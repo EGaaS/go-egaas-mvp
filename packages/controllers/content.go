@@ -426,7 +426,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 								</script>`))
 		skipRestrictedUsers := []string{"cashRequestIn", "cashRequestOut", "upgrade", "notifications"}
 
-		if c.StateId > 0 && (tplName == "dashboard_anonym" || tplName == "home") {
+		/*if c.StateId > 0 && (tplName == "dashboard_anonym" || tplName == "home") {
 			tpl, err := utils.CreateHtmlFromTemplate("dashboard_default", sessCitizenId, sessStateId, &map[string]string{})
 			if err != nil {
 				log.Error("%v", err)
@@ -434,7 +434,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 			}
 			w.Write([]byte(tpl))
 			return
-		}
+		}*/
 
 		// тем, кто не зареган на пуле не выдаем некоторые страницы
 		if !utils.InSliceString(tplName, skipRestrictedUsers) {

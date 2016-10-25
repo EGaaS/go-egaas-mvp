@@ -347,9 +347,9 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 				}
 			}
 			fmt.Println("GET http host")
-			if err := utils.LoadContracts(); err != nil {
+			/*if err := utils.LoadContracts(); err != nil {
 				log.Error(`Load Contracts`, err)
-			}
+			}*/
 			BrowserHttpHost, HandleHttpHost, ListenHttpHost = GetHttpHost()
 			// для ноды тоже нужна БД
 			tcpListener()
@@ -359,8 +359,8 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		// включаем листинг веб-сервером для клиентской части
 		http.HandleFunc(HandleHttpHost+"/", controllers.Index)
 		http.HandleFunc(HandleHttpHost+"/content", controllers.Content)
-		http.HandleFunc(HandleHttpHost+"/template", controllers.Template)
-		http.HandleFunc(HandleHttpHost+"/app", controllers.App)
+		//http.HandleFunc(HandleHttpHost+"/template", controllers.Template)
+		//http.HandleFunc(HandleHttpHost+"/app", controllers.App)
 		http.HandleFunc(HandleHttpHost+"/ajax", controllers.Ajax)
 		//http.HandleFunc(HandleHttpHost+"/ajaxjson", controllers.AjaxJson)
 		//http.HandleFunc(HandleHttpHost+"/tools", controllers.Tools)

@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"html/template"
 	"archive/zip"
 	"bytes"
 	"crypto"
@@ -48,7 +49,7 @@ import (
 	"github.com/EGaaS/go-mvp/packages/consts"
 	"github.com/EGaaS/go-mvp/packages/lib"
 	"github.com/EGaaS/go-mvp/packages/static"
-	"github.com/EGaaS/go-mvp/packages/textproc"
+	//"github.com/EGaaS/go-mvp/packages/textproc"
 	b58 "github.com/jbenet/go-base58"
 	"github.com/kardianos/osext"
 	_ "github.com/lib/pq"
@@ -2400,16 +2401,12 @@ func DecodeLenInt64(data *[]byte) (int64, error) {
 func FillLeft(slice []byte) []byte {
 	return lib.FillLeft(slice)
 }
-
+/*
 func CreateHtmlFromTemplate(page string, citizenId, stateId int64, params *map[string]string) (string, error) {
 	data, err := DB.Single(`SELECT value FROM "`+Int64ToStr(stateId)+`_pages" WHERE name = ?`, page).String()
 	if err != nil {
 		return "", err
 	}
-	/*	qrx := regexp.MustCompile(`CitizenId`)
-		data = qrx.ReplaceAllString(data, Int64ToStr(citizenId))
-		qrx = regexp.MustCompile(`AccountId`)
-		data = qrx.ReplaceAllString(data, Int64ToStr(accountId))*/
 	(*params)[`page`] = page
 	(*params)[`state_id`] = Int64ToStr(stateId)
 	if len(data) > 0 {
@@ -2418,7 +2415,7 @@ func CreateHtmlFromTemplate(page string, citizenId, stateId int64, params *map[s
 	}
 	return ``, nil
 }
-
+*/
 
 func FirstBlock(exit bool) {
 
@@ -2492,4 +2489,41 @@ func FirstBlock(exit bool) {
 			os.Exit(0)
 		}
 	}
+}
+
+
+func ProceedTemplate(html string, data interface{}) (string, error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("proceedTemplate Recovered", r)
+			fmt.Println(r)
+		}
+	}()
+	pattern, err := static.Asset("static/" + html + ".html")
+	if err != nil {
+		return "", err
+	}
+	funcMap := template.FuncMap{
+		"sum": func(a, b interface{}) int {
+			//			fmt.Println(`TYPES`, reflect.TypeOf(a), reflect.TypeOf(b))
+			return a.(int) + b.(int)
+		},
+		"noescape": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	}
+	sign, err := static.Asset("static/signatures_new.html")
+	if err != nil {
+		return "", err
+	}
+
+	t := template.Must(template.New("template").Funcs(funcMap).Parse(string(pattern)))
+	t = template.Must(t.Parse(string(sign)))
+	b := new(bytes.Buffer)
+	err = t.Execute(b, data)
+	if err != nil {
+		return "", err
+	}
+	return b.String(), nil
 }

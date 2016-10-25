@@ -24,7 +24,7 @@ import (
 	"reflect"
 
 	"github.com/EGaaS/go-mvp/packages/consts"
-	"github.com/EGaaS/go-mvp/packages/smart"
+	//"github.com/EGaaS/go-mvp/packages/smart"
 	"github.com/EGaaS/go-mvp/packages/utils"
 	"github.com/op/go-logging"
 	"github.com/shopspring/decimal"
@@ -79,7 +79,7 @@ type Parser struct {
 	newPublicKeysHex [3][]byte
 	TxPtr            interface{} // Pointer to the corresponding struct in consts/struct.go
 	TxData           map[string]interface{}
-	TxContract       *smart.Contract
+	//TxContract       *smart.Contract
 	TxVars           map[string]string
 	AllPkeys         map[string]string
 	States           map[int64]string
@@ -403,6 +403,7 @@ func (p *Parser) BlockError(err error) {
 	p.ExecSql("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
 }
 
+/*
 func (p *Parser) AccessRights(condition string, iscondition bool) error {
 	param := `value`
 	if iscondition {
@@ -501,3 +502,4 @@ func (p *Parser) AccessChange(table, name string) error {
 	}
 	return nil
 }
+*/

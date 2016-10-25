@@ -17,14 +17,12 @@
 package controllers
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"strings"
-
 	"github.com/EGaaS/go-mvp/packages/consts"
 	"github.com/EGaaS/go-mvp/packages/lib"
-	"github.com/EGaaS/go-mvp/packages/smart"
+	//"github.com/EGaaS/go-mvp/packages/smart"
 	"github.com/EGaaS/go-mvp/packages/utils"
 )
 
@@ -103,13 +101,13 @@ func (c *Controller) BlockExplorer() (string, error) {
 					for i := 0; i < itype; i++ {
 						tmp[4-itype+i] = block[i+1]
 					}
-					idc := int32(binary.BigEndian.Uint32(tmp))
-					contract := smart.GetContractById(idc)
+					//idc := int32(binary.BigEndian.Uint32(tmp))
+					/*contract := smart.GetContractById(idc)
 					if contract != nil {
 						name = contract.Name
 					} else {
 						name = fmt.Sprintf(`Unknown=%d`, idc)
-					}
+					}*/
 				}
 				txlist = append(txlist, name)
 				block = block[size:]

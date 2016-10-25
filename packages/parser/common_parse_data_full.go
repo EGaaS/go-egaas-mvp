@@ -18,9 +18,8 @@ package parser
 
 import (
 	"fmt"
-
 	"github.com/EGaaS/go-mvp/packages/consts"
-	"github.com/EGaaS/go-mvp/packages/smart"
+	//"github.com/EGaaS/go-mvp/packages/smart"
 	"github.com/EGaaS/go-mvp/packages/utils"
 )
 
@@ -124,7 +123,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				return err
 			}
 
-			if p.BlockData.BlockId > 1 && p.TxContract == nil {
+			if p.BlockData.BlockId > 1 /*&& p.TxContract == nil*/ {
 				var userId int64
 				// txSlice[3] могут подсунуть пустой
 				if len(p.TxSlice) > 3 {
@@ -149,7 +148,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 					return utils.ErrInfo(fmt.Errorf("max_block_user_transactions"))
 				}
 			}
-			if p.TxContract == nil {
+			//if p.TxContract == nil {
 				// время в транзакции не может быть больше, чем на MAX_TX_FORW сек времени блока
 				// и  время в транзакции не может быть меньше времени блока -24ч.
 				if utils.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > p.BlockData.Time || utils.BytesToInt64(p.TxSlice[2]) < p.BlockData.Time-consts.MAX_TX_BACK {
@@ -165,17 +164,17 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				if !ok {
 					return utils.ErrInfo(fmt.Errorf("nonexistent type"))
 				}
-			} else {
+			/*} else {
 				if int64(p.TxPtr.(*consts.TXHeader).Time)-consts.MAX_TX_FORW > p.BlockData.Time || int64(p.TxPtr.(*consts.TXHeader).Time) < p.BlockData.Time-consts.MAX_TX_BACK {
 					return utils.ErrInfo(fmt.Errorf("incorrect transaction time"))
 				}
 
-			}
+			}*/
 			p.TxMap = map[string][]byte{}
 
 			p.TxIds++
 
-			if p.TxContract != nil {
+			/*if p.TxContract != nil {
 				if err := p.CallContract(smart.CALL_INIT | smart.CALL_FRONT | smart.CALL_MAIN); err != nil {
 					if p.TxContract.Called == smart.CALL_FRONT || p.TxContract.Called == smart.CALL_MAIN {
 						err0 := p.RollbackTo(txForRollbackTo, true)
@@ -185,7 +184,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 					}
 					return utils.ErrInfo(err)
 				}
-			} else {
+			} else {*/
 				MethodName := consts.TxTypes[utils.BytesToInt(p.TxSlice[1])]
 				log.Debug("MethodName", MethodName+"Init")
 				err_ := utils.CallMethod(p, MethodName+"Init")
@@ -215,7 +214,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 					}
 					return utils.ErrInfo(err_.(error))
 				}
-			}
+			//}
 			// даем юзеру понять, что его тр-ия попала в блок
 			p.ExecSql("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockId, utils.Md5(transactionBinaryDataFull))
 			log.Debug("UPDATE transactions_status SET block_id = %d WHERE hex(hash) = %s", p.BlockData.BlockId, utils.Md5(transactionBinaryDataFull))

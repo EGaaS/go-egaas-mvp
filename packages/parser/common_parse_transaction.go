@@ -19,15 +19,9 @@ package parser
 import (
 	"fmt"
 	"reflect"
-	"strings"
-
 	"github.com/EGaaS/go-mvp/packages/consts"
 	"github.com/EGaaS/go-mvp/packages/lib"
-	"github.com/EGaaS/go-mvp/packages/script"
-	"github.com/EGaaS/go-mvp/packages/smart"
 	"github.com/EGaaS/go-mvp/packages/utils"
-
-	"github.com/shopspring/decimal"
 )
 
 func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, error) {
@@ -61,27 +55,23 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 				p.TxCitizenID = 0
 				p.TxWalletID = int64(p.TxPtr.(*consts.TXHeader).WalletId)
 			}
-			contract := smart.GetContractById(p.TxPtr.(*consts.TXHeader).Type)
+			/*contract := smart.GetContractById(p.TxPtr.(*consts.TXHeader).Type)
 			if contract == nil {
 				return nil, fmt.Errorf(`unknown contract %d`, p.TxPtr.(*consts.TXHeader).Type)
-			}
+			}*/
 			forsign := fmt.Sprintf("%d,%d,%d,%d,%d", p.TxPtr.(*consts.TXHeader).Type,
 				p.TxPtr.(*consts.TXHeader).Time, p.TxPtr.(*consts.TXHeader).WalletId,
 				p.TxPtr.(*consts.TXHeader).StateId, p.TxPtr.(*consts.TXHeader).Flags)
 
-			p.TxContract = contract
+			//p.TxContract = contract
 			p.TxData = make(map[string]interface{})
-			for _, fitem := range *contract.Block.Info.(*script.ContractInfo).Tx {
+			/*for _, fitem := range *contract.Block.Info.(*script.ContractInfo).Tx {
 				var v interface{}
 				switch fitem.Type.String() {
 				case `uint64`:
 					var val uint64
 					lib.BinUnmarshal(&input, &val)
 					v = val
-					/*				case `float64`:
-									var val float64
-									lib.BinUnmarshal(&input, &val)
-									v = val*/
 				case `int64`:
 					v, err = lib.DecodeLenInt64(&input)
 				case `decimal.Decimal`:
@@ -112,7 +102,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 				}
 				forsign += fmt.Sprintf(",%v", v)
 
-			}
+			}*/
 			p.TxData[`forsign`] = forsign
 			//			fmt.Println(`Contract data`, p.TxData)
 		} else if isStruct {
