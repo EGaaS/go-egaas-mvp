@@ -17,7 +17,6 @@
 package controllers
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/EGaaS/go-mvp/packages/consts"
 	"github.com/EGaaS/go-mvp/packages/lib"
@@ -26,6 +25,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"io/ioutil"
 	"os"
+	"encoding/hex"
 )
 
 func (c *Controller) Install() (string, error) {
@@ -39,11 +39,11 @@ func (c *Controller) Install() (string, error) {
 	if generateFirstBlock != "" {
 		*utils.GenerateFirstBlock = utils.StrToInt64(generateFirstBlock)
 	}
-	firstBlockDir := c.r.FormValue("first_block_dir")
+	/*firstBlockDir := c.r.FormValue("first_block_dir")
 	*utils.FirstBlockDir = *utils.Dir
 	if firstBlockDir != "" {
 		*utils.FirstBlockDir = firstBlockDir
-	}
+	}*/
 	installType := c.r.FormValue("type")
 	tcpHost := c.r.FormValue("tcp_host")
 	if tcpHost != "" {
@@ -202,13 +202,13 @@ func (c *Controller) Install() (string, error) {
 			dropConfig()
 			return "", utils.ErrInfo(err)
 		}
+
 		err = utils.DaylightRestart()
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			dropConfig()
 			return "", utils.ErrInfo(err)
 		}
-
 	}
 	return `{"success":1}`, nil
 }

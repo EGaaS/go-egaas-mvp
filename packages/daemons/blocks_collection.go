@@ -287,8 +287,10 @@ BEGIN:
 				var newBlock []byte
 				if len(*utils.FirstBlockDir) > 0 {
 					newBlock, _ = ioutil.ReadFile(*utils.FirstBlockDir + "/1block")
+					logger.Debug(*utils.FirstBlockDir + "/1block")
 				} else {
 					newBlock, err = static.Asset("static/1block")
+					logger.Debug("static/1block")
 					if err != nil {
 						if d.dPrintSleep(err, d.sleepTime) {
 							break BEGIN
@@ -298,6 +300,7 @@ BEGIN:
 				}
 				parser.BinaryData = newBlock
 				parser.CurrentVersion = consts.VERSION
+				logger.Debug("newBlock %x", newBlock)
 
 				if err = parser.ParseDataFull(false); err != nil {
 					parser.BlockError(err)
