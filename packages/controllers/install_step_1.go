@@ -153,7 +153,6 @@ func (c *Controller) InstallStep1() (string, error) {
 			os.Exit(1)
 		}
 
-
 		log.Debug("GenerateFirstBlock", *utils.GenerateFirstBlock)
 
 		if _, err := os.Stat(*utils.FirstBlockDir + "/1block"); os.IsNotExist(err) {
