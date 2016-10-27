@@ -49,12 +49,12 @@ func (c *Controller) AjaxSignIn() interface{} {
 		return result
 	}
 	//Test
-	if stateId == 0 {
+	/*if stateId == 0 {
 		citizen, err := c.Single(`SELECT count(id) FROM "1_citizens"`).Int64()
 		if err == nil && citizen > 0 {
 			stateId = 1
 		}
-	}
+	}*/
 	sign, _ := hex.DecodeString(c.r.FormValue("sign"))
 	var msg string
 	switch uid := c.sess.Get(`uid`).(type) {
@@ -90,27 +90,7 @@ func (c *Controller) AjaxSignIn() interface{} {
 	log.Debug("wallet_id : %d", walletId)
 	var citizenId int64
 	fmt.Println(`SingIN`, stateId)
-	if stateId > 0 {
-		//result = SignInJson{}
-		log.Debug("stateId %v", stateId)
-		if _, err := c.CheckStateName(stateId); err == nil {
-			citizenId, err = c.Single(`SELECT id FROM "`+utils.Int64ToStr(stateId)+`_citizens" WHERE id = ?`,
-				walletId).Int64()
-			if err != nil {
-				result.Error = err.Error()
-				return result
-			}
-			log.Debug("citizenId %v", citizenId)
-			if citizenId == 0 {
-				stateId = 0
-				log.Debug("not a citizen")
-				//result.Error = "not a citizen"
-			}
-		} else {
-			result.Error = err.Error()
-			return result
-		}
-	}
+
 	result.Result = true
 	/*	citizenId, err := c.GetCitizenIdByPublicKey(publicKey)
 		err = c.ExecSql("UPDATE config SET citizen_id = ?", citizenId)

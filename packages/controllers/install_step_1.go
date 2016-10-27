@@ -22,9 +22,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"encoding/hex"
+	//"encoding/hex"
 	"github.com/EGaaS/go-mvp/packages/consts"
-	"github.com/EGaaS/go-mvp/packages/lib"
+	//"github.com/EGaaS/go-mvp/packages/lib"
 	"github.com/EGaaS/go-mvp/packages/static"
 	"github.com/EGaaS/go-mvp/packages/utils"
 	"github.com/astaxie/beego/config"
@@ -154,7 +154,7 @@ func (c *Controller) InstallStep1() (string, error) {
 		}
 
 		log.Debug("GenerateFirstBlock", *utils.GenerateFirstBlock)
-
+		/*
 		if _, err := os.Stat(*utils.FirstBlockDir + "/1block"); os.IsNotExist(err) {
 
 			// If there is no key, this is the first run and the need to create them in the working directory.
@@ -207,7 +207,7 @@ func (c *Controller) InstallStep1() (string, error) {
 				os.Exit(1)
 			}
 
-		}
+		}*/
 	}()
 
 	utils.Sleep(3) // даем время обновиться config.ini, чтобы в content выдался не installStep0, а updatingBlockchain
