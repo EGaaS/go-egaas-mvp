@@ -48,13 +48,7 @@ func (c *Controller) AjaxSignIn() interface{} {
 		result.Error = err.Error()
 		return result
 	}
-	//Test
-	/*if stateId == 0 {
-		citizen, err := c.Single(`SELECT count(id) FROM "1_citizens"`).Int64()
-		if err == nil && citizen > 0 {
-			stateId = 1
-		}
-	}*/
+
 	sign, _ := hex.DecodeString(c.r.FormValue("sign"))
 	var msg string
 	switch uid := c.sess.Get(`uid`).(type) {
@@ -81,11 +75,19 @@ func (c *Controller) AjaxSignIn() interface{} {
 		result.Error = err.Error()
 		return result
 	}
-	/*	err = c.ExecSql("UPDATE config SET dlt_wallet_id = ?", walletId)
+
+	dltWalletId, err := c.Single(`SELECT dlt_wallet_id FROM config`).Int64()
+	if err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	if dltWalletId == 0 {
+		err = c.DCDB.ExecSql(`UPDATE config SET dlt_wallet_id = ?`, int64(lib.Address(publicKey)))
 		if err != nil {
 			result.Error = err.Error()
 			return result
-		}*/
+		}
+	}
 	c.sess.Set("wallet_id", walletId)
 	log.Debug("wallet_id : %d", walletId)
 	var citizenId int64
