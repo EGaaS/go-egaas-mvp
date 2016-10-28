@@ -5,4 +5,3 @@ cd make_dmg
 zip -r egaas_osx64.zip egaas.app/Contents/MacOS/egaasbin
 ./make_dmg.sh -b background.png -i logo-big.icns -s "480:540" -c 240:400:240:200 -n egaas_osx64 "egaas.app"
 cd ../
-git stash
