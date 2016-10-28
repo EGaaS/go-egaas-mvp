@@ -718,4 +718,3 @@ function replaceTag(tag) {
 function safe_tags_replace(str) {
     return str.replace(/[&<>]/g, replaceTag);
 }
->>>>>>> bfd554d6f33791020261d81968c2e492ea76e8a0
