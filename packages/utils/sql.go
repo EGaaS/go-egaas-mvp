@@ -810,6 +810,15 @@ func (db *DCDB) GetMyNodePublicKey(myPrefix string) (string, error) {
 	return key, nil
 }
 
+func (db *DCDB) GetMyPublicKeyFromBlockChain(myWalletId int64) (string, error) {
+	var key string
+	key, err := db.Single("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", myWalletId).String()
+	if err != nil {
+		return "", ErrInfo(err)
+	}
+	return key, nil
+}
+
 func (db *DCDB) GetPrivateKey(myPrefix string) (string, error) {
 	var key string
 	key, err := db.Single("SELECT private_key FROM my_keys WHERE block_id = (SELECT max(block_id) FROM my_keys)").String()
