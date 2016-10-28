@@ -392,8 +392,11 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 				thrustWindowLoder.Close()
 				thrustWindow := thrust.NewWindow(thrust.WindowOptions{
 					RootUrl: BrowserHttpHost,
-					Size:    commands.SizeHW{Width: 1024, Height: 600},
+					Size:    commands.SizeHW{Width: 1024, Height: 800},
 				})
+				if *utils.DevTools != 0 {
+					thrustWindow.OpenDevtools()
+				}
 				thrustWindow.HandleEvent("*", func(cr commands.EventResult) {
 					fmt.Println("HandleEvent", cr)
 				})
