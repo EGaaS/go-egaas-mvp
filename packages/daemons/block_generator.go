@@ -256,6 +256,17 @@ BEGIN:
 			continue
 		}
 
+		nodePKey, err := d.GetMyPublicKeyFromBlockChain(myWalletId)
+		if len(nodePKey) < 1 {
+			logger.Debug("continue")
+			d.dbUnlock()
+			if d.dSleep(d.sleepTime) {
+				break BEGIN
+			}
+			continue
+		}
+
+
 		//#####################################
 		//##		 Формируем блок
 		//#####################################
