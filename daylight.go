@@ -52,7 +52,7 @@ func main() {
 		utils.Thrust = true
 		thrust.Start()
 		thrustWindow = thrust.NewWindow(thrust.WindowOptions{
-			RootUrl:  "http://localhost:7079/loader.html",
+			RootUrl:  "http://localhost:7070/loader.html",
 			HasFrame: winVer() != 6,
 			Title:    "EGaaS",
 			Size:     commands.SizeHW{Width: width, Height: height},
