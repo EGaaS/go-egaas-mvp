@@ -111,8 +111,10 @@ var (
 	EndBlockId              = flag.Int64("endBlockId", 0, "End block for blockCollection daemon")
 	RollbackToBlockId       = flag.Int64("rollbackToBlockId", 0, "Rollback to block_id")
 	Tls                     = flag.String("tls", "", "Support https. Specify directory for .well-known")
+	DevTools                = flag.Int64("devtools", 0, "Devtools in thrust-shell")
 	DaemonsChans            []*DaemonsChansType
 	eWallets                = &sync.Mutex{}
+	Thrust                  bool
 )
 
 func init() {
@@ -2317,6 +2319,7 @@ func daylightUpd(url string) error {
 	return nil
 }
 
+/*
 func DaylightRestart() error {
 	log.Debug("exec", os.Args[0])
 	err := exec.Command(os.Args[0]).Start()
@@ -2324,7 +2327,7 @@ func DaylightRestart() error {
 		return ErrInfo(err)
 	}
 	return nil
-}
+}*/
 
 func GetUpdVerAndUrl(host string) (string, string, error) {
 
