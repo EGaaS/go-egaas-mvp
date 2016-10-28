@@ -74,7 +74,7 @@ func main() {
 		go func() {
 			http.HandleFunc("/static/img/main_loader.gif", main_loader)
 			http.HandleFunc("/loader.html", main_loader_html)
-			http.ListenAndServe(":7079", nil)
+			http.ListenAndServe(":7070", nil)
 		}()
 	}
 	tray()
