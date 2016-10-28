@@ -52,5 +52,5 @@ func tray() {
 }
 
 func enterLoop() {
-	trayhost.EnterLoop("DayLight", iconData)
+	trayhost.EnterLoop("EGaaS", iconData)
 }
