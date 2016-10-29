@@ -998,6 +998,7 @@ func (db *DCDB) GetNodePublicKeyWalletOrCB(wallet_id, state_id int64) ([]byte, e
 		if err != nil {
 			return []byte(""), err
 		}
+		log.Debug("node_public_key %x", result)
 	} else {
 		result, err = db.Single("SELECT node_public_key FROM system_recognized_states WHERE state_id = ?", state_id).Bytes()
 		if err != nil {
