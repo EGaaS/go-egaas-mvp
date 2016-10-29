@@ -27,6 +27,7 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/astaxie/beego/config"
+	"strings"
 )
 
 func (c *Controller) Install() (string, error) {
@@ -200,8 +201,9 @@ func (c *Controller) Install() (string, error) {
 		log.Debug("1block")
 
 		NodePrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/NodePrivateKey")
-		npubkey := lib.PrivateToPublicHex(string(NodePrivateKey))
-		err = c.DCDB.ExecSql(`INSERT INTO my_node_keys (private_key, public_key, block_id) VALUES (?, [hex], ?)`, NodePrivateKey, npubkey, 1)
+		NodePrivateKeyStr := strings.TrimSpace(string(NodePrivateKey))
+		npubkey := lib.PrivateToPublicHex(NodePrivateKeyStr)
+		err = c.DCDB.ExecSql(`INSERT INTO my_node_keys (private_key, public_key, block_id) VALUES (?, [hex], ?)`, NodePrivateKeyStr, npubkey, 1)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			dropConfig()
