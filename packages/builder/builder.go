@@ -230,7 +230,7 @@ func main() {
 	}
 	
 	if strings.IndexRune( options.Skip, 'b' ) < 0 {
-		fmt.Println(`Compiling daylight.go`)
+		fmt.Println(`Compiling egaas.go`)
 		if err = os.MkdirAll( filepath.Dir(options.OutFile), 0755); err != nil {
 			exit(err)
 		}
