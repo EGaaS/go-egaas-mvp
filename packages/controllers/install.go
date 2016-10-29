@@ -181,12 +181,14 @@ func (c *Controller) Install() (string, error) {
 			}
 		}
 
+		*utils.GenerateFirstBlock = 1
 		utils.FirstBlock(false)
 
 		log.Debug("1block")
 
 		NodePrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/NodePrivateKey")
-		err = c.DCDB.ExecSql(`INSERT INTO my_node_keys (private_key, block_id) VALUES (?, ?)`, NodePrivateKey, 1)
+		npubkey := lib.PrivateToPublicHex(string(NodePrivateKey))
+		err = c.DCDB.ExecSql(`INSERT INTO my_node_keys (private_key, public_key, block_id) VALUES (?, [hex], ?)`, NodePrivateKey, npubkey, 1)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			dropConfig()
