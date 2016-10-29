@@ -40,11 +40,11 @@ func (c *Controller) Install() (string, error) {
 	if generateFirstBlock != "" {
 		*utils.GenerateFirstBlock = utils.StrToInt64(generateFirstBlock)
 	}
-	firstBlockDir := c.r.FormValue("first_block_dir")
+	/*firstBlockDir := c.r.FormValue("first_block_dir")
 	*utils.FirstBlockDir = *utils.Dir
 	if firstBlockDir != "" {
 		*utils.FirstBlockDir = firstBlockDir
-	}
+	}*/
 	installType := c.r.FormValue("type")
 	tcpHost := c.r.FormValue("tcp_host")
 	if tcpHost != "" {
