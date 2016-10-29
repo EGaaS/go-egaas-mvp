@@ -47,7 +47,6 @@ var GKey = {
 		if ( typeof THRUST != "undefined" )
 			THRUST.remote.send(localStorage.getItem('Accounts'));
 	},
-	},
 	clear: function() {
 //		localStorage.removeItem('PubKey');
 		localStorage.removeItem('EncKey');
