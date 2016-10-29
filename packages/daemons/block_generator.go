@@ -297,6 +297,7 @@ BEGIN:
 		okBlock := false
 		for !okBlock {
 			n++
+			log.Debug("n", n)
 			if n > 100 {
 				continue BEGIN
 			}
