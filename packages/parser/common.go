@@ -399,7 +399,7 @@ func (p *Parser) BlockError(err error) {
 		errText = errText[:255]
 	}
 	p.DeleteQueueTx([]byte(p.TxHash))
-	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %x", errText, p.TxHash)
+	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %s", errText, p.TxHash)
 	p.ExecSql("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
 }
 
