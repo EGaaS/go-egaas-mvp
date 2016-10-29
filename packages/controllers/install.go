@@ -31,6 +31,9 @@ import (
 
 func (c *Controller) Install() (string, error) {
 
+	if _, err := os.Stat(*utils.Dir + "/config.ini"); err == nil {
+		return "", utils.ErrInfo("config.ini exists")
+	}
 	c.r.ParseForm()
 	dir := c.r.FormValue("dir")
 	if dir != "" {
@@ -58,7 +61,7 @@ func (c *Controller) Install() (string, error) {
 	if logLevel != "DEBUG" {
 		logLevel = "ERROR"
 	}
-	url := c.r.FormValue("url")
+	first_load_blockchain_url := c.r.FormValue("first_load_blockchain_url")
 	firstLoad := c.r.FormValue("first_load")
 	dbType := c.r.FormValue("db_type")
 	dbHost := c.r.FormValue("host")
@@ -67,8 +70,8 @@ func (c *Controller) Install() (string, error) {
 	dbUsername := c.r.FormValue("username")
 	dbPassword := c.r.FormValue("password")
 
-	if len(url) == 0 {
-		url = consts.BLOCKCHAIN_URL
+	if len(first_load_blockchain_url) == 0 {
+		first_load_blockchain_url = consts.BLOCKCHAIN_URL
 	}
 
 	if _, err := os.Stat(*utils.Dir + "/config.ini"); os.IsNotExist(err) {
@@ -142,7 +145,7 @@ func (c *Controller) Install() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSql("INSERT INTO config (first_load_blockchain, first_load_blockchain_url, auto_reload) VALUES (?, ?, ?)", firstLoad, url, 259200)
+	err = c.DCDB.ExecSql("INSERT INTO config (first_load_blockchain, first_load_blockchain_url, auto_reload) VALUES (?, ?, ?)", firstLoad, first_load_blockchain_url, 259200)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()
@@ -158,21 +161,31 @@ func (c *Controller) Install() (string, error) {
 
 	log.Debug("GenerateFirstBlock", *utils.GenerateFirstBlock)
 
-	if _, err := os.Stat(*utils.FirstBlockDir + "/1block"); os.IsNotExist(err) {
+	fmt.Println("GenerateFirstBlock")
+
+	if _, err := os.Stat(*utils.FirstBlockDir + "/1block"); len(*utils.FirstBlockDir) > 0 && os.IsNotExist(err) {
+
+		fmt.Println("not exists "+*utils.FirstBlockDir + "/1block")
 
 		// If there is no key, this is the first run and the need to create them in the working directory.
 		if _, err := os.Stat(*utils.Dir + "/PrivateKey"); os.IsNotExist(err) {
-
+			fmt.Println("not exists "+*utils.Dir + "/PrivateKey")
 			if len(*utils.FirstBlockPublicKey) == 0 {
 				priv, pub := lib.GenKeys()
+				fmt.Println("WriteFile "+*utils.Dir + "/PrivateKey")
 				err := ioutil.WriteFile(*utils.Dir+"/PrivateKey", []byte(priv), 0644)
 				if err != nil {
 					log.Error("%v", utils.ErrInfo(err))
 				}
 				*utils.FirstBlockPublicKey = pub
 			}
+		}
+
+		if _, err := os.Stat(*utils.Dir + "/NodePrivateKey"); os.IsNotExist(err) {
+			fmt.Println("not exists "+*utils.Dir + "/NodePrivateKey")
 			if len(*utils.FirstBlockNodePublicKey) == 0 {
 				priv, pub := lib.GenKeys()
+				fmt.Println("WriteFile "+*utils.Dir + "/NodePrivateKey")
 				err := ioutil.WriteFile(*utils.Dir+"/NodePrivateKey", []byte(priv), 0644)
 				if err != nil {
 					log.Error("%v", utils.ErrInfo(err))
@@ -183,7 +196,7 @@ func (c *Controller) Install() (string, error) {
 
 		*utils.GenerateFirstBlock = 1
 		utils.FirstBlock(false)
-
+	}
 		log.Debug("1block")
 
 		NodePrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/NodePrivateKey")
@@ -194,12 +207,16 @@ func (c *Controller) Install() (string, error) {
 			dropConfig()
 			return "", utils.ErrInfo(err)
 		}
-		PrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/PrivateKey")
-		PrivateHex, _ := hex.DecodeString(string(PrivateKey))
-		PublicKeyBytes2 := lib.PrivateToPublic(PrivateHex)
-		log.Debug("dlt_wallet_id %d", int64(lib.Address(PublicKeyBytes2)))
 
-		err = c.DCDB.ExecSql(`UPDATE config SET dlt_wallet_id = ?`, int64(lib.Address(PublicKeyBytes2)))
+		if *utils.DltWalletId == 0 {
+			PrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/PrivateKey")
+			PrivateHex, _ := hex.DecodeString(string(PrivateKey))
+			PublicKeyBytes2 := lib.PrivateToPublic(PrivateHex)
+			log.Debug("dlt_wallet_id %d", int64(lib.Address(PublicKeyBytes2)))
+			*utils.DltWalletId = int64(lib.Address(PublicKeyBytes2))
+		}
+
+		err = c.DCDB.ExecSql(`UPDATE config SET dlt_wallet_id = ?`, *utils.DltWalletId)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			dropConfig()
@@ -212,7 +229,7 @@ func (c *Controller) Install() (string, error) {
 					return "", utils.ErrInfo(err)
 				}*/
 
-	}
+
 	return `{"success":1}`, nil
 }
 

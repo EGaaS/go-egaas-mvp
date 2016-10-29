@@ -63,7 +63,17 @@
 			$("#first_block").show();
 		}
 	});
-	
+
+	$('#first_load').on('change', function() {
+		if (this.value=="nodes") {
+			$('#url').css("display", "none")
+		} else {
+			$('#url').css("display", "block")
+		}
+	});
+
+	$('#url').css("display", "block")
+
 	$('#next').bind('click', function () {
 		$.post( 'ajax?controllerName=install', {
 			'generate_first_block' : $('input[id=generate_first_block]:checked').val(),
@@ -106,6 +116,19 @@
 				<h1>Installation</h1>
 				<div id="extended_div">
 					<form class="extended_form keyCode_13">
+
+						<fieldset class="form-group">
+							<label class="col-sm-3 control-label" for="first_load">First load</label>
+							<div class="col-sm-9">
+								<select id="first_load" class="form-control c-select">
+									<option value="file">Url</option>
+									<option value="nodes">Nodes</option>
+								</select>
+								<div>
+									<input class="form-control" type="text" id="url" value="http://egaas-blockchain.github.io/blockchain">
+								</div>
+							</div>
+						</fieldset>
 
 						<fieldset class="form-group">
 							<label class="col-sm-3 control-label" for="log_level">log_level</label>

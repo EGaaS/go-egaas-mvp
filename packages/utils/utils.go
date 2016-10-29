@@ -92,6 +92,7 @@ type DaemonsChansType struct {
 }
 
 var (
+	DltWalletId				= flag.Int64("dltWalletId", 0, "DltWalletId")
 	FirstBlockDir           = flag.String("firstBlockDir", "", "FirstBlockDir")
 	FirstBlockPublicKey     = flag.String("firstBlockPublicKey", "", "FirstBlockPublicKey")
 	FirstBlockNodePublicKey = flag.String("firstBlockNodePublicKey", "", "FirstBlockNodePublicKey")
@@ -2451,6 +2452,13 @@ func FirstBlock(exit bool) {
 		log.Debug("PublicKey", PublicKey)
 		//		PublicKeyBytes, _ := base64.StdEncoding.DecodeString(string(PublicKey))
 		PublicKeyBytes, _ := hex.DecodeString(string(PublicKey))
+
+
+		PrivateKey, _ := ioutil.ReadFile(*Dir + "/PrivateKey")
+		PrivateHex, _ := hex.DecodeString(string(PrivateKey))
+		PublicKeyBytes2 := lib.PrivateToPublic(PrivateHex)
+		log.Debug("dlt_wallet_id %d", int64(lib.Address(PublicKeyBytes2)))
+
 
 		NodePublicKey := *FirstBlockNodePublicKey
 		log.Debug("NodePublicKey", NodePublicKey)
