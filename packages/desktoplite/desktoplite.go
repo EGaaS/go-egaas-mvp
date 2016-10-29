@@ -19,8 +19,8 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"github.com/EGaaS/go-mvp/packages/system"
-	"github.com/EGaaS/go-mvp/packages/utils"
+	"github.com/EGaaS/go-egaas-mvp/packages/system"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/go-bindata-assetfs"
 	"github.com/go-thrust/lib/bindings/window"
 	"github.com/go-thrust/lib/commands"
@@ -30,7 +30,7 @@ import (
 	"path/filepath"
 	"io/ioutil"
 	"encoding/json"
-	"github.com/EGaaS/go-mvp/packages/static"
+	"github.com/EGaaS/go-egaas-mvp/packages/static"
 )
 
 //const GETPOOLURL = `http://localhost:8089/getpool/`
