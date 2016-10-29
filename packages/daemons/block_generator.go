@@ -293,9 +293,13 @@ BEGIN:
 			continue
 		}
 
+		n:=0
 		okBlock := false
 		for !okBlock {
-
+			n++
+			if n > 100 {
+				continue BEGIN
+			}
 			var mrklArray [][]byte
 			var usedTransactions string
 			var mrklRoot []byte
