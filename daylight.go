@@ -49,17 +49,10 @@ func main() {
 		height = 578
 	}
 	if utils.Desktop() && (winVer() >= 6 || winVer() == 0) {
-
-		go func() {
-			http.HandleFunc("/static/img/main_loader.gif", main_loader)
-			http.HandleFunc("/loader.html", main_loader_html)
-			http.ListenAndServe(":7070", nil)
-		}()
-		//utils.Sleep(1)
 		utils.Thrust = true
 		thrust.Start()
 		thrustWindow = thrust.NewWindow(thrust.WindowOptions{
-			RootUrl:  "http://localhost:7070/loader.html",
+			RootUrl:  "http://localhost:7979/loader.html",
 			HasFrame: winVer() != 6,
 			Title:    "EGaaS",
 			Size:     commands.SizeHW{Width: width, Height: height},
@@ -78,7 +71,11 @@ func main() {
 		})
 		thrustWindow.Show()
 		thrustWindow.Focus()
-
+		go func() {
+			http.HandleFunc("/static/img/main_loader.gif", main_loader)
+			http.HandleFunc("/loader.html", main_loader_html)
+			http.ListenAndServe(":7979", nil)
+		}()
 	}
 	tray()
 
