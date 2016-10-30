@@ -32,7 +32,7 @@ const MIN_CONFIRMED_NODES = 0
 const LAST_BLOCK = 330000
 
 // примерный размер блокчейна
-const BLOCKCHAIN_SIZE = 77000000
+const BLOCKCHAIN_SIZE = 100
 
 // где лежит блокчейн. для тех, кто не хочет собирать его с нодов
 const BLOCKCHAIN_URL = "http://egaas-blockchain.github.io/blockchain"
