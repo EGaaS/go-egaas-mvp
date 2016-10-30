@@ -827,7 +827,7 @@ func GetEndBlockId() (int64, error) {
 			log.Fatal(err)
 		}
 		if fi.Size() == 0 {
-			return 0, ErrInfo("/public/blockchain size=0")
+			return 0, nil
 		}
 
 		// размер блока, записанный в 5-и последних байтах файла blockchain

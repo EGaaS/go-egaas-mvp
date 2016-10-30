@@ -55,8 +55,6 @@ BEGIN:
 			if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {
 				break BEGIN
 			}
-			// чтобы не стопориться тут, а дойти до пересборки БД
-			endBlockId = 4294967295
 		}
 		logger.Debug("curBlockId: %v / endBlockId: %v", curBlockId, endBlockId)
 		if curBlockId-100 > endBlockId {
