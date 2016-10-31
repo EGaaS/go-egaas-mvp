@@ -17,7 +17,7 @@
 package consts
 
 // текущая версия
-const VERSION = "1.0.1a2"
+const VERSION = "1.0.1b1"
 
 const FIRST_QDLT = 1e+26
 
@@ -71,10 +71,10 @@ const ALERT_ERROR_TIME = 1
 const DATA_TYPE_MAX_BLOCK_ID = 10
 const DATA_TYPE_BLOCK_BODY = 7
 
-const UPD_FULL_NODES_PERIOD = 120 // на время тестов 1, потом надо ставить 86400
+const UPD_FULL_NODES_PERIOD = 3600 // на время тестов 3600, потом надо ставить 86400
 
 const ALERT_KEY = `30820122300d06092a864886f70d01010105000382010f003082010a0282010100d4a48242d0fb2c7c295bc9c87b1aa0c6d23b5f8cab2ec20c2dfde35513ef6066b92ee3935f9a38100493717b60bb7832411daee02012f44a9f58ac91056b2603661544116bfbc55181e5a693bace5ec9325ba0232b9c9c0a29096569d217243e5bf891cc7fc4bcd2e7d6518acc6f982aaa43a9ed737e3ea2845d6432a823ee5b40d1548f802d0c108bf6e5cb5a4daa7edb48764dcbfa6b7a961208833996cfee265ca2ce2655d444cf3c177b3841b1cc4f3102f89cb2bdb1e5a68eac270506147dd8391b7b3af40a50be13c3970077faffaf98ccc5b8c011146be9c2eb9dfd3454f67a68daaf385d334366d132308bffede27656a515ff69a260bbe2452bd2c30203010001`
-const UPD_AND_VER_URL = "http://daylight.world"
+const UPD_AND_VER_URL = "http://upd.egaas.org"
 const GOOGLE_API_KEY = "AIzaSyBLZlUPgd9uhX05OrsFU68yJOZFrYhZe84"
 
 var LangMap = map[string]int{"en": 1, "ru": 42}
@@ -83,26 +83,9 @@ var Countries = []string{"Afghanistan", "Albania", "Algeria", "American Samoa", 
 
 var TxTypes = map[int]string{
 	1: "FirstBlock",
-	2: "CitizenRequest",
-	3: "NewCitizen",
-	4: "TXNewCitizen",
 	5: "DLTTransfer",
 	6: "DLTChangeHostVote",
 	7: "UpdFullNodes",
-	8: "ChangeNodeKey",
-	9: "NewState",
-	10: "NewColumn",
-	11: "NewTable",
-	12: "EditPage",
-	13: "EditMenu",
-	14: "EditContract",
-	15: "NewContract",
-	16: "EditColumn",
-	17: "EditTable",
-	18: "EditStateParameters",
-	19: "NewStateParameters",
-	20: "NewPage",
-	21: "NewMenu",
 	22: "ChangeNodeKeyDLT",
 }
 
