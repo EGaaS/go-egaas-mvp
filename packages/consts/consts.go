@@ -49,7 +49,7 @@ const MAX_TX_SIZE = 32 << 20
 
 const MAX_TX_COUNT = 100000
 
-const ERROR_TIME = 1
+const ERROR_TIME = 5
 
 const ROUND_FIX = 0.00000000001
 
