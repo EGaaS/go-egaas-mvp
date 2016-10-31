@@ -47,8 +47,14 @@ func (p *Parser) UpdFullNodesFront() error {
 	if p.BlockData!= nil {
 		txTime = p.BlockData.Time
 	}
-	if txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD {
-		return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
+	if p.BlockData!=nil && p.BlockData.BlockId < 36600 {
+		if txTime - upd_full_nodes <= 120 {
+			return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
+		}
+	} else {
+		if txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD {
+			return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
+		}
 	}
 
 	p.nodePublicKey, err = p.GetNodePublicKey(p.TxWalletID)
