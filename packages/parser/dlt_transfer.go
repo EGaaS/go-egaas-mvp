@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"encoding/hex"
-	"github.com/shopspring/decimal"
 )
 
 func (p *Parser) DLTTransferInit() error {
@@ -64,37 +63,9 @@ func (p *Parser) DLTTransferFront() error {
 		}
 	}
 
-	zero, _ := decimal.NewFromString("0")
-	if p.TxMaps.Decimal["amount"].Cmp(zero) <= 0  {
-		return p.ErrInfo("amount<=0")
-	}
-
-	fPrice, err := p.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
+	err = p.CheckTokens(p.TxMaps.Decimal["amount"], p.TxMaps.Decimal["commission"], false)
 	if err != nil {
 		return p.ErrInfo(err)
-	}
-
-	fuelRate, err := p.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").String()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
-	// 1 000 000 000 000 000 000 qDLT = 1 DLT * 100 000 000
-	// fuelRate = 1 000 000 000 000 000
-	//
-	fPriceDecemal, err := decimal.NewFromString(fPrice)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	fuelRateDecemal, err := decimal.NewFromString(fuelRate)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	commission := fPriceDecemal.Mul(fuelRateDecemal)
-
-	// проверим, удовлетворяет ли нас комиссия, которую предлагает юзер
-	if p.TxMaps.Decimal["commission"].Cmp(commission) < 0 {
-		return p.ErrInfo(fmt.Sprintf("commission %s < dltPrice %d", p.TxMaps.Decimal["commission"].String(), commission))
 	}
 
 	if string(p.TxMap["comment"]) == "null" {
@@ -111,19 +82,9 @@ func (p *Parser) DLTTransferFront() error {
 		return p.ErrInfo("incorrect sign")
 	}
 
-	totalAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	totalAmountDecimal, err := decimal.NewFromString(totalAmount)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	if totalAmountDecimal.Cmp(p.TxMaps.Decimal["amount"].Add(p.TxMaps.Decimal["commission"])) < 0 {
-		return p.ErrInfo(fmt.Sprintf("%s + %s < %s)", p.TxMaps.Decimal["amount"], p.TxMaps.Decimal["commission"], totalAmount))
-	}
 	return nil
 }
+
 
 func (p *Parser) DLTTransfer() error {
 	log.Debug("wallet address %s", p.TxMaps.String["walletAddress"])

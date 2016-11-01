@@ -403,103 +403,60 @@ func (p *Parser) BlockError(err error) {
 	p.ExecSql("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
 }
 
-/*
-func (p *Parser) AccessRights(condition string, iscondition bool) error {
-	param := `value`
-	if iscondition {
-		param = `conditions`
+
+func (p *Parser) CheckTokens(amount, txCommission decimal.Decimal, woAmountAndCommission bool) error {
+
+	zero, _ := decimal.NewFromString("0")
+	if amount.Cmp(zero) <= 0  {
+		return p.ErrInfo("amount<=0")
 	}
-	conditions, err := p.Single(`SELECT `+param+` FROM "`+utils.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
-		condition).String()
+
+	fPrice, err := p.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
 	if err != nil {
-		return err
+		return p.ErrInfo(err)
 	}
-	if len(conditions) > 0 {
-		ret, err := smart.EvalIf(conditions, &map[string]interface{}{`state`: p.TxStateID,
-			`citizen`: p.TxCitizenID, `wallet`: p.TxWalletID})
-		if err != nil {
-			return err
+
+	fuelRate, err := p.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").String()
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+
+	// 1 000 000 000 000 000 000 qDLT = 1 DLT * 100 000 000
+	// fuelRate = 1 000 000 000 000 000
+	//
+	fPriceDecemal, err := decimal.NewFromString(fPrice)
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+	fuelRateDecemal, err := decimal.NewFromString(fuelRate)
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+	commission := fPriceDecemal.Mul(fuelRateDecemal)
+
+	// проверим, удовлетворяет ли нас комиссия, которую предлагает юзер
+	if !woAmountAndCommission {
+		if txCommission.Cmp(commission) < 0 {
+			return p.ErrInfo(fmt.Sprintf("commission %s < dltPrice %d", txCommission.String(), commission))
 		}
-		if !ret {
-			return fmt.Errorf(`Access denied`)
+	}
+
+	totalAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+	totalAmountDecimal, err := decimal.NewFromString(totalAmount)
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+	if !woAmountAndCommission {
+		if totalAmountDecimal.Cmp(amount.Add(txCommission)) < 0 {
+			return p.ErrInfo(fmt.Sprintf("%s + %s < %s", amount, txCommission, totalAmount))
+		}
+	} else {
+		if totalAmountDecimal.Cmp(commission) < 0 {
+			return p.ErrInfo(fmt.Sprintf("%s < %s",  commission, totalAmount))
 		}
 	}
 	return nil
 }
-
-func (p *Parser) AccessTable(table, action string) error {
-
-	if p.TxStateID == 0 {
-		return nil
-	}
-	prefix := utils.Int64ToStr(int64(p.TxStateID))
-
-	tablePermission, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", table)
-	if err != nil {
-		return err
-	}
-	if len(tablePermission[action]) > 0 {
-		ret, err := smart.EvalIf(tablePermission[action], &map[string]interface{}{`state`: p.TxStateID,
-			`citizen`: p.TxCitizenID, `wallet`: p.TxWalletID})
-		if err != nil {
-			return err
-		}
-		if !ret {
-			return fmt.Errorf(`Access denied`)
-		}
-	}
-	return nil
-}
-
-func (p *Parser) AccessColumns(table string, columns []string) error {
-
-	if p.TxStateID == 0 {
-		return nil
-	}
-	prefix := utils.Int64ToStr(int64(p.TxStateID))
-
-	columnsAndPermissions, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`,
-		"key", "value", table)
-	if err != nil {
-		return err
-	}
-	for _, col := range columns {
-		if cond, ok := columnsAndPermissions[col]; ok && len(cond) > 0 {
-			ret, err := smart.EvalIf(cond, &map[string]interface{}{`state`: p.TxStateID,
-				`citizen`: p.TxCitizenID, `wallet`: p.TxWalletID})
-			if err != nil {
-				return err
-			}
-			if !ret {
-				return fmt.Errorf(`Access denied`)
-			}
-		}
-	}
-	return nil
-}
-
-func (p *Parser) AccessChange(table, name string) error {
-	if p.TxStateID == 0 {
-		return nil
-	}
-
-	prefix := utils.Int64ToStr(int64(p.TxStateID))
-
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_`+table+`" WHERE name = ?`, name).String()
-	if err != nil {
-		return err
-	}
-
-	if len(conditions) > 0 {
-		ret, err := smart.EvalIf(conditions, &map[string]interface{}{`state`: p.TxStateID,
-			`citizen`: p.TxCitizenID, `wallet`: p.TxWalletID})
-		if err != nil {
-			return err
-		}
-		if !ret {
-			return fmt.Errorf(`Access denied`)
-		}
-	}
-	return nil
-}
-*/
