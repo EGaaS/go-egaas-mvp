@@ -372,10 +372,12 @@ BEGIN:
 			//		bytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, utils.HashSha1(forSign))
 			bytes, err := utils.SignECDSA(nodePrivateKey, forSign)
 			if err != nil {
-				if d.dPrintSleep(fmt.Sprintf("err %v %v", err, utils.GetParent()), d.sleepTime) {
+				/*if d.dPrintSleep(fmt.Sprintf("err %v %v", err, utils.GetParent()), d.sleepTime) {
 					break BEGIN
 				}
-				continue BEGIN
+				continue BEGIN*/
+				logger.Error("SignECDSA error ", err)
+				continue
 			}
 			logger.Debug("SignECDSA %x", bytes)
 
@@ -403,11 +405,11 @@ BEGIN:
 			err = p.ParseDataFull(true)
 			if err != nil {
 				p.BlockError(err)
-				if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {
-					break BEGIN
-				}
-				continue
 				logger.Error("ParseDataFull error ", err)
+				/*if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {
+					break BEGIN
+				}*/
+				continue
 			}
 			okBlock = true
 		}
