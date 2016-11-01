@@ -449,7 +449,10 @@ BEGIN:
 				if err == nil {
 					break
 				} else {
-					utils.Sleep(1)
+					if d.dPrintSleep(utils.ErrInfo(err), 1) {
+						d.dbUnlock()
+						break BEGIN
+					}
 				}
 				if dwI > 10 {
 					break

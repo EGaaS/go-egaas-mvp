@@ -83,7 +83,7 @@ func (p *Parser) GetBlocks(blockId int64, host string, rollbackBlocks, goroutine
 			} else {
 				utils.Sleep(1)
 			}
-			if dwI > 10 {
+			if dwI > 5 {
 				break
 			}
 			dwI++
