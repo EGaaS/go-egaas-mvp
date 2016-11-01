@@ -32,6 +32,9 @@ type systemInfoPage struct {
 	Rollback []map[string]string
 	FullNodes []map[string]string
 	Votes []map[string]string
+	Confirmations []map[string]string
+	Wallets []map[string]string
+	WalletsTransactions []map[string]string
 }
 
 func init() {
@@ -67,6 +70,20 @@ func (c *Controller) SystemInfo() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
+	pageData.Confirmations, err = c.GetAll(`SELECT * FROM confirmations ORDER BY block_id DESC LIMIT 100`, -1)
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
+
+	pageData.Wallets, err = c.GetAll(`SELECT wallet_id, amount, address_vote,	host,	last_forging_data_upd, hex(node_public_key),	hex(public_key_0),	hex(public_key_1),	hex(public_key_2),	rb_id FROM dlt_wallets ORDER BY amount DESC LIMIT 100`, -1)
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
+
+	pageData.WalletsTransactions, err = c.GetAll(`SELECT id, amount,	block_id,	commission,rb_id,	recipient_wallet_address,	recipient_wallet_id,	sender_wallet_id, time  FROM dlt_transactions ORDER BY block_id DESC LIMIT 100`, -1)
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
 
 	return proceedTemplate(c, NSystemInfo, &pageData)
 }
