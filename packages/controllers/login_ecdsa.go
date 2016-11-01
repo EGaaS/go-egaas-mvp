@@ -28,6 +28,7 @@ type loginECDSAPage struct {
 	Lang   map[string]string
 	Title  string
 	States map[string]string
+	Private string
 	/*	MyModalIdName string
 		UserID        int64
 		PoolTechWorks int
@@ -112,6 +113,7 @@ func (c *Controller) LoginECDSA() (string, error) {
 		Lang:   c.Lang,
 		Title:  "Login",
 		States: states,
+		Private: "",
 		/*		MyWalletData:          MyWalletData,
 				Title:                 "modalAnonym",
 		*/})

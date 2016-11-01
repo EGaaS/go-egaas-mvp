@@ -19,6 +19,7 @@ package parser
 import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"fmt"
+	"github.com/shopspring/decimal"
 )
 
 func (p *Parser) ChangeNodeKeyDLTInit() error {
@@ -53,6 +54,14 @@ func (p *Parser) ChangeNodeKeyDLTFront() error {
 	last_forging_data_upd, err := p.Single(`SELECT last_forging_data_upd FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).Int64()
 	if err != nil || txTime - last_forging_data_upd < 600 {
 		return p.ErrInfo("txTime - last_forging_data_upd < 600 sec")
+	}
+
+	if p.BlockData!=nil && p.BlockData.BlockId < 17000 {
+		zero, _ := decimal.NewFromString("0")
+		err = p.CheckTokens(zero, zero, true)
+		if err != nil {
+			return p.ErrInfo(err)
+		}
 	}
 
 	forSign := fmt.Sprintf("%s,%s,%d,%s", p.TxMap["type"], p.TxMap["time"], p.TxWalletID, p.TxMap["new_node_public_key"])

@@ -21,6 +21,7 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"encoding/hex"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/shopspring/decimal"
 )
 
 func (p *Parser) DLTChangeHostVoteInit() error {
@@ -74,12 +75,13 @@ func (p *Parser) DLTChangeHostVoteFront() error {
 		return p.ErrInfo("txTime - last_forging_data_upd < 600 sec")
 	}
 
-	/*zero, _ := decimal.NewFromString("0")
-	commission, _ := decimal.NewFromString("0")
-	err = p.CheckTokens(zero, p.TxMaps.Decimal["commission"])
-	if err != nil {
-		return p.ErrInfo(err)
-	}*/
+	if p.BlockData!=nil && p.BlockData.BlockId < 17000 {
+		zero, _ := decimal.NewFromString("0")
+		err = p.CheckTokens(zero, zero, true)
+		if err != nil {
+			return p.ErrInfo(err)
+		}
+	}
 
 	forSign := fmt.Sprintf("%s,%s,%d,%s,%s", p.TxMap["type"], p.TxMap["time"], p.TxWalletID, p.TxMap["host"], p.TxMap["addressVote"])
 	CheckSignResult, err := utils.CheckSign(p.PublicKeys, forSign, p.TxMap["sign"], false)

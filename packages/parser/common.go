@@ -451,11 +451,11 @@ func (p *Parser) CheckTokens(amount, txCommission decimal.Decimal, woAmountAndCo
 	}
 	if !woAmountAndCommission {
 		if totalAmountDecimal.Cmp(amount.Add(txCommission)) < 0 {
-			return p.ErrInfo(fmt.Sprintf("%s + %s < %s", amount, txCommission, totalAmount))
+			return p.ErrInfo(fmt.Sprintf("not enough money : %s + %s < %s", amount, txCommission, totalAmount))
 		}
 	} else {
 		if totalAmountDecimal.Cmp(commission) < 0 {
-			return p.ErrInfo(fmt.Sprintf("%s < %s",  commission, totalAmount))
+			return p.ErrInfo(fmt.Sprintf("not enough money : %s < %s",  commission, totalAmount))
 		}
 	}
 	return nil
