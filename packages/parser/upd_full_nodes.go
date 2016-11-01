@@ -159,10 +159,11 @@ func (p *Parser) UpdFullNodesRollback() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	log.Debug(`full_nodes_wallet_json %v`, full_nodes_wallet_json)
 	full_nodes_wallet := []map[string]string{{}}
 	err = json.Unmarshal(full_nodes_wallet_json, &full_nodes_wallet)
 	if err != nil {
-		return p.ErrInfo(fmt.Sprintf("%v : %s", err, full_nodes_wallet_json))
+		return p.ErrInfo(fmt.Sprintf("%v : (%s)", err, full_nodes_wallet_json))
 	}
 
 	// удаляем новые данные
