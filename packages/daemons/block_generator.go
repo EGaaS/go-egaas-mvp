@@ -254,7 +254,7 @@ BEGIN:
 			continue
 		}
 
-		nodePKey, err := d.GetMyPublicKeyFromBlockChain(myWalletId)
+		nodePKey, err := d.GetMyNodePublicKeyFromBlockChain(myWalletId)
 		if len(nodePKey) < 1 {
 			logger.Debug("continue")
 			if d.unlockPrintSleep(utils.ErrInfo("len(nodePKey) < 1"), d.sleepTime) {
@@ -262,15 +262,17 @@ BEGIN:
 			}
 			continue
 		}
+		logger.Debug("nodePKey %s", nodePKey)
 
 		myNodePkey, err := d.GetMyNodePublicKey()
-		if len(nodePKey) < 1 {
+		if len(myNodePkey) < 1 {
 			logger.Debug("continue")
-			if d.unlockPrintSleep(utils.ErrInfo("len(nodePKey) < 1"), d.sleepTime) {
+			if d.unlockPrintSleep(utils.ErrInfo("len(myNodePkey) < 1"), d.sleepTime) {
 				break BEGIN
 			}
 			continue
 		}
+		logger.Debug("myNodePkey %s", myNodePkey)
 		if myNodePkey!=nodePKey {
 			logger.Debug("myNodePkey!=nodePKey")
 			if d.unlockPrintSleep(utils.ErrInfo("myNodePkey!=nodePKey "), d.sleepTime) {
