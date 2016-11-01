@@ -70,15 +70,21 @@ func (p *Parser) ChangeNodeKeyDLT() error {
 		return p.ErrInfo(err)
 	}
 
-	myKey, err := p.Single(`SELECT id FROM my_node_keys WHERE block_id = 0 AND public_key = [hex]`, p.TxMaps.Bytes["new_node_public_key"]).Int64()
+	dltWalletId, err := p.Single(`SELECT dlt_wallet_id FROM config`).Int64()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	log.Debug("myKey %d", myKey)
-	if myKey > 0 {
-		_, err := p.selectiveLoggingAndUpd([]string{"block_id"}, []interface{}{p.BlockData.BlockId}, "my_node_keys", []string{"id"}, []string{utils.Int64ToStr(myKey)}, true)
+	if dltWalletId == 0 {
+		myKey, err := p.Single(`SELECT id FROM my_node_keys WHERE block_id = 0 AND public_key = [hex]`, p.TxMaps.Bytes["new_node_public_key"]).Int64()
 		if err != nil {
 			return p.ErrInfo(err)
+		}
+		log.Debug("myKey %d", myKey)
+		if myKey > 0 {
+			_, err := p.selectiveLoggingAndUpd([]string{"block_id"}, []interface{}{p.BlockData.BlockId}, "my_node_keys", []string{"id"}, []string{utils.Int64ToStr(myKey)}, true)
+			if err != nil {
+				return p.ErrInfo(err)
+			}
 		}
 	}
 	return nil

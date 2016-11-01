@@ -17,7 +17,7 @@
 package consts
 
 // текущая версия
-const VERSION = "1.0.1b1"
+const VERSION = "1.0.1b2"
 
 const FIRST_QDLT = 1e+26
 
@@ -49,7 +49,7 @@ const MAX_TX_SIZE = 32 << 20
 
 const MAX_TX_COUNT = 100000
 
-const ERROR_TIME = 1
+const ERROR_TIME = 5
 
 const ROUND_FIX = 0.00000000001
 
@@ -64,8 +64,8 @@ const GAPS_BETWEEN_BLOCKS = 3
 const COMMISSION = 1000
 const TCP_PORT = "7078"
 const MAX_BLOCK_USER_TXS = 100
-const RB_BLOCKS_1 = 30
-const RB_BLOCKS_2 = 1440
+const RB_BLOCKS_1 = 50
+const RB_BLOCKS_2 = 5000
 const ALERT_ERROR_TIME = 1
 
 const DATA_TYPE_MAX_BLOCK_ID = 10

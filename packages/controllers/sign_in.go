@@ -18,8 +18,6 @@ package controllers
 
 import (
 	"encoding/hex"
-	"fmt"
-
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -43,7 +41,6 @@ func (c *Controller) AjaxSignIn() interface{} {
 	c.r.ParseForm()
 	key := c.r.FormValue("key")
 	bkey, err := hex.DecodeString(key)
-	stateId := utils.StrToInt64(c.r.FormValue("state_id"))
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -82,7 +79,7 @@ func (c *Controller) AjaxSignIn() interface{} {
 		return result
 	}
 	if dltWalletId == 0 {
-		err = c.DCDB.ExecSql(`UPDATE config SET dlt_wallet_id = ?`, int64(lib.Address(publicKey)))
+		err = c.DCDB.ExecSql(`UPDATE config SET dlt_wallet_id = ?`, walletId)
 		if err != nil {
 			result.Error = err.Error()
 			return result
@@ -91,17 +88,9 @@ func (c *Controller) AjaxSignIn() interface{} {
 	c.sess.Set("wallet_id", walletId)
 	log.Debug("wallet_id : %d", walletId)
 	var citizenId int64
-	fmt.Println(`SingIN`, stateId)
 
 	result.Result = true
-	/*	citizenId, err := c.GetCitizenIdByPublicKey(publicKey)
-		err = c.ExecSql("UPDATE config SET citizen_id = ?", citizenId)
-		if err != nil {
-			result.Error = err.Error()
-			return result
-		}*/
 	c.sess.Set("citizen_id", citizenId)
-	c.sess.Set("state_id", stateId)
-	log.Debug("wallet_id %d citizen_id %d state_id %d", walletId, citizenId, stateId)
+	log.Debug("wallet_id %d citizen_id %d", walletId, citizenId)
 	return result //`{"result":1,"address": "` + address + `"}`, nil
 }

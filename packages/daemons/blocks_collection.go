@@ -495,7 +495,7 @@ BEGIN:
 				prevBlockHash = "0"
 			}
 
-			logger.Debug("prevBlockHash %x", prevBlockHash)
+			logger.Debug("prevBlockHash %s", prevBlockHash)
 
 			first :=
 				false

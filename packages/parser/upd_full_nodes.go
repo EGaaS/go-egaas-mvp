@@ -119,8 +119,12 @@ func (p *Parser) UpdFullNodes() error {
 		return p.ErrInfo(err)
 	}
 
+	where := ``
+	if p.BlockData.BlockId > 3000 {
+		where = ` AND amount > 1000`
+	}
 	// получаем новые данные по wallet-нодам
-	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 10`).String()
+	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' `+where+` GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 10`).String()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -146,23 +150,25 @@ func (p *Parser) UpdFullNodesRollback() error {
 	}
 
 	// получим rb_id чтобы восстановить оттуда данные
-	rbId, err := p.Single(`SELECT rb_id FROM full_nodes WHERE wallet_id > 0`).Int64()
+	rbId, err := p.Single(`SELECT rb_id FROM full_nodes WHERE wallet_id != 0`).Int64()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	log.Debug("rb_id %v", rbId)
 
 	full_nodes_wallet_json, err := p.Single(`SELECT full_nodes_wallet_json FROM rb_full_nodes WHERE rb_id = ?`, rbId).Bytes()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	log.Debug("full_nodes_wallet_json %v", full_nodes_wallet_json)
 	full_nodes_wallet := []map[string]string{{}}
 	err = json.Unmarshal(full_nodes_wallet_json, &full_nodes_wallet)
 	if err != nil {
-		return p.ErrInfo(err)
+		return p.ErrInfo(fmt.Sprintf("%v : (%s)", err, full_nodes_wallet_json))
 	}
 
 	// удаляем новые данные
-	err = p.ExecSql(`DELETE FROM full_nodes WHERE wallet_id > 0`)
+	err = p.ExecSql(`DELETE FROM full_nodes WHERE wallet_id != 0`)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

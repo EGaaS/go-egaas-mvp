@@ -282,7 +282,6 @@ BEGIN:
 		p := new(parser.Parser)
 		p.DCDB = d.DCDB
 
-		Time := time.Now().Unix()
 
 		// переведем тр-ии в `verified` = 1
 		err = p.AllTxParser()
@@ -299,8 +298,10 @@ BEGIN:
 			n++
 			logger.Debug("n", n)
 			if n > 100 {
+				d.dbUnlock()
 				continue BEGIN
 			}
+			Time := time.Now().Unix()
 			var mrklArray [][]byte
 			var usedTransactions string
 			var mrklRoot []byte
