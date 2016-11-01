@@ -236,8 +236,7 @@ BEGIN:
 		logger.Debug("blockgeneration begin")
 		if blockId < 1 {
 			logger.Debug("continue")
-			d.dbUnlock()
-			if d.dSleep(d.sleepTime) {
+			if d.unlockPrintSleep(utils.ErrInfo("blockId < 1"), d.sleepTime) {
 				break BEGIN
 			}
 			continue
@@ -249,8 +248,7 @@ BEGIN:
 		nodePrivateKey, err := d.GetNodePrivateKey()
 		if len(nodePrivateKey) < 1 {
 			logger.Debug("continue")
-			d.dbUnlock()
-			if d.dSleep(d.sleepTime) {
+			if d.unlockPrintSleep(utils.ErrInfo("len(nodePrivateKey) < 1"), d.sleepTime) {
 				break BEGIN
 			}
 			continue
@@ -259,22 +257,34 @@ BEGIN:
 		nodePKey, err := d.GetMyPublicKeyFromBlockChain(myWalletId)
 		if len(nodePKey) < 1 {
 			logger.Debug("continue")
-			d.dbUnlock()
-			if d.dSleep(d.sleepTime) {
+			if d.unlockPrintSleep(utils.ErrInfo("len(nodePKey) < 1"), d.sleepTime) {
 				break BEGIN
 			}
 			continue
 		}
 
-
+		myNodePkey, err := d.GetMyNodePublicKey()
+		if len(nodePKey) < 1 {
+			logger.Debug("continue")
+			if d.unlockPrintSleep(utils.ErrInfo("len(nodePKey) < 1"), d.sleepTime) {
+				break BEGIN
+			}
+			continue
+		}
+		if myNodePkey!=nodePKey {
+			logger.Debug("myNodePkey!=nodePKey")
+			if d.unlockPrintSleep(utils.ErrInfo("myNodePkey!=nodePKey "), d.sleepTime) {
+				break BEGIN
+			}
+			continue
+		}
 		//#####################################
 		//##		 Формируем блок
 		//#####################################
 
 		if prevBlock["block_id"] >= newBlockId {
 			logger.Debug("continue %d >= %d", prevBlock["block_id"], newBlockId)
-			d.dbUnlock()
-			if d.dSleep(d.sleepTime) {
+			if d.unlockPrintSleep(utils.ErrInfo("blockid>=new"), d.sleepTime) {
 				break BEGIN
 			}
 			continue

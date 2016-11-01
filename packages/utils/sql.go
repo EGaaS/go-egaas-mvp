@@ -801,7 +801,7 @@ func (db *DCDB) GetNodePrivateKey() (string, error) {
 	return key, nil
 }
 
-func (db *DCDB) GetMyNodePublicKey(myPrefix string) (string, error) {
+func (db *DCDB) GetMyNodePublicKey() (string, error) {
 	var key string
 	key, err := db.Single("SELECT public_key FROM my_node_keys WHERE block_id = (SELECT max(block_id) FROM my_node_keys)").String()
 	if err != nil {
