@@ -34,6 +34,7 @@ const LAST_BLOCK = 10000
 // примерный размер блокчейна
 const BLOCKCHAIN_SIZE = 100
 
+const COUNT_BLOCK_BEFORE_SAVE = 1000
 // где лежит блокчейн. для тех, кто не хочет собирать его с нодов
 const BLOCKCHAIN_URL = "http://egaas-blockchain.github.io/blockchain"
 

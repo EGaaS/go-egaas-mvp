@@ -3,6 +3,7 @@ package daemons
 import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"os"
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 )
 
 func CreatingBlockchain(chBreaker chan bool, chAnswer chan string) {
@@ -57,7 +58,7 @@ BEGIN:
 			}
 		}
 		logger.Debug("curBlockId: %v / endBlockId: %v", curBlockId, endBlockId)
-		if curBlockId-100 > endBlockId {
+		if curBlockId-consts.COUNT_BLOCK_BEFORE_SAVE > endBlockId {
 			file, err := os.OpenFile(*utils.Dir+"/public/blockchain", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 			if err != nil {
 				if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {
@@ -70,7 +71,7 @@ BEGIN:
 					FROM block_chain
 					WHERE id > ? AND id <= ?
 					ORDER BY id
-					`), endBlockId, curBlockId-30)
+					`), endBlockId, curBlockId-consts.COUNT_BLOCK_BEFORE_SAVE )
 			if err != nil {
 				file.Close()
 				if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {
