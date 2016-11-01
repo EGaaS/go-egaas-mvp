@@ -266,12 +266,12 @@
 					<div class="alert alert-info alert-dismissable">{{noescape .NewVersion}}</div>
 				</div>
 				{{end}}
-				<div id="reload_db" class="alerts">
+				<!--<div id="reload_db" class="alerts">
 					<div class="alert alert-danger" style="display:{{if .RestartDb}}block{{else}}none{{end}};">
 						<strong>Error!</strong>
 						<button id="reloadBlockchain" class="btn btn-info">Reload blockchain</button>
 					</div>
-				</div>
+				</div>-->
 			</div>
 			<textarea class="form-control debug" readonly></textarea>
 			{{if not .Mobile}}
