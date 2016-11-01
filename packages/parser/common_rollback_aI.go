@@ -40,26 +40,17 @@ func (p *Parser) rollbackAI(table string, num int64) error {
 	NewAi := current + num
 	log.Debug("NewAi: %d", NewAi)
 
-	if p.ConfigIni["db_type"] == "postgresql" {
-		pg_get_serial_sequence, err := p.Single("SELECT pg_get_serial_sequence('" + table + "', '" + AiId + "')").String()
-		if err != nil {
-			return utils.ErrInfo(err)
-		}
-		err = p.ExecSql("ALTER SEQUENCE " + pg_get_serial_sequence + " RESTART WITH " + utils.Int64ToStr(NewAi))
-		if err != nil {
-			return utils.ErrInfo(err)
-		}
-	} else if p.ConfigIni["db_type"] == "mysql" {
-		err := p.ExecSql("ALTER TABLE " + table + " AUTO_INCREMENT = " + utils.Int64ToStr(NewAi))
-		if err != nil {
-			return utils.ErrInfo(err)
-		}
-	} else if p.ConfigIni["db_type"] == "sqlite" {
-		NewAi--
-		err := p.ExecSql("UPDATE SQLITE_SEQUENCE SET seq = ? WHERE name = ?", NewAi, table)
-		if err != nil {
-			return utils.ErrInfo(err)
-		}
+	log.Debug("SELECT pg_get_serial_sequence('" + table + "', '" + AiId + "')")
+	pg_get_serial_sequence, err := p.Single("SELECT pg_get_serial_sequence('" + table + "', '" + AiId + "')").String()
+	if err != nil {
+		return utils.ErrInfo(err)
 	}
+
+	log.Debug("ALTER SEQUENCE " + pg_get_serial_sequence + " RESTART WITH " + utils.Int64ToStr(NewAi))
+	err = p.ExecSql("ALTER SEQUENCE " + pg_get_serial_sequence + " RESTART WITH " + utils.Int64ToStr(NewAi))
+	if err != nil {
+		return utils.ErrInfo(err)
+	}
+
 	return nil
 }
