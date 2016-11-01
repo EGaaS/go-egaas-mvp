@@ -298,7 +298,9 @@ BEGIN:
 			n++
 			logger.Debug("n", n)
 			if n > 100 {
-				d.dbUnlock()
+				if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
+					break BEGIN
+				}
 				continue BEGIN
 			}
 			Time := time.Now().Unix()
