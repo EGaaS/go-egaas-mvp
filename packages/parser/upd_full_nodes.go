@@ -47,13 +47,13 @@ func (p *Parser) UpdFullNodesFront() error {
 	if p.BlockData!= nil {
 		txTime = p.BlockData.Time
 	}
-	if p.BlockData!=nil && p.BlockData.BlockId < 16000 {
+	if p.BlockData!=nil && p.BlockData.BlockId < 16500 {
 		if txTime - upd_full_nodes <= 120 {
-			return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
+			return utils.ErrInfoFmt("txTime - upd_full_nodes <= 120 (%d - %d <= 120)", txTime, upd_full_nodes)
 		}
 	} else {
 		if txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD {
-			return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
+			return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD (%d - %d <= %d)", txTime, upd_full_nodes, consts.UPD_FULL_NODES_PERIOD)
 		}
 	}
 
