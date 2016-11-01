@@ -26,12 +26,13 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 	if len(where) > 0 {
 		where = " WHERE " + where
 	}
-
 	// получим rb_id, по которому можно найти данные, которые были до этого
+	log.Debug("SELECT rb_id FROM " + table + " " + where)
 	rbId, err := p.Single("SELECT rb_id FROM " + table + " " + where).Int64()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	log.Debug("rbId %d", rbId)
 	if rbId > 0 {
 		// данные, которые восстановим
 		rbData, err := p.OneRow("SELECT * FROM rollback WHERE rb_id  =  ?", rbId).String()
@@ -42,7 +43,7 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		var jsonMap map[string]string
 		json.Unmarshal([]byte(rbData["data"]), &jsonMap)
 
-		//log.Debug("logData",logData)
+		log.Debug("rbData",rbData)
 		addSqlUpdate := ""
 		for k, v := range jsonMap {
 			if utils.InSliceString(k, []string{"hash", "tx_hash", "public_key_0", "public_key_1", "public_key_2", "node_public_key"}) && len(v) != 0 {
@@ -55,10 +56,11 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		//log.Debug("%v", logData["prev_rb_id"])
 		log.Debug("UPDATE "+table+" SET "+addSqlUpdate+" "+where)
 		addSqlUpdate = addSqlUpdate[0 : len(addSqlUpdate)-1]
-		err = p.ExecSql("UPDATE "+table+" SET "+addSqlUpdate+" "+where)
+		affect, err := p.ExecSqlGetAffect("UPDATE "+table+" SET "+addSqlUpdate+" "+where)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
+		log.Debug("affect %d", affect)
 		// подчищаем _log
 		err = p.ExecSql("DELETE FROM rollback WHERE rb_id = ?", rbId)
 		if err != nil {
@@ -66,11 +68,13 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		}
 		p.rollbackAI("rollback", 1)
 	} else {
+		log.Debug("DELETE FROM " + table + " " + where)
 		err = p.ExecSql("DELETE FROM " + table + " " + where)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
 		if rollbackAI {
+			log.Debug("rollbackAI")
 			p.rollbackAI(table, 1)
 		}
 	}
