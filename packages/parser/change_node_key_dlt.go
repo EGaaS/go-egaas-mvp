@@ -78,8 +78,9 @@ func (p *Parser) ChangeNodeKeyDLT() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	log.Debug("p.TxMaps.Bytes[new_node_public_key] %x", p.TxMaps.Bytes["new_node_public_key"])
+	log.Debug("myKey %d / dltWalletId %d", myKey, dltWalletId)
 	if dltWalletId == myKey ||  dltWalletId == 0 {
-
 		log.Debug("myKey %d", myKey)
 		if myKey > 0 {
 			_, err := p.selectiveLoggingAndUpd([]string{"block_id"}, []interface{}{p.BlockData.BlockId}, "my_node_keys", []string{"id"}, []string{utils.Int64ToStr(myKey)}, true)
