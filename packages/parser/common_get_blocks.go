@@ -184,6 +184,7 @@ func (p *Parser) GetBlocks(blockId int64, host string, rollbackBlocks, goroutine
 	// чтобы брать блоки по порядку
 	blocksSorted := utils.SortMap(blocks)
 	log.Debug("blocks", blocksSorted)
+	log.Debug("blocks len %d", len(blocksSorted))
 
 	// получим наши транзакции в 1 бинарнике, просто для удобства
 	var transactions []byte
