@@ -57,6 +57,8 @@ func (p *Parser) ChangeNodeKeyDLTFront() error {
 	}
 
 	if p.BlockData!=nil && p.BlockData.BlockId < 17000 {
+
+	} else {
 		zero, _ := decimal.NewFromString("0")
 		err = p.CheckTokens(zero, zero, true)
 		if err != nil {

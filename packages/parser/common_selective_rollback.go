@@ -53,7 +53,7 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		}
 		//log.Debug("%v", logData)
 		//log.Debug("%v", logData["prev_rb_id"])
-		//log.Debug("UPDATE "+table+" SET "+addSqlUpdate+" rb_id = ? "+where)
+		log.Debug("UPDATE "+table+" SET "+addSqlUpdate+" "+where)
 		addSqlUpdate = addSqlUpdate[0 : len(addSqlUpdate)-1]
 		err = p.ExecSql("UPDATE "+table+" SET "+addSqlUpdate+" "+where)
 		if err != nil {
