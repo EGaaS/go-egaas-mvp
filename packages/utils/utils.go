@@ -2132,15 +2132,6 @@ func GetBlockBody(host string, blockId int64, dataTypeBlockBody int64) ([]byte, 
 	log.Debug("dataSize: %v", dataSize)
 	if dataSize < 10485760 && dataSize > 0 {
 		binaryBlock = make([]byte, dataSize)
-		/*n, err := conn.Read(binaryBlock)
-		log.Debug("dataSize: %v / get: %v", dataSize, n)
-		if err != nil {
-			return nil, ErrInfo(err)
-		}
-		if len(binaryBlock) > 500000 {
-			ioutil.WriteFile(IntToStr(n)+"-block-"+string(DSha256(binaryBlock)), binaryBlock, 0644)
-		}*/
-		//binaryBlock, err = ioutil.ReadAll(conn)
 		_, err = io.ReadFull(conn, binaryBlock)
 		if err != nil {
 			return nil, ErrInfo(err)

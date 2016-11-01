@@ -73,8 +73,21 @@ func (p *Parser) GetBlocks(blockId int64, host string, rollbackBlocks, goroutine
 		}
 
 		// качаем тело блока с хоста host
-		binaryBlock, err := utils.GetBlockBody(host, blockId, dataTypeBlockBody)
-
+		dwI := 0
+		var binaryBlock []byte
+		var err error
+		for {
+			binaryBlock, err = utils.GetBlockBody(host, blockId, dataTypeBlockBody)
+			if err == nil {
+				break
+			} else {
+				utils.Sleep(1)
+			}
+			if dwI > 10 {
+				break
+			}
+			dwI++
+		}
 		if err != nil {
 			ClearTmp(blocks)
 			return utils.ErrInfo(err)

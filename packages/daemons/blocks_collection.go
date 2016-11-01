@@ -441,8 +441,21 @@ BEGIN:
 			}
 
 			// качаем тело блока с хоста maxBlockIdHost
-			binaryBlock, err := utils.GetBlockBody(maxBlockIdHost, blockId, consts.DATA_TYPE_BLOCK_BODY)
-
+			dwI := 0
+			var binaryBlock []byte
+			err = nil
+			for {
+				binaryBlock, err = utils.GetBlockBody(maxBlockIdHost, blockId, consts.DATA_TYPE_BLOCK_BODY)
+				if err == nil {
+					break
+				} else {
+					utils.Sleep(1)
+				}
+				if dwI > 10 {
+					break
+				}
+				dwI++
+			}
 			if len(binaryBlock) == 0 {
 				// баним на 1 час хост, который дал нам пустой блок, хотя должен был дать все до максимального
 				// для тестов убрал, потом вставить.
