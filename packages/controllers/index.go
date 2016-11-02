@@ -28,6 +28,7 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/democratic-coin/dcoin-go/packages/consts"
 )
 
 type index struct {
@@ -41,6 +42,7 @@ type index struct {
 	Android     bool
 	Mobile      bool
 	ShowIOSMenu bool
+	Version string
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +150,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	b := new(bytes.Buffer)
 	err = t.Execute(b, &index{
+		Version: consts.VERSION,
 		DbOk:        true,
 		Lang:        globalLangReadOnly[lang],
 		Key:         key,
