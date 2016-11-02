@@ -28,7 +28,7 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/democratic-coin/dcoin-go/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 )
 
 type index struct {
