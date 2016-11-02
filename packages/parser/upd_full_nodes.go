@@ -121,7 +121,8 @@ func (p *Parser) UpdFullNodes() error {
 
 	where := ``
 	if p.BlockData.BlockId > 23900 {
-		where = ` AND amount > 1000000000000000000000`
+		// min 100 EGS ~ 10$
+		where = ` AND amount > 100000000000000000000`
 	}
 	// получаем новые данные по wallet-нодам
 	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' `+where+` GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 100`).String()
