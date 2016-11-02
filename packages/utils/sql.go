@@ -1478,6 +1478,9 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 }
 
 func (db *DCDB) FindInFullNodes(myCBID, myWalletId int64) (int64, error) {
+	if myCBID == 0 {
+		myCBID = -1
+	}
 	return db.Single("SELECT id FROM full_nodes WHERE final_delegate_state_id = ? OR final_delegate_wallet_id = ? OR state_id = ? OR wallet_id = ?", myCBID, myWalletId, myCBID, myWalletId).Int64()
 }
 
