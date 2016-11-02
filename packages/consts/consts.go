@@ -29,7 +29,7 @@ const WAIT_CONFIRMED_NODES = 10
 const MIN_CONFIRMED_NODES = 0
 
 // примерный текущий крайний блок
-const LAST_BLOCK = 10000
+const LAST_BLOCK = 30000
 
 // примерный размер блокчейна
 const BLOCKCHAIN_SIZE = 100
