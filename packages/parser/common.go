@@ -406,11 +406,12 @@ func (p *Parser) BlockError(err error) {
 
 func (p *Parser) CheckTokens(amount, txCommission decimal.Decimal, woAmountAndCommission bool) error {
 
-	zero, _ := decimal.NewFromString("0")
-	if amount.Cmp(zero) <= 0  {
-		return p.ErrInfo("amount<=0")
+	if !woAmountAndCommission {
+		zero, _ := decimal.NewFromString("0")
+		if amount.Cmp(zero) <= 0 {
+			return p.ErrInfo("amount<=0")
+		}
 	}
-
 	fPrice, err := p.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
 	if err != nil {
 		return p.ErrInfo(err)
