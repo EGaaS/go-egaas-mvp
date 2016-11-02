@@ -1515,6 +1515,12 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 }
 
 func (db *DCDB) GetSleepTime(myWalletId, myCBID, prevBlockCBID, prevBlockWalletId int64) (int64, error) {
+	if prevBlockCBID == 0 {
+		prevBlockCBID = -1
+	}
+	if myCBID == 0 {
+		myCBID = -1
+	}
 	// возьмем список всех full_nodes
 	fullNodesList, err := db.GetAll("SELECT id, wallet_id, state_id as state_id FROM full_nodes", -1)
 	if err != nil {
