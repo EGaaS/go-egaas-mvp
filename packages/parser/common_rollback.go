@@ -36,8 +36,8 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 			sizesSlice = append(sizesSlice, txSize)
 			// удалим тр-ию
 			log.Debug("txSize", txSize)
-			//log.Debug("binForSize", binForSize)
 			utils.BytesShift(&binForSize, txSize)
+			//log.Debug("binForSize %x", binForSize)
 			if len(binForSize) == 0 {
 				break
 			}
@@ -87,7 +87,8 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 				if _, ok := err_.(error); ok {
 					return utils.ErrInfo(err_.(error))
 				}*/
-			if i == 0 && !skipCurrent {
+			if (i == 0 && !skipCurrent) || i > 0 {
+				log.Debug(MethodName+"Rollback")
 				err_ = utils.CallMethod(p, MethodName+"Rollback")
 				if _, ok := err_.(error); ok {
 					return utils.ErrInfo(err_.(error))
