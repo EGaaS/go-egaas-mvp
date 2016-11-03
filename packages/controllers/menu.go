@@ -34,6 +34,7 @@ type menuPage struct {
 	CitizenName   string
 	CitizenAvatar string
 	Version string
+	Btc           string	
 }
 
 func init() {
@@ -79,5 +80,5 @@ func (c *Controller) Menu() (string, error) {
 		menu = qrx.ReplaceAllString(menu, "<li class='citizen_$2'><a href='#' onclick=\"load_page('$2'); HideMenu();\"><span>$1</span></a></li>")
 
 	}
-	return proceedTemplate(c, NMenu, &menuPage{Version: consts.VERSION, Data: c.Data, Menu: menu, CanCitizen: canCitizen > 0, StateName: stateName, StateFlag: stateFlag, CitizenName: citizenName, CitizenAvatar: citizenAvatar})
+	return proceedTemplate(c, NMenu, &menuPage{Version: consts.VERSION, Data: c.Data, Menu: menu, CanCitizen: canCitizen > 0, StateName: stateName, StateFlag: stateFlag, CitizenName: citizenName, CitizenAvatar: citizenAvatar, Btc: GetBtc()})
 }
