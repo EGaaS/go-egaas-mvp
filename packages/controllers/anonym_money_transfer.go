@@ -33,6 +33,7 @@ type anonymMoneyTransferPage struct {
 	WalletId     int64
 	CitizenId    int64
 	Commission   int64
+	Amount string
 }
 
 func (c *Controller) AnonymMoneyTransfer() (string, error) {
@@ -55,6 +56,14 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 
 	log.Debug("sessCitizenId %d SessWalletId %d SessStateId %d", c.SessCitizenId, c.SessWalletId, c.SessStateId)
 
+	amount, err := c.Single("select amount from dlt_wallets where wallet_id = ?", c.SessWalletId).String()
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
+	if amount == "" {
+		amount = "0"
+	}
+
 	TemplateStr, err := makeTemplate("anonym_money_transfer", "anonymMoneyTransfer", &anonymMoneyTransferPage{
 		CountSignArr: c.CountSignArr,
 		CountSign:    c.CountSign,
@@ -62,6 +71,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 		Title:        "anonymMoneyTransfer",
 		ShowSignData: c.ShowSignData,
 		SignData:     "",
+		Amount: amount,
 		WalletId:     c.SessWalletId,
 		CitizenId:    c.SessCitizenId,
 		Commission : commission,
