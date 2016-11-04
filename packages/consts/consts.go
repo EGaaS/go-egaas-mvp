@@ -17,7 +17,7 @@
 package consts
 
 // текущая версия
-const VERSION = "1.0.2b1"
+const VERSION = "1.0.2b2"
 
 const FIRST_QDLT = 1e+26
 
@@ -34,7 +34,6 @@ const LAST_BLOCK = 30000
 // примерный размер блокчейна
 const BLOCKCHAIN_SIZE = 100
 
-const COUNT_BLOCK_BEFORE_SAVE = 1000
 // где лежит блокчейн. для тех, кто не хочет собирать его с нодов
 const BLOCKCHAIN_URL = "http://egaas-blockchain.github.io/blockchain"
 
@@ -68,6 +67,8 @@ const MAX_BLOCK_USER_TXS = 100
 const RB_BLOCKS_1 = 50
 const RB_BLOCKS_2 = 5000
 const ALERT_ERROR_TIME = 5
+
+const COUNT_BLOCK_BEFORE_SAVE = RB_BLOCKS_2
 
 const DATA_TYPE_MAX_BLOCK_ID = 10
 const DATA_TYPE_BLOCK_BODY = 7
