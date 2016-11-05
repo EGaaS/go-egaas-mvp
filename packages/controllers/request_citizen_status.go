@@ -23,6 +23,7 @@ import (
 type requestCitizenStatusPage struct {
 	Alert        string
 	Lang         map[string]string
+	Thrust bool
 }
 
 func (c *Controller) RequestCitizenStatus() (string, error) {
@@ -30,6 +31,7 @@ func (c *Controller) RequestCitizenStatus() (string, error) {
 	var err error
 
 	TemplateStr, err := makeTemplate("request_citizen_status", "requestCitizenStatus", &requestCitizenStatusPage{
+		Thrust:      utils.Thrust,
 		Alert:        c.Alert,
 		Lang:         c.Lang})
 	if err != nil {

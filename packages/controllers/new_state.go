@@ -23,6 +23,7 @@ import (
 type newStatePage struct {
 	Alert        string
 	Lang         map[string]string
+	Thrust bool
 }
 
 func (c *Controller) NewState() (string, error) {
@@ -31,6 +32,7 @@ func (c *Controller) NewState() (string, error) {
 
 	TemplateStr, err := makeTemplate("new_state", "newState", &newStatePage{
 		Alert:        c.Alert,
+		Thrust:      utils.Thrust,
 		Lang:         c.Lang})
 	if err != nil {
 		return "", utils.ErrInfo(err)
