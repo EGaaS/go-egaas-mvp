@@ -24,6 +24,7 @@
 					 <tr>
 						<td class="thead">Bitcoin Address</td>
 						<td id="btc">{{$info.wallet}}</td>
+						<td ><script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script> <a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a></td>
 					 </tr>
 					 <!--tr>
 						<td class="thead">Status</td>
@@ -52,7 +53,7 @@
 					<td class="thead">Block Height</td>
 					<td class="thead">TxIndex</td>
 					<td class="thead">BTC</td>
-					<td class="thead">EGAAS</td>
+					<td class="thead">EGS</td>
 					<td class="thead">Bonus</td>
 					<td class="thead">Time</td>
 					<td class="thead">Status</td>
@@ -62,13 +63,50 @@
 		 <tr>
 			<td >{{.block}}</td>
 			<td >{{.tx}}</td>
-			<td >{{.balance}}</td>
-			<td>{{.egaas}}</td>
+			<td style="text-align:right" >{{.balance}}</td>
+			<td style="text-align:right">{{.egaas}}</td>
 			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
 			<td>{{.etime}}</td>
 			<td>{{if eq .status "1"}}pending{{end}}{{if eq .status "2"}}approved{{end}}{{if eq .status "3"}}completed{{end}}</td>
 		 </tr>
 	{{end}}
+	{{end}}
+			  </tbody>
+		   </table>
+		</div>
+	 </div>
+	</div>
+
+	<div class="content-heading">
+	   ICO List 
+	</div>
+	
+	<div class="panel panel-default" id="backupform" data-sweet-alert>
+	 <div class="panel-body">
+		<div class="table-responsive">
+		   <table class="table table-striped table-bordered table-hover">
+			  <tbody>
+				 <tr>
+					<td class="thead">Wallet</td>
+					<td class="thead">Block</td>
+					<td class="thead">TxIndex</td>
+					<td class="thead">BTC</td>
+					<td class="thead">EGS</td>
+					<td class="thead">Bonus</td>
+					<td class="thead">Time</td>
+					<td class="thead">Status</td>
+				 </tr>
+	{{range .AllList}}
+		 <tr>
+			<td ><nobr>{{.egswallet}}</nobr></td>
+			<td >{{.block}}</td>
+			<td >{{.tx}}</td>
+			<td style="text-align:right">{{.balance}}</td>
+			<td style="text-align:right">{{.egaas}}</td>
+			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
+			<td>{{.etime}}</td>
+			<td>{{if eq .status "1"}}pending{{end}}{{if eq .status "2"}}approved{{end}}{{if eq .status "3"}}completed{{end}}</td>
+		 </tr>
 	{{end}}
 			  </tbody>
 		   </table>
