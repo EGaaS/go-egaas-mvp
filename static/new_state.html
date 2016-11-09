@@ -14,9 +14,9 @@
 				You can create your own state or community, create and manage smart laws, etc. in version 0.1, which can be downloaded
 
 				{{if .Thrust}}
-					<a href="#" onclick='THRUST.remote.send("http://egaas.org/en/download.html#private")' target="_blank">
+					<a href="#" onclick='THRUST.remote.send("http://egaas.org/en/download.html#private"); load_page("newState"); HideMenu(); ' target="_blank">
 				{{else}}
-					<a href="http://egaas.org/en/download.html#private" target="_blank">
+					<a href="http://egaas.org/en/download.html#private" onclick="load_page('newState'); HideMenu(); " target="_blank">
 				{{end}}
 
 
