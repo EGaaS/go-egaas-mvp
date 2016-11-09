@@ -22,10 +22,14 @@
 			   <table class="table table-striped table-bordered table-hover">
 				  <tbody>
 					 <tr>
+						{{if .Message}}
+						<td><strong>{{.Message}}</strong></td>
+						{{else}}
 						<td class="thead">Bitcoin Address</td>
 						<td id="btc">{{$info.wallet}}</td>
 						<td ><script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script> <a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a></td>
-					 </tr>
+					    {{end}}
+					</tr>
 					 <!--tr>
 						<td class="thead">Status</td>
 						<td id="status">waiting for payment</td>
@@ -34,6 +38,7 @@
 			   </table>
 			</div>
 		 </div>
+		{{if not .Message}}
 		 <div class="panel-footer">
 		   <div class="clearfix">
 			  <div >
@@ -42,6 +47,7 @@
 			  </div>
 		   </div>
 		  </div>
+		{{end}}
 		</div>
 	{{end}}
 	<div class="panel panel-default" id="backupform" data-sweet-alert>
