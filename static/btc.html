@@ -73,7 +73,7 @@
 			<td style="text-align:right">{{.egaas}}</td>
 			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
 			<td>{{.etime}}</td>
-			<td>{{if eq .status "1"}}pending{{end}}{{if eq .status "2"}}approved{{end}}{{if eq .status "3"}}completed{{end}}</td>
+			<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}}{{if eq .status "3"}}completed{{end}}</td>
 		 </tr>
 	{{end}}
 	{{end}}
@@ -94,8 +94,7 @@
 			  <tbody>
 				 <tr>
 					<td class="thead">Wallet</td>
-					<td class="thead">Block</td>
-					<td class="thead">TxIndex</td>
+					<td class="thead">BTC Address<br>Block / TxIndex</td>
 					<td class="thead">BTC</td>
 					<td class="thead">EGS</td>
 					<td class="thead">Bonus</td>
@@ -105,13 +104,13 @@
 	{{range .AllList}}
 		 <tr>
 			<td ><nobr>{{.egswallet}}</nobr></td>
-			<td >{{.block}}</td>
-			<td >{{.tx}}</td>
+			<td ><a href="https://blockchain.info/address/{{.wallet}}" target="_blank">{{.wallet}}</a><br>
+			{{.block}} / {{.tx}}</td>
 			<td style="text-align:right">{{.balance}}</td>
 			<td style="text-align:right">{{.egaas}}</td>
 			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
 			<td>{{.etime}}</td>
-			<td>{{if eq .status "1"}}pending{{end}}{{if eq .status "2"}}approved{{end}}{{if eq .status "3"}}completed{{end}}</td>
+			<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}}{{if eq .status "3"}}completed{{end}}</td>
 		 </tr>
 	{{end}}
 			  </tbody>
