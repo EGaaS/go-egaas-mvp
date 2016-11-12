@@ -1,126 +1,162 @@
-	<style>
-		.thead {
-			width:120px;
-			font-weight:bold;
-			white-space:nowrap;
-		}
-	</style>
-	
-	<div class="content-heading">
-	   EGaaS ICO
-	</div>
-	<ol class="breadcrumb">
-	   <li><a href="#" onclick="dl_navigate0('dashboardAnonym')">Dashboard</a></li>
-	   <li class="active">EGaaS ICO</li>
-	</ol>
-	<!-- START panel-->
-	{{if .List}}
-		{{$info := index .List 0}}
-		<div class="panel panel-default" id="backupform" data-sweet-alert>
-		 <div class="panel-body">
-			<div class="table-responsive">
-			   <table class="table table-striped table-bordered table-hover">
-				  <tbody>
-					 <tr>
+<style>
+	.thead {
+		width: 120px;
+		font-weight: bold;
+		white-space: nowrap;
+	}
+</style>
+
+<div class="content-heading">
+	EGaaS ICO
+</div>
+<ol class="breadcrumb">
+	<li><a href="#" onclick="dl_navigate0('dashboardAnonym')">Dashboard</a></li>
+	<li class="active">EGaaS ICO</li>
+</ol>
+<!-- START panel-->
+{{if .List}} {{$info := index .List 0}}
+<div class="panel panel-default" id="backupform" data-sweet-alert>
+	<div class="panel-body">
+		<div class="table-responsive">
+			<table class="table table-striped table-bordered table-hover">
+				<tbody>
+					<tr>
 						{{if .Message}}
 						<td><strong>{{.Message}}</strong></td>
 						{{else}}
 						<td class="thead">Bitcoin Address</td>
 						<td id="btc">{{$info.wallet}}</td>
-						<td ><script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script> <a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a></td>
-					    {{end}}
+						<td><script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script>
+							<a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a>
+						</td>
+						{{end}}
 					</tr>
-					 <!--tr>
+					<!--tr>
 						<td class="thead">Status</td>
 						<td id="status">waiting for payment</td>
 					 </tr-->
-				  </tbody>
-			   </table>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	{{if not .Message}}
+	<div class="panel-footer">
+		<div class="clearfix">
+			<div>
+				<button id="clipboard" type="button" class="btn btn-primary" data-clipboard-action="copy" data-clipboard-text="{{$info.address}}" onClick="preloader(this);">Copy to clipboard</button>
+				<button type="button" class="btn btn-primary" style="float:right;" onclick="refresh()">Refresh</button>
 			</div>
-		 </div>
-		{{if not .Message}}
-		 <div class="panel-footer">
-		   <div class="clearfix">
-			  <div >
-				<button id="clipboard" type="button" class="btn btn-primary" data-clipboard-action="copy" 
-						data-clipboard-text="{{$info.address}}" onClick="preloader(this);">Copy to clipboard</button>		
-			  </div>
-		   </div>
-		  </div>
-		{{end}}
 		</div>
+	</div>
 	{{end}}
-	<div class="panel panel-default" id="backupform" data-sweet-alert>
-	 <div class="panel-body">
+</div>
+{{end}}
+<div class="panel panel-default" id="backupform" data-sweet-alert>
+	<div class="panel-body">
 		<div class="table-responsive">
-		   <table class="table table-striped table-bordered table-hover">
-			  <tbody>
-				 <tr>
-					<td class="thead">Block Height</td>
-					<td class="thead">TxIndex</td>
-					<td class="thead">BTC</td>
-					<td class="thead">EGS</td>
-					<td class="thead">Bonus</td>
-					<td class="thead">Time</td>
-					<td class="thead">Status</td>
-				 </tr>
-	{{range .List}}
-	{{if ne .status "0"}}
-		 <tr>
-			<td >{{.block}}</td>
-			<td >{{.tx}}</td>
-			<td style="text-align:right" >{{.balance}}</td>
-			<td style="text-align:right">{{.egaas}}</td>
-			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
-			<td>{{.etime}}</td>
-			<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}}{{if eq .status "3"}}completed{{end}}</td>
-		 </tr>
-	{{end}}
-	{{end}}
-			  </tbody>
-		   </table>
+			<table class="table table-striped table-bordered table-hover">
+				<tbody>
+					<tr>
+						<td class="thead">Block Height</td>
+						<td class="thead">TxIndex</td>
+						<td class="thead">BTC</td>
+						<td class="thead">EGS</td>
+						<td class="thead">Bonus</td>
+						<td class="thead">Time</td>
+						<td class="thead">Status</td>
+					</tr>
+					{{range .List}} {{if ne .status "0"}}
+					<tr>
+						<td>{{.block}}</td>
+						<td>{{.tx}}</td>
+						<td style="text-align:right">{{.balance}}</td>
+						<td style="text-align:right">{{.egaas}}</td>
+						<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
+						<td>{{.etime}}</td>
+						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
+						</td>
+					</tr>
+					{{end}} {{end}}
+				</tbody>
+			</table>
 		</div>
-	 </div>
 	</div>
+</div>
+{{if not .Message}}
+<div class="content-heading">
+	ICO Statistic
+</div>
 
-	<div class="content-heading">
-	   ICO List 
-	</div>
-	
-	<div class="panel panel-default" id="backupform" data-sweet-alert>
-	 <div class="panel-body">
+<div class="panel panel-default" id="backupform" data-sweet-alert>
+	<div class="panel-body">
 		<div class="table-responsive">
-		   <table class="table table-striped table-bordered table-hover">
-			  <tbody>
-				 <tr>
-					<td class="thead">Wallet</td>
-					<td class="thead">BTC Address<br>Block / TxIndex</td>
-					<td class="thead">BTC</td>
-					<td class="thead">EGS</td>
-					<td class="thead">Bonus</td>
-					<td class="thead">Time</td>
-					<td class="thead">Status</td>
-				 </tr>
-	{{range .AllList}}
-		 <tr>
-			<td ><nobr>{{.egswallet}}</nobr></td>
-			<td ><a href="https://blockchain.info/address/{{.wallet}}" target="_blank">{{.wallet}}</a><br>
-			{{.block}} / {{.tx}}</td>
-			<td style="text-align:right">{{.balance}}</td>
-			<td style="text-align:right">{{.egaas}}</td>
-			<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
-			<td>{{.etime}}</td>
-			<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}}{{if eq .status "3"}}completed{{end}}</td>
-		 </tr>
-	{{end}}
-			  </tbody>
-		   </table>
+			<table class="table table-striped table-bordered table-hover">
+				<tbody>
+					<tr>
+						<td class="thead">EGS/BTC</td>
+						<td class="thead">Bonus</td>
+						<td class="thead">Remaining Time</td>
+						<td class="thead" style="text-align:right">Remaining EGS</td>
+					</tr>
+					{{range .Stat}}
+					<tr>
+						<td>1 EGS = {{.Btc}} BTC</td>
+						<td>{{if gt .Bonus 0}}{{.Bonus}}%{{end}}</td>
+						<td>{{if .Finished}}Finished{{else}}{{.Day}}d {{.Hour}}h {{.Minute}}m{{end}}</td>
+						<td style="text-align:right">{{if not .Finished}}{{.ForSell}}{{end}}</td>
+					</tr>
+					{{end}}
+				</tbody>
+			</table>
 		</div>
-	 </div>
 	</div>
-	
-	<script  type="text/javascript">
+</div>
+{{end}}
 
+<div class="content-heading">
+	ICO List
+</div>
+
+<div class="panel panel-default" id="backupform" data-sweet-alert>
+	<div class="panel-body">
+		<div class="table-responsive">
+			<table class="table table-striped table-bordered table-hover">
+				<tbody>
+					<tr>
+						<td class="thead">Wallet</td>
+						<td class="thead">BTC Address<br>Block / TxIndex</td>
+						<td class="thead">BTC</td>
+						<td class="thead">EGS</td>
+						<td class="thead">Bonus</td>
+						<td class="thead">Time</td>
+						<td class="thead">Status</td>
+					</tr>
+					{{range .AllList}}
+					<tr>
+						<td>
+							<nobr>{{.egswallet}}</nobr>
+						</td>
+						<td><a href="https://blockchain.info/address/{{.wallet}}" target="_blank">{{.wallet}}</a><br> {{.block}} / {{.tx}}</td>
+						<td style="text-align:right">{{.balance}}</td>
+						<td style="text-align:right">{{.egaas}}</td>
+						<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
+						<td>{{.etime}}</td>
+						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
+						</td>
+					</tr>
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+
+function refresh() {
+	load_page('btc');
+	return false;
+}
 	
 	var clipboard = new Clipboard("#clipboard");
 
@@ -133,4 +169,3 @@
 	$(".anonym, .anonym_btc").addClass("active");
 		
 	</script>
-	
