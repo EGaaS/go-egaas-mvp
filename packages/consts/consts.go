@@ -17,7 +17,7 @@
 package consts
 
 // текущая версия
-const VERSION = "1.0.3b3"
+const VERSION = "1.0.3b4"
 
 const FIRST_QDLT = 1e+26
 
@@ -29,7 +29,7 @@ const WAIT_CONFIRMED_NODES = 10
 const MIN_CONFIRMED_NODES = 0
 
 // примерный текущий крайний блок
-const LAST_BLOCK = 100000
+const LAST_BLOCK = 150000
 
 // примерный размер блокчейна
 const BLOCKCHAIN_SIZE = 100
