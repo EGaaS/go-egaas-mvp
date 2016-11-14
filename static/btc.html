@@ -9,10 +9,6 @@
 <div class="content-heading">
 	EGaaS ICO
 </div>
-<ol class="breadcrumb">
-	<li><a href="#" onclick="dl_navigate0('dashboardAnonym')">Dashboard</a></li>
-	<li class="active">EGaaS ICO</li>
-</ol>
 <!-- START panel-->
 {{if .List}} {{$info := index .List 0}}
 <div class="panel panel-default" id="backupform" data-sweet-alert>
@@ -56,16 +52,18 @@
 	<div class="panel-body">
 		<div class="table-responsive">
 			<table class="table table-striped table-bordered table-hover">
-				<tbody>
+				<thead>
 					<tr>
-						<td class="thead">Block Height</td>
-						<td class="thead">TxIndex</td>
-						<td class="thead">BTC</td>
-						<td class="thead">EGS</td>
-						<td class="thead">Bonus</td>
-						<td class="thead">Time</td>
-						<td class="thead">Status</td>
+						<td>Block Height</td>
+						<td>TxIndex</td>
+						<td>BTC</td>
+						<td>EGS</td>
+						<td>Bonus</td>
+						<td>Time</td>
+						<td>Status</td>
 					</tr>
+				</thead>
+				<tbody>
 					{{range .List}} {{if ne .status "0"}}
 					<tr>
 						<td>{{.block}}</td>
@@ -84,27 +82,27 @@
 	</div>
 </div>
 {{if not .Message}}
-<div class="content-heading">
-	ICO Statistic
-</div>
+<h4>ICO Statistic</h4>
 
 <div class="panel panel-default" id="backupform" data-sweet-alert>
 	<div class="panel-body">
 		<div class="table-responsive">
 			<table class="table table-striped table-bordered table-hover">
-				<tbody>
+				<thead>
 					<tr>
-						<td class="thead">EGS/BTC</td>
-						<td class="thead">Bonus</td>
-						<td class="thead">Remaining Time</td>
-						<td class="thead" style="text-align:right">Remaining EGS</td>
+						<td>EGS/BTC</td>
+						<td>Bonus</td>
+						<td>Remaining Time</td>
+						<td style="text-align:right;">Remaining EGS</td>
 					</tr>
+				</thead>
+				<tbody>
 					{{range .Stat}}
 					<tr>
 						<td>1 EGS = {{.Btc}} BTC</td>
 						<td>{{if gt .Bonus 0}}{{.Bonus}}%{{end}}</td>
 						<td>{{if .Finished}}Finished{{else}}{{.Day}}d {{.Hour}}h {{.Minute}}m{{end}}</td>
-						<td style="text-align:right">{{if not .Finished}}{{.ForSell}}{{end}}</td>
+						<td style="text-align:right;">{{if not .Finished}}{{.ForSell}}{{end}}</td>
 					</tr>
 					{{end}}
 				</tbody>
@@ -114,24 +112,24 @@
 </div>
 {{end}}
 
-<div class="content-heading">
-	ICO List
-</div>
+<h4>ICO List</h4>
 
 <div class="panel panel-default" id="backupform" data-sweet-alert>
 	<div class="panel-body">
 		<div class="table-responsive">
 			<table class="table table-striped table-bordered table-hover">
-				<tbody>
+				<thead>
 					<tr>
-						<td class="thead">Wallet</td>
-						<td class="thead">BTC Address<br>Block / TxIndex</td>
-						<td class="thead">BTC</td>
-						<td class="thead">EGS</td>
-						<td class="thead">Bonus</td>
-						<td class="thead">Time</td>
-						<td class="thead">Status</td>
+						<td>Wallet</td>
+						<td>BTC Address<br>Block / TxIndex</td>
+						<td>BTC</td>
+						<td>EGS</td>
+						<td>Bonus</td>
+						<td>Time</td>
+						<td>Status</td>
 					</tr>
+				</thead>
+				<tbody>
 					{{range .AllList}}
 					<tr>
 						<td>
@@ -154,17 +152,12 @@
 
 <script type="text/javascript">
 
-function refresh() {
-	load_page('btc');
-	return false;
-}
+	function refresh() {
+		load_page('btc');
+		return false;
+	}
 	
-	var clipboard = new Clipboard("#clipboard");
-
-	clipboard.on('success', function(e) {
-		e.clearSelection();
-		Alert("Success", "", "success");
-	});
+	CopyToClipboard("#clipboard");
 	
 	$(".aside .nav li").removeClass("active");
 	$(".anonym, .anonym_btc").addClass("active");
