@@ -4,13 +4,42 @@
 		font-weight: bold;
 		white-space: nowrap;
 	}
+	.h1 {
+		margin-top:0px;
+	}
+	.form {
+		margin-bottom:20px;
+	}
 </style>
 
 <div class="content-heading">
 	EGaaS ICO
 </div>
+
+<div class="unwrap">
+	<div class="bg-cover">
+		<div class="container container-md pv-lg">
+			<div class="text-center mb-lg">
+				<div class="h1 text-bold">Subscribe</div>
+				<p>to the newsletter about ICO</p>
+			</div>
+		</div>
+	</div>
+</div>
+<form class="form">
+	<div class="input-group input-group-lg">
+		<input id="email" name="term" placeholder="E-mail" style="width:100%" class="form-control input-lg radius-clear" type="text">
+		<span class="input-group-btn">
+			<button type="button" class="btn btn-info btn-lg b0 radius-clear" onClick="subscribe();">
+				<strong>Subscribe</strong>
+			</button>
+		</span>
+	</div>
+</form>
+
 <!-- START panel-->
 {{if .List}} {{$info := index .List 0}}
+<h4>Bitcoin Address</h4>
 <div class="panel panel-default" id="backupform" data-sweet-alert>
 	<div class="panel-body">
 		<div class="table-responsive">
@@ -20,12 +49,11 @@
 						{{if .Message}}
 						<td><strong>{{.Message}}</strong></td>
 						{{else}}
-						<td class="thead">Bitcoin Address</td>
-						<td id="btc">{{$info.wallet}}</td>
-						<td><img src="ajax?qr={{$info.wallet}}" alt=""></td>
-						<td><!--script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script>
-							<a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a-->
-						</td>
+						<td id="btc" width="50%" align="center">{{$info.wallet}}</td>
+						<td width="50%" align="center"><img src="ajax?qr={{$info.wallet}}" alt=""></td>
+						<!--<td><script>function shapeshift_click(a,e){e.preventDefault();var link=a.href;window.open(link,'1418115287605','width=700,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=0,left=0,top=0');return false;}</script>
+							<a onclick="shapeshift_click(this, event);" href="https://shapeshift.io/shifty.html?destination={{$info.wallet}}&amp;output=BTC"><img src="https://shapeshift.io/images/shifty/xs_light_ss.png" class="ss-button"></a>
+						</td>-->
 						{{end}}
 					</tr>
 					<!--tr>
