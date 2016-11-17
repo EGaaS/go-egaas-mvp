@@ -7,9 +7,6 @@
 	.h1 {
 		margin-top:0px;
 	}
-	.form {
-		margin-bottom:20px;
-	}
 </style>
 
 <div class="content-heading">
@@ -17,26 +14,30 @@
 </div>
 
 {{if not .Email}}
-<div class="unwrap">
-	<div class="bg-cover">
-		<div class="container container-md pv-lg">
-			<div class="text-center mb-lg">
-				<div class="h1 text-bold">Subscribe</div>
-				<p>to the newsletter about ICO</p>
+<div class="panel panel-default" data-sweet-alert>
+	<div class="panel-body">
+		<div class="unwrap">
+			<div class="bg-cover">
+				<div class="container container-md">
+					<div class="text-center mb-lg">
+						<div class="h1 text-bold">Subscribe</div>
+						<p>to the newsletter about ICO</p>
+					</div>
+				</div>
 			</div>
 		</div>
+		<form class="form">
+			<div class="input-group input-group-lg">
+				<input id="email" name="term" placeholder="E-mail" style="width:100%" class="form-control input-lg radius-clear" type="text">
+				<span class="input-group-btn">
+					<button type="button" class="btn btn-info btn-lg b0 radius-clear" onClick="subscribe();">
+						<strong>Subscribe</strong>
+					</button>
+				</span>
+			</div>
+		</form>
 	</div>
 </div>
-<form class="form">
-	<div class="input-group input-group-lg">
-		<input id="email" name="term" placeholder="E-mail" style="width:100%" class="form-control input-lg radius-clear" type="text">
-		<span class="input-group-btn">
-			<button type="button" class="btn btn-info btn-lg b0 radius-clear" onClick="subscribe();">
-				<strong>Subscribe</strong>
-			</button>
-		</span>
-	</div>
-</form>
 {{end}}
 
 <!-- START panel-->
