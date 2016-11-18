@@ -4,8 +4,9 @@
 		font-weight: bold;
 		white-space: nowrap;
 	}
+	
 	.h1 {
-		margin-top:0px;
+		margin-top: 0px;
 	}
 </style>
 
@@ -90,6 +91,7 @@
 						<td>BTC</td>
 						<td>EGS</td>
 						<td>Bonus</td>
+						<td>Bonus 2</td>
 						<td>Time</td>
 						<td>Status</td>
 					</tr>
@@ -102,6 +104,7 @@
 						<td style="text-align:right">{{.balance}}</td>
 						<td style="text-align:right">{{.egaas}}</td>
 						<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
+						<td>{{.bonus2}}</td>
 						<td>{{.etime}}</td>
 						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
 						</td>
@@ -156,6 +159,7 @@
 						<td>BTC</td>
 						<td>EGS</td>
 						<td>Bonus</td>
+						<td>Bonus 2</td>
 						<td>Time</td>
 						<td>Status</td>
 					</tr>
@@ -170,6 +174,7 @@
 						<td style="text-align:right">{{.balance}}</td>
 						<td style="text-align:right">{{.egaas}}</td>
 						<td>{{if gt .bonus "0"}}{{.bonus}}%{{end}}</td>
+						<td>{{.bonus2}}</td>
 						<td>{{.etime}}</td>
 						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
 						</td>
