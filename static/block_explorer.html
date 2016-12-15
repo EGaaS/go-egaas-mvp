@@ -25,7 +25,11 @@
 	   Block Information
 	</div>
 	<ol class="breadcrumb">
+	{{if .Public}}
+	   <li><a href="/blockexplorer">Block Explorer</a></li>
+	{{else}}
 	   <li><a href="#" onclick="load_page('block_explorer', {singlePage: 1});">Block Explorer</a></li>
+	{{end}}
 	</ol>
 	<!-- START panel-->
 	<div class="panel panel-default">
@@ -158,7 +162,11 @@
 	}
 
 	function block_detail( id ) {
-	    $("#dl_content").load( "content?page=blockExplorer", { blockId: id }, function() {});
+		{{if .Public}}
+	    window.location = "blockexplorer?blockId=" + id;
+		{{else}}
+	    $("#dl_content").load("content?page=blockExplorer", { blockId: id }, function() {});
+		{{end}}
 		return false
 	}
 

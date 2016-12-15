@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	//"github.com/EGaaS/go-egaas-mvp/packages/smart"
@@ -33,6 +34,7 @@ type blockExplorerPage struct {
 	List       []map[string]string
 	Latest     int64
 	BlockId    int64
+	Public     bool
 	BlockData  map[string]string
 	SinglePage int64
 }
@@ -46,6 +48,7 @@ func (c *Controller) BlockExplorer() (string, error) {
 
 	blockId := utils.StrToInt64(c.r.FormValue("blockId"))
 	pageData.SinglePage = utils.StrToInt64(c.r.FormValue("singlePage"))
+	pageData.Public = strings.HasPrefix(c.r.URL.String(), `/blockexplorer`)
 
 	if blockId > 0 {
 		pageData.BlockId = blockId
@@ -124,8 +127,12 @@ func (c *Controller) BlockExplorer() (string, error) {
 				return ``, nil
 			}
 		}
+		limit := `30`
+		if pageData.Public {
+			limit = `100`
+		}
 		blockExplorer, err := c.GetAll(`SELECT  b.hash, b.state_id, b.wallet_id, b.time, b.tx, b.id FROM block_chain as b
-		order by b.id desc limit 30 offset 0`, -1)
+		order by b.id desc limit `+limit+` offset 0`, -1)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
