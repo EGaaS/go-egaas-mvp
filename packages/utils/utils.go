@@ -2024,7 +2024,7 @@ func TcpConn(Addr string) (net.Conn, error) {
 		return nil, ErrInfo(err)
 	}
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)*/
-	conn, err := net.DialTimeout("tcp", Addr, 10*time.Second)
+	conn, err := net.DialTimeout("tcp4", Addr, 10*time.Second)
 	if err != nil {
 		return nil, ErrInfo(err)
 	}
