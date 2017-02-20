@@ -2097,6 +2097,7 @@ func GetCurrentDir() string {
 
 func GetBlockBody(host string, blockId int64, dataTypeBlockBody int64) ([]byte, error) {
 
+	log.Debug("TcpConn: %s", host)
 	conn, err := TcpConn(host)
 	if err != nil {
 		return nil, ErrInfo(err)
