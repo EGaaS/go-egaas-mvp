@@ -35,7 +35,7 @@ const LAST_BLOCK = 150000
 const BLOCKCHAIN_SIZE = 100
 
 // где лежит блокчейн. для тех, кто не хочет собирать его с нодов
-const BLOCKCHAIN_URL = "http://egaas-blockchain.github.io/blockchain"
+const BLOCKCHAIN_URL = "https://media.githubusercontent.com/media/egaas-blockchain/egaas-blockchain.github.io/master/blockchain.raw"
 
 // на сколько может бежать время в тр-ии
 const MAX_TX_FORW = 0
