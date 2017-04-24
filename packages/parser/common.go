@@ -22,9 +22,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	//"github.com/EGaaS/go-egaas-mvp/packages/smart"
+	//	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/script"
+	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/op/go-logging"
 	"github.com/shopspring/decimal"
@@ -64,6 +67,7 @@ type Parser struct {
 	fullTxBinaryData []byte
 	TxHash           string
 	TxSlice          [][]byte
+	MerkleRoot       []byte
 	GoroutineName    string
 	CurrentVersion   string
 	MrklRoot         []byte
@@ -74,11 +78,13 @@ type Parser struct {
 	TxStateID        uint32
 	TxStateIDStr     string
 	TxTime           int64
+	TxCost           int64           // Maximum cost of executing contract
+	TxUsedCost       decimal.Decimal // Used cost of CPU resources
 	nodePublicKey    []byte
 	newPublicKeysHex [3][]byte
 	TxPtr            interface{} // Pointer to the corresponding struct in consts/struct.go
 	TxData           map[string]interface{}
-	//TxContract       *smart.Contract
+	TxContract       *smart.Contract
 	TxVars           map[string]string
 	AllPkeys         map[string]string
 	States           map[int64]string
@@ -244,7 +250,9 @@ func (p *Parser) GetTxMap(fields []string) (map[string][]byte, error) {
 }
 
 func (p *Parser) CheckInputData(data map[string]string) error {
+
 	for k, v := range data {
+		fmt.Println("v==", v, p.TxMap[k])
 		if !utils.CheckInputData(p.TxMap[k], v) {
 			return fmt.Errorf("incorrect " + k + "(" + string(p.TxMap[k]) + " : " + v + ")")
 		}
@@ -335,17 +343,22 @@ func (p *Parser) getMyNodeCommission(currencyId, userId int64, amount float64) (
 
 }
 
-func (p *Parser) checkSenderDLT(amount, commission int64) error {
-
-	// получим сумму на кошельке юзера
-	totalAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).Int64()
-	if err != nil {
-		return p.ErrInfo(err)
+func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
+	wallet := p.TxWalletID
+	if wallet == 0 {
+		wallet = p.TxCitizenID
 	}
+	// получим сумму на кошельке юзера
+	strAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
+	if err != nil {
+		return err
+	}
+	totalAmount, _ := decimal.NewFromString(strAmount)
 
-	amountAndCommission := amount + commission
-	if totalAmount < amountAndCommission {
-		return p.ErrInfo(fmt.Sprintf("%f < %f)", totalAmount, amountAndCommission))
+	amountAndCommission := amount
+	amountAndCommission.Add(commission)
+	if totalAmount.Cmp(amountAndCommission) < 0 {
+		return fmt.Errorf("%v < %v)", totalAmount, amountAndCommission)
 	}
 	return nil
 }
@@ -398,65 +411,308 @@ func (p *Parser) BlockError(err error) {
 		errText = errText[:255]
 	}
 	p.DeleteQueueTx([]byte(p.TxHash))
-	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %s", errText, p.TxHash)
+	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %x", errText, p.TxHash)
 	p.ExecSql("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
 }
 
-
-func (p *Parser) CheckTokens(amount, txCommission decimal.Decimal, woAmountAndCommission bool) error {
-
-	if !woAmountAndCommission {
-		zero, _ := decimal.NewFromString("0")
-		if amount.Cmp(zero) <= 0 {
-			return p.ErrInfo("amount<=0")
+func (p *Parser) AccessRights(condition string, iscondition bool) error {
+	param := `value`
+	if iscondition {
+		param = `conditions`
+	}
+	conditions, err := p.Single(`SELECT `+param+` FROM "`+utils.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
+		condition).String()
+	if err != nil {
+		return err
+	}
+	if len(conditions) > 0 {
+		ret, err := p.EvalIf(conditions)
+		if err != nil {
+			return err
 		}
-	}
-	fPrice, err := p.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
-	fuelRate, err := p.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").String()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
-	// 1 000 000 000 000 000 000 qDLT = 1 DLT * 100 000 000
-	// fuelRate = 1 000 000 000 000 000
-	//
-	fPriceDecemal, err := decimal.NewFromString(fPrice)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	fuelRateDecemal, err := decimal.NewFromString(fuelRate)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	commission := fPriceDecemal.Mul(fuelRateDecemal)
-
-	// проверим, удовлетворяет ли нас комиссия, которую предлагает юзер
-	if !woAmountAndCommission {
-		if txCommission.Cmp(commission) < 0 {
-			return p.ErrInfo(fmt.Sprintf("commission %s < dltPrice %d", txCommission.String(), commission))
-		}
-	}
-
-	totalAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	totalAmountDecimal, err := decimal.NewFromString(totalAmount)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	if !woAmountAndCommission {
-		if totalAmountDecimal.Cmp(amount.Add(txCommission)) < 0 {
-			return p.ErrInfo(fmt.Sprintf("not enough money : %s + %s < %s", amount, txCommission, totalAmount))
+		if !ret {
+			return fmt.Errorf(`Access denied`)
 		}
 	} else {
-		if totalAmountDecimal.Cmp(commission) < 0 {
-			return p.ErrInfo(fmt.Sprintf("not enough money : %s < %s",  commission, totalAmount))
+		return fmt.Errorf(`There is not %s in state_parameters`, condition)
+	}
+	return nil
+}
+
+func (p *Parser) AccessTable(table, action string) error {
+
+	//	prefix := utils.Int64ToStr(int64(p.TxStateID))
+	govAccount, _ := utils.StateParam(int64(p.TxStateID), `gov_account`)
+	if table == `dlt_wallets` && p.TxContract != nil && p.TxCitizenID == utils.StrToInt64(govAccount) {
+		return nil
+	}
+
+	if isCustom, err := p.IsCustomTable(table); err != nil {
+		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать
+	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
+		return fmt.Errorf(table + ` is not a custom table`)
+	}
+	prefix := table[:strings.IndexByte(table, '_')]
+
+	/*	if p.TxStateID == 0 {
+		return nil
+	}*/
+
+	tablePermission, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", table)
+	if err != nil {
+		return err
+	}
+	if len(tablePermission[action]) > 0 {
+		ret, err := p.EvalIf(tablePermission[action])
+		if err != nil {
+			return err
+		}
+		if !ret {
+			return fmt.Errorf(`Access denied`)
 		}
 	}
 	return nil
+}
+
+func (p *Parser) AccessColumns(table string, columns []string) error {
+
+	//prefix := utils.Int64ToStr(int64(p.TxStateID))
+
+	if isCustom, err := p.IsCustomTable(table); err != nil {
+		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать
+	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
+		return fmt.Errorf(table + ` is not a custom table`)
+	}
+	prefix := table[:strings.IndexByte(table, '_')]
+	/*	if p.TxStateID == 0 {
+		return nil
+	}*/
+
+	columnsAndPermissions, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`,
+		"key", "value", table)
+	if err != nil {
+		return err
+	}
+	for _, col := range columns {
+		if cond, ok := columnsAndPermissions[col]; ok && len(cond) > 0 {
+			ret, err := p.EvalIf(cond)
+			if err != nil {
+				return err
+			}
+			if !ret {
+				return fmt.Errorf(`Access denied`)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *Parser) AccessChange(table, name string) error {
+	/*	if p.TxStateID == 0 {
+		return nil
+	}*/
+	prefix := `global`
+	if p.TxMaps.Int64["global"] == 0 {
+		prefix = p.TxStateIDStr
+	}
+	//	prefix := utils.Int64ToStr(int64(p.TxStateID))
+	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_`+table+`" WHERE name = ?`, name).String()
+	if err != nil {
+		return err
+	}
+
+	if len(conditions) > 0 {
+		ret, err := p.EvalIf(conditions)
+		if err != nil {
+			return err
+		}
+		if !ret {
+			return fmt.Errorf(`Access denied`)
+		}
+	} else {
+		return fmt.Errorf(`There is not conditions in %s`, prefix+`_`+table)
+	}
+	return nil
+}
+
+func (p *Parser) getEGSPrice(name string) (decimal.Decimal, error) {
+	fPrice, err := p.Single(`SELECT value->'`+name+`' FROM system_parameters WHERE name = ?`, "op_price").String()
+	if err != nil {
+		return decimal.New(0, 0), p.ErrInfo(err)
+	}
+	p.TxCost = 0
+	p.TxUsedCost, _ = decimal.NewFromString(fPrice)
+	fuelRate := p.GetFuel()
+	if fuelRate.Cmp(decimal.New(0, 0)) <= 0 {
+		return decimal.New(0, 0), fmt.Errorf(`fuel rate must be greater than 0`)
+	}
+	return p.TxUsedCost.Mul(fuelRate), nil
+}
+
+func (p *Parser) checkPrice(name string) error {
+	EGSPrice, err := p.getEGSPrice(name)
+	if err != nil {
+		return err
+	}
+	// Is there a correct amount on the wallet?
+	err = p.checkSenderDLT(EGSPrice, decimal.New(0, 0))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Parser) GetContractLimit() (ret int64) {
+	//	fuel := p.GetFuel()
+	/*	if p.TxStateID > 0 && p.TxCitizenID > 0 {
+
+		}
+		TxCitizenID      int64
+		TxWalletID       int64
+		TxStateID */
+	/*	if ret == 0 {
+		ret = script.COST_DEFAULT
+	}*/
+	// default maximum cost of F
+	p.TxCost = script.COST_DEFAULT // ret * fuel
+	return p.TxCost
+}
+
+/*func (p *Parser) CheckContractLimit(price int64) bool {
+	return true
+	var balance decimal.Decimal
+	fuel := p.GetFuel()
+	if fuel <= 0 {
+		return false
+	}
+	need := p.TxCost * fuel // need qEGS = F*fuel
+	//	wallet := p.TxWalletID
+	if p.TxStateID > 0 && p.TxCitizenID != 0 {
+		var needuser int64
+		rate, _ := utils.EGSRate(int64(p.TxStateID)) // money/egs
+		tableAccounts, _ := utils.StateParam(int64(p.TxStateID), `table_accounts`)
+		tableAccounts = lib.Escape(tableAccounts)
+		if len(tableAccounts) == 0 {
+			tableAccounts = `accounts`
+		}
+		if rate == 0 {
+			rate = 1.0
+		}
+		p.TxContract.EGSRate = rate
+		p.TxContract.TableAccounts = tableAccounts
+
+		if price >= 0 {
+			needuser = int64(float64(price) * rate)
+		} else {
+			needuser = int64(float64(need) * rate)
+		}
+		p.TxContract.TxGovAccount = utils.StrToInt64(StateVal(p, `gov_account`))
+		if needuser > 0 {
+			if money, _ := p.Single(fmt.Sprintf(`select amount from "%d_%s" where citizen_id=?`, p.TxStateID, tableAccounts),
+				p.TxCitizenID).Int64(); money < needuser {
+				return false
+			}
+		}
+		// Check if government has enough money
+		balance, _ = utils.Balance(p.TxContract.TxGovAccount)
+		//wallet = p.TxCitizenID
+	} else {
+		//if balance.Cmp(decimal.New(0, 0)) == 0 {
+		balance, _ = utils.Balance(p.TxWalletID)
+	}
+	/*		TxCitizenID      int64
+			TxWalletID       int64
+			TxStateID
+	return balance.Cmp(decimal.New(need, 0)) > 0
+}*/
+
+func (p *Parser) payFPrice() error {
+	var (
+		fromId int64
+		err    error
+	)
+	//return nil
+	toId := p.BlockData.WalletId // account of node
+	fuel := p.GetFuel()
+	if fuel.Cmp(decimal.New(0, 0)) <= 0 {
+		return fmt.Errorf(`fuel rate must be greater than 0`)
+	}
+
+	if p.TxCost == 0 { // embedded transaction
+		fromId = p.TxWalletID
+		if fromId == 0 {
+			fromId = p.TxCitizenID
+		}
+	} else { // contract
+		if p.TxStateID > 0 && p.TxCitizenID != 0 && p.TxContract != nil {
+			//fromId = p.TxContract.TxGovAccount
+			fromId = utils.StrToInt64(StateVal(p, `gov_account`))
+		} else {
+			// списываем напрямую с dlt_wallets у юзера
+			fromId = p.TxWalletID
+		}
+	}
+	egs := p.TxUsedCost.Mul(fuel)
+	fmt.Printf("Pay fuel=%v fromId=%d toId=%d cost=%v egs=%v", fuel, fromId, toId, p.TxUsedCost, egs)
+	if egs.Cmp(decimal.New(0, 0)) == 0 { // Is it possible to pay nothing?
+		return nil
+	}
+	var amount string
+	if amount, err = p.Single(`select amount from dlt_wallets where wallet_id=?`, fromId).String(); err != nil {
+		return err
+	}
+	damount, err := decimal.NewFromString(amount)
+	if err != nil {
+		return err
+	}
+	if damount.Cmp(egs) < 0 {
+		egs = damount
+	}
+	commission := egs.Mul(decimal.New(3, 0)).Div(decimal.New(100, 0)).Floor()
+	//	fmt.Printf("Commission %v %v \r\n", commission, egs)
+	/*	query := fmt.Sprintf(`begin;
+		update dlt_wallets set amount = amount - least(amount, '%d') where wallet_id='%d';
+		update dlt_wallets set amount = amount + '%d' where wallet_id='%d';
+		update dlt_wallets set amount = amount + '%d' where wallet_id='%d';
+		commit;`, egs, fromId, egs-commission, toId, commission, consts.COMMISSION_WALLET)
+		if err := p.ExecSql(query); err != nil {
+			return err
+		}*/
+	if _, err := p.selectiveLoggingAndUpd([]string{`-amount`}, []interface{}{egs}, `dlt_wallets`, []string{`wallet_id`},
+		[]string{utils.Int64ToStr(fromId)}, true); err != nil {
+		return err
+	}
+	if _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{egs.Sub(commission)}, `dlt_wallets`, []string{`wallet_id`},
+		[]string{utils.Int64ToStr(toId)}, true); err != nil {
+		return err
+	}
+	if _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{commission}, `dlt_wallets`, []string{`wallet_id`},
+		[]string{utils.Int64ToStr(consts.COMMISSION_WALLET)}, true); err != nil {
+		return err
+	}
+	fmt.Printf(" Paid commission %v\r\n", commission)
+	return nil
+	/*	if p.TxStateID > 0 && p.TxCitizenID != 0 && p.TxContract != nil {
+			// Это все уберется, гос-во будет снимать деньги с граждан внутри контрактов
+			table := fmt.Sprintf(`"%d_%s"`, p.TxStateID, p.TxContract.TableAccounts)
+			amount, err := p.Single(`select amount from `+table+` where citizen_id=?`, p.TxCitizenID).Int64()
+			money := int64(float64(egs) * p.TxContract.EGSRate)
+			if p.TxContract.TxPrice >= 0 {
+				money = int64(float64(p.TxContract.TxPrice) * p.TxContract.EGSRate)
+			}
+			if amount < money {
+				money = amount
+			}
+			if money > 0 {
+				if err = p.ExecSql(`update `+table+` set amount = amount - ? where citizen_id=?`, money, p.TxCitizenID); err != nil {
+					return err
+				}
+				if err = p.ExecSql(`update `+table+` set amount = amount + ? where citizen_id=?`, money, p.TxContract.TxGovAccount); err != nil {
+					// refund payment
+					p.ExecSql(`update `+table+` set amount = amount + ? where citizen_id=?`, money, p.TxCitizenID)
+					return err
+				}
+			}
+		}
+		return nil*/
 }
