@@ -64,7 +64,6 @@ type Parser struct {
 	fullTxBinaryData []byte
 	TxHash           string
 	TxSlice          [][]byte
-	MerkleRoot       []byte
 	GoroutineName    string
 	CurrentVersion   string
 	MrklRoot         []byte
