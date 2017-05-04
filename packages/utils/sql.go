@@ -41,6 +41,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"github.com/op/go-logging"
+	"github.com/shopspring/decimal"
 )
 
 var Mutex = &sync.Mutex{}
@@ -70,10 +71,10 @@ func ReplQ(q string) string {
 func NewDbConnect(ConfigIni map[string]string) (*DCDB, error) {
 	var db *sql.DB
 	var err error
-		db, err = sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable port=%s", ConfigIni["db_user"], ConfigIni["db_password"], ConfigIni["db_name"], ConfigIni["db_port"]))
-		if err != nil {
-			return &DCDB{}, err
-		}
+	db, err = sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable port=%s", ConfigIni["db_user"], ConfigIni["db_password"], ConfigIni["db_name"], ConfigIni["db_port"]))
+	if err != nil {
+		return &DCDB{}, err
+	}
 	log.Debug("return")
 	return &DCDB{db, ConfigIni}, err
 }
@@ -819,7 +820,6 @@ func (db *DCDB) GetMyPublicKeyFromBlockChain(myWalletId int64) (string, error) {
 	return key, nil
 }
 
-
 func (db *DCDB) GetMyNodePublicKeyFromBlockChain(myWalletId int64) (string, error) {
 	var key string
 	key, err := db.Single("SELECT node_public_key FROM dlt_wallets WHERE wallet_id = ?", myWalletId).String()
@@ -828,7 +828,6 @@ func (db *DCDB) GetMyNodePublicKeyFromBlockChain(myWalletId int64) (string, erro
 	}
 	return key, nil
 }
-
 
 func (db *DCDB) GetPrivateKey(myPrefix string) (string, error) {
 	var key string
@@ -1601,4 +1600,30 @@ func (db *DCDB) CheckStateName(stateId int64) (bool, error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("null stateId")
+}
+
+func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
+	md5 := Md5(data)
+	err = db.ExecSql(`INSERT INTO transactions_status (
+			hash, time,	type, wallet_id, citizen_id	) VALUES (
+			[hex], ?, ?, ?, ? )`, md5, time.Now().Unix(), txType, adminWallet, adminWallet)
+	if err != nil {
+		return err
+	}
+	err = db.ExecSql("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", md5, hex.EncodeToString(data))
+	if err != nil {
+		return err
+	}
+	return
+}
+
+func (db *DCDB) GetFuel() decimal.Decimal {
+	// fuel = qEGS/F
+	/*	fuelMutex.Lock()
+		defer fuelMutex.Unlock()
+		if cacheFuel <= 0 {*/
+	fuel, _ := db.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").String()
+	//}
+	cacheFuel, _ := decimal.NewFromString(fuel)
+	return cacheFuel
 }

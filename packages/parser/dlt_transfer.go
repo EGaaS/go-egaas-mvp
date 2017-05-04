@@ -17,15 +17,15 @@
 package parser
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"encoding/hex"
 	"fmt"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
-	"encoding/hex"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 func (p *Parser) DLTTransferInit() error {
 
-	fields := []map[string]string{{"walletAddress": "string"}, {"amount": "decimal"},  {"commission": "decimal"}, {"comment": "bytes"},{"public_key": "bytes"}, {"sign": "bytes"}}
+	fields := []map[string]string{{"walletAddress": "string"}, {"amount": "decimal"}, {"commission": "decimal"}, {"comment": "bytes"}, {"public_key": "bytes"}, {"sign": "bytes"}}
 	err := p.GetTxMaps(fields)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -85,7 +85,6 @@ func (p *Parser) DLTTransferFront() error {
 	return nil
 }
 
-
 func (p *Parser) DLTTransfer() error {
 	log.Debug("wallet address %s", p.TxMaps.String["walletAddress"])
 	log.Debug("wallet address hex %x", utils.B54Decode(p.TxMaps.String["walletAddress"]))
@@ -106,7 +105,7 @@ func (p *Parser) DLTTransfer() error {
 
 	log.Debug("amount %s", p.TxMaps.Decimal["amount"])
 	log.Debug("commission %s", p.TxMaps.Decimal["commission"])
-	amountAndCommission:= p.TxMaps.Decimal["amount"].Add(p.TxMaps.Decimal["commission"])
+	amountAndCommission := p.TxMaps.Decimal["amount"].Add(p.TxMaps.Decimal["commission"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -122,9 +121,10 @@ func (p *Parser) DLTTransfer() error {
 	}
 
 	if walletId == 0 {
-		log.Debug("walletId == 0");
-		log.Debug("%s", string(p.TxMaps.String["walletAddress"]));
-		_, err = p.selectiveLoggingAndUpd([]string{"+amount"}, []interface{}{p.TxMaps.Decimal["amount"].String()}, "dlt_wallets", []string{"wallet_id"}, []string{utils.Int64ToStr(lib.StringToAddress(p.TxMaps.String["walletAddress"]))}, true)
+		log.Debug("walletId == 0")
+		log.Debug("%s", string(p.TxMaps.String["walletAddress"]))
+		walletId = lib.StringToAddress(p.TxMaps.String["walletAddress"])
+		_, err = p.selectiveLoggingAndUpd([]string{"+amount"}, []interface{}{p.TxMaps.Decimal["amount"].String()}, "dlt_wallets", []string{"wallet_id"}, []string{utils.Int64ToStr(walletId)}, true)
 	} else {
 		_, err = p.selectiveLoggingAndUpd([]string{"+amount"}, []interface{}{p.TxMaps.Decimal["amount"].String()}, "dlt_wallets", []string{"wallet_id"}, []string{utils.Int64ToStr(walletId)}, true)
 	}
@@ -139,7 +139,8 @@ func (p *Parser) DLTTransfer() error {
 	}
 
 	// пишем в общую историю тр-ий
-	dlt_transactions_id, err := p.ExecSqlGetLastInsertId(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions", p.TxWalletID, walletId, p.TxMaps.String["walletAddress"], p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(),p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
+	dlt_transactions_id, err := p.ExecSqlGetLastInsertId(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
+		p.TxWalletID, walletId, lib.AddressToString(utils.StrToUint64(p.TxMaps.String["walletAddress"])), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -147,7 +148,6 @@ func (p *Parser) DLTTransfer() error {
 	if err != nil {
 		return err
 	}
-
 
 	dlt_transactions_id, err = p.ExecSqlGetLastInsertId(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions", p.TxWalletID, p.BlockData.WalletId, lib.AddressToString(uint64(p.BlockData.WalletId)), p.TxMaps.Decimal["commission"].String(), 0, "Commission", p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {

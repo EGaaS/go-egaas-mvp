@@ -19,6 +19,7 @@ package lib
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/md5"
 	crand "crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -26,15 +27,30 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash/crc64"
+	"io"
+	"math"
 	"math/big"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-
 	//	b58 "github.com/jbenet/go-base58"
 	//	"golang.org/x/crypto/ripemd160"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 )
+
+const (
+	UpdPublicKey = `fd7f6ccf79ec35a7cf18640e83f0bbc62a5ae9ea7e9260e3a93072dd088d3c7acf5bcb95a7b44fcfceff8de4b16591d146bb3dc6e79f93f900e59a847d2684c3`
+)
+
+type Update struct {
+	Version string
+	Hash    string
+	Sign    string
+	Url     string
+}
 
 var (
 	Table64 *crc64.Table
@@ -62,6 +78,20 @@ func StringToAddress(address string) (result int64) {
 		err error
 		ret uint64
 	)
+	if len(address) == 0 {
+		return 0
+	}
+	if address[0] == '-' {
+		if id, err := strconv.ParseInt(address, 10, 64); err != nil {
+			return 0
+		} else {
+			address = strconv.FormatUint(uint64(id), 10)
+		}
+	}
+	if len(address) < 20 {
+		address = strings.Repeat(`0`, 20-len(address)) + address
+	}
+
 	val := []byte(strings.Replace(address, `-`, ``, -1))
 	if len(val) != 20 {
 		return
@@ -228,11 +258,42 @@ func FillLeft(slice []byte) []byte {
 	return append(make([]byte, 32-len(slice)), slice...)
 }
 
+// Fill the slice by zero at left if the size of the slice is less than 32.
+func FillLeft64(slice []byte) []byte {
+	if len(slice) >= 64 {
+		return slice
+	}
+	return append(make([]byte, 64-len(slice)), slice...)
+}
+
 // Function generate a random pair of ECDSA private and public keys.
 func GenKeys() (privKey string, pubKey string) {
 	private, _ := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
 	privKey = hex.EncodeToString(private.D.Bytes())
 	pubKey = hex.EncodeToString(append(FillLeft(private.PublicKey.X.Bytes()), FillLeft(private.PublicKey.Y.Bytes())...))
+	return
+}
+
+func SignECDSA(privateKey string, forSign string) (ret []byte, err error) {
+	pubkeyCurve := elliptic.P256()
+
+	b, err := hex.DecodeString(privateKey)
+	if err != nil {
+		return
+	}
+	bi := new(big.Int).SetBytes(b)
+	priv := new(ecdsa.PrivateKey)
+	priv.PublicKey.Curve = pubkeyCurve
+	priv.D = bi
+	priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
+
+	signhash := sha256.Sum256([]byte(forSign))
+	r, s, err := ecdsa.Sign(crand.Reader, priv, signhash[:])
+	if err != nil {
+		return
+	}
+	ret = FillLeft(r.Bytes())
+	ret = append(ret, FillLeft(s.Bytes())...)
 	return
 }
 
@@ -361,6 +422,9 @@ func BinMarshal(out *[]byte, v interface{}) (*[]byte, error) {
 			*out = append(*out, uint8(128+4-i))
 			*out = append(*out, tmp[i:]...)
 		}
+	case reflect.Float64:
+		bin := Float2Bytes(t.Float())
+		*out = append(*out, bin...)
 	case reflect.Int64:
 		EncodeLenInt64(out, t.Int())
 	case reflect.Uint64:
@@ -408,12 +472,18 @@ func BinUnmarshal(out *[]byte, v interface{}) error {
 			var i uint8
 			size := val - 128
 			tmp := make([]byte, 4)
+			if len(*out) <= int(size) || size > 4 {
+				return fmt.Errorf(`wrong input data`)
+			}
 			for ; i < size; i++ {
 				tmp[4-size+i] = (*out)[i+1]
 			}
 			t.SetInt(int64(binary.BigEndian.Uint32(tmp)))
 			*out = (*out)[size+1:]
 		}
+	case reflect.Float64:
+		t.SetFloat(Bytes2Float((*out)[:8]))
+		*out = (*out)[8:]
 	case reflect.Int64:
 		if val, err := DecodeLenInt64(out); err != nil {
 			return err
@@ -435,7 +505,9 @@ func BinUnmarshal(out *[]byte, v interface{}) error {
 		}
 	case reflect.Struct:
 		for i := 0; i < t.NumField(); i++ {
-			BinUnmarshal(out, t.Field(i).Addr().Interface())
+			if err := BinUnmarshal(out, t.Field(i).Addr().Interface()); err != nil {
+				return err
+			}
 		}
 	case reflect.Slice:
 		if val, err := DecodeLength(out); err != nil {
@@ -463,6 +535,8 @@ func FieldToBytes(v interface{}, num int) []byte {
 			ret = append(ret, []byte(fmt.Sprintf("%d", field.Uint()))...)
 		case reflect.Int8, reflect.Int32, reflect.Int64:
 			ret = append(ret, []byte(fmt.Sprintf("%d", field.Int()))...)
+		case reflect.Float64:
+			ret = append(ret, []byte(fmt.Sprintf("%f", field.Float()))...)
 		case reflect.String:
 			ret = append(ret, []byte(field.String())...)
 		case reflect.Slice:
@@ -486,18 +560,22 @@ func HexToInt64(input string) (ret int64) {
 func EscapeName(name string) string {
 	out := make([]byte, 1, len(name)+2)
 	out[0] = '"'
+	available := `() ,`
 	for _, ch := range []byte(name) {
 		if (ch >= '0' && ch <= '9') || ch == '_' || (ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') {
+			(ch >= 'A' && ch <= 'Z') || strings.IndexByte(available, ch) >= 0 {
 			out = append(out, ch)
 		}
+	}
+	if strings.IndexAny(string(out), available) >= 0 {
+		return string(out[1:])
 	}
 	return string(append(out, '"'))
 }
 
 func Escape(data string) string {
 	out := make([]byte, 0, len(data)+2)
-	available := `_ ,=`
+	available := `_ ,=!-'()"?*$<>: `
 	for _, ch := range []byte(data) {
 		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
 			(ch >= 'A' && ch <= 'Z') || strings.IndexByte(available, ch) >= 0 {
@@ -505,4 +583,119 @@ func Escape(data string) string {
 		}
 	}
 	return string(out)
+}
+
+func EscapeForJson(data string) string {
+	return strings.Replace(data, `"`, `\"`, -1)
+}
+
+func CalculateMd5(filePath string) ([]byte, error) {
+	var result []byte
+	file, err := os.Open(filePath)
+	if err != nil {
+		return result, err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return result, err
+	}
+
+	return hash.Sum(result), nil
+}
+
+/*func reverse(in string) string {
+	r := []rune(in)
+	n := len(r)
+	for i := 0; i < n/2; i++ {
+		r[i], r[n-1-i] = r[n-1-i], r[i]
+	}
+	return string(r)
+}*/
+
+func NumString(in string) string {
+	if strings.IndexByte(in, '.') >= 0 {
+		lr := strings.Split(in, `.`)
+		return NumString(lr[0]) + `.` + lr[1]
+		//		return NumString(lr[0]) + `.` + reverse(NumString(reverse(lr[1])))
+	}
+	buf := []byte(in)
+	out := make([]byte, len(in)+4)
+	for len(buf) > 3 {
+		out = append(append([]byte(` `), buf[len(buf)-3:]...), out...)
+		buf = buf[:len(buf)-3]
+	}
+	return string(append(buf, out...))
+}
+
+func Bytes2Float(bytes []byte) float64 {
+	return math.Float64frombits(binary.LittleEndian.Uint64(bytes))
+}
+
+func Float2Bytes(float float64) []byte {
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, math.Float64bits(float))
+	return bytes
+}
+
+func StripTags(value string) string {
+	return strings.Replace(strings.Replace(value, `<`, `&lt;`, -1), `>`, `&gt;`, -1)
+}
+
+func GetSharedKey(private, public []byte) (shared []byte, err error) {
+	pubkeyCurve := elliptic.P256()
+
+	private = FillLeft(private)
+	public = FillLeft(public)
+	pub := new(ecdsa.PublicKey)
+	pub.Curve = pubkeyCurve
+	pub.X = new(big.Int).SetBytes(public[0:32])
+	pub.Y = new(big.Int).SetBytes(public[32:])
+
+	bi := new(big.Int).SetBytes(private)
+	priv := new(ecdsa.PrivateKey)
+	priv.PublicKey.Curve = pubkeyCurve
+	priv.D = bi
+	priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
+
+	if priv.Curve.IsOnCurve(pub.X, pub.Y) {
+		x, _ := pub.Curve.ScalarMult(pub.X, pub.Y, priv.D.Bytes())
+		key := sha256.Sum256([]byte(hex.EncodeToString(x.Bytes())))
+		shared = key[:]
+	} else {
+		err = fmt.Errorf("Not IsOnCurve")
+	}
+	return
+}
+
+func GetSharedHex(private, public string) (string, error) {
+	priv, err := hex.DecodeString(private)
+	if err != nil {
+		return ``, err
+	}
+	pub, err := hex.DecodeString(public)
+	if err != nil {
+		return ``, err
+	}
+	shared, err := GetSharedKey(priv, pub)
+	if err != nil {
+		return ``, err
+	}
+	return hex.EncodeToString(shared), nil
+}
+
+func GetShared(public string) (string, string, error) {
+	priv, pub := GenKeys()
+	shared, err := GetSharedHex(priv, public)
+	return shared, pub, err
+}
+
+func EGSMoney(money string) string {
+	digit := consts.EGS_DIGIT
+	if len(money) < digit+1 {
+		money = strings.Repeat(`0`, digit+1-len(money)) + money
+	}
+	money = money[:len(money)-digit] + `.` + money[len(money)-digit:]
+	return strings.TrimRight(strings.TrimRight(money, `0`), `.`)
 }

@@ -17,7 +17,6 @@
 package utils
 
 import (
-	"html/template"
 	"archive/zip"
 	"bytes"
 	"crypto"
@@ -28,6 +27,7 @@ import (
 	crand "crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"html/template"
 	//	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -92,7 +92,7 @@ type DaemonsChansType struct {
 }
 
 var (
-	DltWalletId				= flag.Int64("dltWalletId", 0, "DltWalletId")
+	DltWalletId             = flag.Int64("dltWalletId", 0, "DltWalletId")
 	FirstBlockDir           = flag.String("firstBlockDir", "", "FirstBlockDir")
 	FirstBlockPublicKey     = flag.String("firstBlockPublicKey", "", "FirstBlockPublicKey")
 	FirstBlockNodePublicKey = flag.String("firstBlockNodePublicKey", "", "FirstBlockNodePublicKey")
@@ -113,9 +113,13 @@ var (
 	RollbackToBlockId       = flag.Int64("rollbackToBlockId", 0, "Rollback to block_id")
 	Tls                     = flag.String("tls", "", "Support https. Specify directory for .well-known")
 	DevTools                = flag.Int64("devtools", 0, "Devtools in thrust-shell")
-	DaemonsChans            []*DaemonsChansType
-	eWallets                = &sync.Mutex{}
-	Thrust                  bool
+	BoltDir                 = flag.String("boltDir", GetCurrentDir(), "Bolt directory")
+	BoltPsw                 = flag.String("boltPsw", "", "Bolt password")
+	ApiToken                = flag.String("apiToken", "", "Api Token")
+
+	DaemonsChans []*DaemonsChansType
+	eWallets     = &sync.Mutex{}
+	Thrust       bool
 )
 
 func init() {
@@ -1443,7 +1447,7 @@ func CheckECDSA(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogi
 		// в 1 signs может быть от 1 до 3-х подписей
 		i := 0
 		for {
-			if  i > 2 {
+			if i > 2 {
 				return false, ErrInfoFmt("i > 3")
 			}
 			if len(signs) == 0 {
@@ -1464,7 +1468,6 @@ func CheckECDSA(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogi
 	log.Debug("publicKeys %x", publicKeys)
 	pubkeyCurve := elliptic.P256()
 	signhash := sha256.Sum256([]byte(forSign))
-
 
 	log.Debug("len(signsSlice) %d len(publicKeys) %d", len(signsSlice), len(publicKeys))
 
@@ -2397,6 +2400,7 @@ func DecodeLenInt64(data *[]byte) (int64, error) {
 func FillLeft(slice []byte) []byte {
 	return lib.FillLeft(slice)
 }
+
 /*
 func CreateHtmlFromTemplate(page string, citizenId, stateId int64, params *map[string]string) (string, error) {
 	data, err := DB.Single(`SELECT value FROM "`+Int64ToStr(stateId)+`_pages" WHERE name = ?`, page).String()
@@ -2445,12 +2449,10 @@ func FirstBlock(exit bool) {
 		//		PublicKeyBytes, _ := base64.StdEncoding.DecodeString(string(PublicKey))
 		PublicKeyBytes, _ := hex.DecodeString(string(PublicKey))
 
-
 		PrivateKey, _ := ioutil.ReadFile(*Dir + "/PrivateKey")
 		PrivateHex, _ := hex.DecodeString(string(PrivateKey))
 		PublicKeyBytes2 := lib.PrivateToPublic(PrivateHex)
 		log.Debug("dlt_wallet_id %d", int64(lib.Address(PublicKeyBytes2)))
-
 
 		NodePublicKey := *FirstBlockNodePublicKey
 		log.Debug("NodePublicKey", NodePublicKey)
@@ -2493,7 +2495,6 @@ func FirstBlock(exit bool) {
 		}
 	}
 }
-
 
 func ProceedTemplate(html string, data interface{}) (string, error) {
 

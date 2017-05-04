@@ -32,6 +32,8 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/controllers"
 	"github.com/EGaaS/go-egaas-mvp/packages/daemons"
+	"github.com/EGaaS/go-egaas-mvp/packages/exchangeapi"
+	//	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/schema"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
@@ -150,6 +152,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	daemons.ConfigInit()
 
 	go func() {
+		var err error
 		utils.DB, err = utils.NewDbConnect(configIni)
 		log.Debug("%v", utils.DB)
 		IosLog("utils.DB:" + fmt.Sprintf("%v", utils.DB))
@@ -363,6 +366,10 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		//http.HandleFunc(HandleHttpHost+"/app", controllers.App)
 		http.HandleFunc(HandleHttpHost+"/blockexplorer", controllers.Explorer)
 		http.HandleFunc(HandleHttpHost+"/ajax", controllers.Ajax)
+		http.HandleFunc(HandleHttpHost+"/exchangeapi/newkey", exchangeapi.Api)
+		http.HandleFunc(HandleHttpHost+"/exchangeapi/send", exchangeapi.Api)
+		http.HandleFunc(HandleHttpHost+"/exchangeapi/balance", exchangeapi.Api)
+		http.HandleFunc(HandleHttpHost+"/exchangeapi/history", exchangeapi.Api)
 		//http.HandleFunc(HandleHttpHost+"/ajaxjson", controllers.AjaxJson)
 		//http.HandleFunc(HandleHttpHost+"/tools", controllers.Tools)
 		//http.Handle(HandleHttpHost+"/public/", noDirListing(http.FileServer(http.Dir(*utils.Dir))))
@@ -374,6 +381,10 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 			httpsMux.HandleFunc(HandleHttpHost+"/content", controllers.Content)
 			httpsMux.HandleFunc(HandleHttpHost+"/blockexplorer", controllers.Explorer)
 			httpsMux.HandleFunc(HandleHttpHost+"/ajax", controllers.Ajax)
+			httpsMux.HandleFunc(HandleHttpHost+"/exchangeapi/newkey", exchangeapi.Api)
+			httpsMux.HandleFunc(HandleHttpHost+"/exchangeapi/send", exchangeapi.Api)
+			httpsMux.HandleFunc(HandleHttpHost+"/exchangeapi/balance", exchangeapi.Api)
+			httpsMux.HandleFunc(HandleHttpHost+"/exchangeapi/history", exchangeapi.Api)
 			httpsMux.Handle(HandleHttpHost+"/static/", http.FileServer(&assetfs.AssetFS{Asset: static.Asset, AssetDir: static.AssetDir, Prefix: ""}))
 			go http.ListenAndServeTLS(":443", *utils.Tls+`/fullchain.pem`, *utils.Tls+`/privkey.pem`, httpsMux)
 		}
