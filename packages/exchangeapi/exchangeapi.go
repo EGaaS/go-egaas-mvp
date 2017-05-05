@@ -90,7 +90,6 @@ func InitApi() {
 				log.Fatal(fmt.Errorf(`Check BoltPsw: %v`, err))
 			}
 			if string(decrypted) != forpsw {
-				fmt.Println(`Error: password (boltPsw) is invalid.`)
 				log.Error(`Password (boltPsw) is invalid.`)
 				fmt.Print("\r\nEnter boltPsw password: ")
 				fmt.Scanln(utils.BoltPsw)
