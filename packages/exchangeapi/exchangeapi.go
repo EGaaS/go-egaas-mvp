@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	//	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -45,7 +44,7 @@ type DefaultApi struct {
 	Error string `json:"error"`
 }
 
-func init() {
+func InitApi() {
 	var err error
 	boltDB, err = bolt.Open(*utils.BoltDir+"/exchangeapi.db", 0600, nil)
 	if err != nil {
@@ -78,6 +77,12 @@ func init() {
 		log.Fatal(fmt.Errorf(`BoltDB put/get token: %v`, err))
 	}
 	if len(*utils.BoltPsw) > 0 {
+		if *utils.BoltPsw == `console` {
+			for *utils.BoltPsw == `console` || len(*utils.BoltPsw) == 0 {
+				fmt.Print("\r\nEnter boltPsw password: ")
+				fmt.Scanln(utils.BoltPsw)
+			}
+		}
 		if len(encTest) == 0 {
 			err = boltDB.Update(func(tx *bolt.Tx) error {
 				var encrypted []byte
@@ -93,12 +98,19 @@ func init() {
 				log.Fatal(fmt.Errorf(`BoltDB init: %v`, err))
 			}
 		} else {
-			decrypted, err := decryptBytes(encTest)
-			if err != nil {
-				log.Fatal(fmt.Errorf(`Check BoltPsw: %v`, err))
-			}
-			if string(decrypted) != forpsw {
-				log.Fatal(fmt.Errorf(`Wrong BoltPsw`))
+			var decrypted []byte
+			for true {
+				decrypted, err = decryptBytes(encTest)
+				if err != nil {
+					log.Fatal(fmt.Errorf(`Check BoltPsw: %v`, err))
+				}
+				if string(decrypted) != forpsw {
+					fmt.Println(`Error: password (boltPsw) is invalid.`)
+					fmt.Print("\r\nEnter boltPsw password: ")
+					fmt.Scanln(utils.BoltPsw)
+				} else {
+					break
+				}
 			}
 		}
 	} else {
