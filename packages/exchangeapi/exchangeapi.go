@@ -76,12 +76,32 @@ func InitApi() {
 	if err != nil {
 		log.Fatal(fmt.Errorf(`BoltDB put/get token: %v`, err))
 	}
-	if len(*utils.BoltPsw) > 0 {
-		if *utils.BoltPsw == `console` {
-			for *utils.BoltPsw == `console` || len(*utils.BoltPsw) == 0 {
+	getPassword := func() {
+		for *utils.BoltPsw == `console` || len(*utils.BoltPsw) == 0 {
+			fmt.Print("\r\nEnter boltPsw password: ")
+			fmt.Scanln(utils.BoltPsw)
+		}
+	}
+	checkPassword := func() {
+		var decrypted []byte
+		for true {
+			decrypted, err = decryptBytes(encTest)
+			if err != nil {
+				log.Fatal(fmt.Errorf(`Check BoltPsw: %v`, err))
+			}
+			if string(decrypted) != forpsw {
+				fmt.Println(`Error: password (boltPsw) is invalid.`)
+				log.Error(`Password (boltPsw) is invalid.`)
 				fmt.Print("\r\nEnter boltPsw password: ")
 				fmt.Scanln(utils.BoltPsw)
+			} else {
+				break
 			}
+		}
+	}
+	if len(*utils.BoltPsw) > 0 {
+		if *utils.BoltPsw == `console` {
+			getPassword()
 		}
 		if len(encTest) == 0 {
 			err = boltDB.Update(func(tx *bolt.Tx) error {
@@ -98,24 +118,13 @@ func InitApi() {
 				log.Fatal(fmt.Errorf(`BoltDB init: %v`, err))
 			}
 		} else {
-			var decrypted []byte
-			for true {
-				decrypted, err = decryptBytes(encTest)
-				if err != nil {
-					log.Fatal(fmt.Errorf(`Check BoltPsw: %v`, err))
-				}
-				if string(decrypted) != forpsw {
-					fmt.Println(`Error: password (boltPsw) is invalid.`)
-					fmt.Print("\r\nEnter boltPsw password: ")
-					fmt.Scanln(utils.BoltPsw)
-				} else {
-					break
-				}
-			}
+			checkPassword()
 		}
 	} else {
 		if len(encTest) > 0 {
-			log.Fatal(fmt.Errorf(`-boltPsw parameter must be specified`))
+			log.Error(`-boltPsw parameter must be specified`)
+			getPassword()
+			checkPassword()
 		}
 	}
 }
