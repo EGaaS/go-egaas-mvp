@@ -36,8 +36,10 @@ import (
 	//	b58 "github.com/jbenet/go-base58"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	//	_ "github.com/go-sql-driver/mysql"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	_ "github.com/lib/pq"
 	"github.com/op/go-logging"
 	"github.com/shopspring/decimal"
@@ -46,6 +48,8 @@ import (
 // Mutex for locking DB
 var Mutex = &sync.Mutex{}
 var log = logging.MustGetLogger("daemons")
+var hashProvider = crypto.MD5
+var cryptoProvider = crypto.AESCFB
 
 // DB is a database variable
 var DB *DCDB
@@ -460,9 +464,13 @@ func (db *DCDB) OneRow(query string, args ...interface{}) *oneRow {
 
 // InsertInLogTx inserts md5 hash and time into log_transaction
 func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
-	txMD5 := Md5(binaryTx)
-	err := db.ExecSQL("INSERT INTO log_transactions (hash, time) VALUES ([hex], ?)", txMD5, time)
-	log.Debug("INSERT INTO log_transactions (hash, time) VALUES ([hex], %s)", txMD5)
+	txHash, err := crypto.HashBytes(binaryTx, hashProvider)
+	if err != nil {
+		log.Fatal("Hashing error")
+	}
+	txHash = utils.BinToHex(txHash)
+	err = db.ExecSQL("INSERT INTO log_transactions (hash, time) VALUES ([hex], ?)", txHash, time)
+	log.Debug("INSERT INTO log_transactions (hash, time) VALUES ([hex], %s)", txHash)
 	if err != nil {
 		return ErrInfo(err)
 	}
@@ -471,9 +479,13 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 
 // DelLogTx deletes a row with the specified md5 hash in log_transaction
 func (db *DCDB) DelLogTx(binaryTx []byte) error {
-	txMD5 := Md5(binaryTx)
-	affected, err := db.ExecSQLGetAffect("DELETE FROM log_transactions WHERE hex(hash) = ?", txMD5)
-	log.Debug("DELETE FROM log_transactions WHERE hex(hash) = %s / affected = %d", txMD5, affected)
+	txHash, err := crypto.HashBytes(binaryTx, hashProvider)
+	if err != nil {
+		log.Fatal("Hashig error")
+	}
+	txHash = utils.BinToHex(txHash)
+	affected, err := db.ExecSQLGetAffect("DELETE FROM log_transactions WHERE hex(hash) = ?", txHash)
+	log.Debug("DELETE FROM log_transactions WHERE hex(hash) = %s / affected = %d", txHash, affected)
 	if err != nil {
 		return ErrInfo(err)
 	}
@@ -1249,7 +1261,8 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 
 	log.Debug("binaryTx %x", *binaryTx)
 	log.Debug("iv %s", iv)
-	decrypted, err := DecryptCFB(iv, *binaryTx, decKey)
+
+	decrypted, err := crypto.DecryptBytes(*binaryTx, decKey, iv, cryptoProvider)
 	if err != nil {
 		return nil, nil, nil, ErrInfo(err)
 	}
@@ -1282,14 +1295,18 @@ func (db *DCDB) GetBinSign(forSign string) ([]byte, error) {
 
 // InsertReplaceTxInQueue replaces a row in queue_tx
 func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
-
-	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", Md5(data))
-	err := db.ExecSQL("DELETE FROM queue_tx WHERE hex(hash) = ?", Md5(data))
+	hash, err := crypto.HashBytes(data, hashProvider)
+	if err != nil {
+		log.Fatal("Ошибка хеширования")
+	}
+	hash = utils.BinToHex(hash)
+	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", hash)
+	err := db.ExecSQL("DELETE FROM queue_tx WHERE hex(hash) = ?", hash)
 	if err != nil {
 		return ErrInfo(err)
 	}
-	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", Md5(data), BinToHex(data))
-	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", Md5(data), BinToHex(data))
+	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, BinToHex(data))
+	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, BinToHex(data))
 	if err != nil {
 		return ErrInfo(err)
 	}
@@ -1514,14 +1531,18 @@ func (db *DCDB) IsTable(tblname string) bool {
 
 // SendTx writes transaction info to transactions_status & queue_tx
 func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
-	md5 := Md5(data)
+	hash, err := crypto.HashBytes(data, hashProvider)
+	if err != nil {
+		log.Fatal("Ошибка хеширования")
+	}
+	hash = BinToHex(hash)
 	err = db.ExecSQL(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
-			[hex], ?, ?, ?, ? )`, md5, time.Now().Unix(), txType, adminWallet, adminWallet)
+			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), txType, adminWallet, adminWallet)
 	if err != nil {
 		return err
 	}
-	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", md5, hex.EncodeToString(data))
+	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, hex.EncodeToString(data))
 	if err != nil {
 		return err
 	}

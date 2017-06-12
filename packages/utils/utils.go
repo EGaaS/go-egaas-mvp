@@ -19,10 +19,6 @@ package utils
 import (
 	"archive/zip"
 	"bytes"
-	"crypto"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/sha256"
 	//	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
@@ -38,6 +34,7 @@ import (
 	"net/http"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/textproc"
@@ -189,14 +186,14 @@ func ParseBlockHeader(binaryBlock *[]byte) *BlockData {
 	result := new(BlockData)
 	// распарсим заголовок блока // parse the heading of a block
 	/*
-			Заголовок // the heading
-			TYPE (0-блок, 1-тр-я)        1 // TYPE(0-block, 1-transaction)
-			BLOCK_ID   				       4
-			TIME       					       4
-			WALLET_ID                         1-8
-			state_id                              1
-			SIGN                               от 128 до 512 байт. Подпись от TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT // from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
-	Далее - тело блока (Тр-ии) // further is body block (transaction)
+				Заголовок // the heading
+				TYPE (0-блок, 1-тр-я)        1 // TYPE(0-block, 1-transaction)
+				BLOCK_ID   				       4
+				TIME       					       4
+				WALLET_ID                         1-8
+				state_id                              1
+				SIGN                               от 128 до 512 байт. Подпись от TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT // from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
+		Далее - тело блока (Тр-ии) // further is body block (transaction)
 	*/
 	result.BlockId = BinToDecBytesShift(binaryBlock, 4)
 	result.Time = BinToDecBytesShift(binaryBlock, 4)
@@ -1064,17 +1061,6 @@ func CopyFileContents(src, dst string) error {
 	return ErrInfo(err)
 }
 
-// RandSeq generates a random string
-func RandSeq(n int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	rand.Seed(time.Now().UnixNano())
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
 // CheckSign checks the signature
 func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin bool) (bool, error) {
 	defer func() {
@@ -1108,52 +1094,6 @@ func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin
 	return lib.CheckECDSA(publicKeys[0], forSign, signsSlice[0])
 }
 
-// Md5 returns the hex MD5 hash
-func Md5(v interface{}) []byte {
-	var msg []byte
-	switch v.(type) {
-	case string:
-		msg = []byte(v.(string))
-	case []byte:
-		msg = v.([]byte)
-	}
-	sh := crypto.MD5.New()
-	sh.Write(msg)
-	hash := sh.Sum(nil)
-	return BinToHex(hash)
-}
-
-// DSha256 returns the double calculation of SHA256 hash
-func DSha256(v interface{}) []byte {
-	var data []byte
-	switch v.(type) {
-	case string:
-		data = []byte(v.(string))
-	case []byte:
-		data = v.([]byte)
-	}
-	isha256 := sha256.New()
-	isha256.Write(data)
-	hashSha256 := fmt.Sprintf("%x", isha256.Sum(nil))
-	isha256 = sha256.New()
-	isha256.Write([]byte(hashSha256))
-	return []byte(fmt.Sprintf("%x", isha256.Sum(nil)))
-}
-
-// Sha256 returns SHA256 hash
-func Sha256(v interface{}) []byte {
-	var data []byte
-	switch v.(type) {
-	case string:
-		data = []byte(v.(string))
-	case []byte:
-		data = v.([]byte)
-	}
-	isha256 := sha256.New()
-	isha256.Write(data)
-	return []byte(fmt.Sprintf("%x", isha256.Sum(nil)))
-}
-
 // GetMrklroot returns MerkleTreeRoot
 func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 	var mrklSlice [][]byte
@@ -1175,7 +1115,7 @@ func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 			// separate one transaction from the list of transactions
 			if txSize > 0 {
 				transactionBinaryData := BytesShift(&binaryData, txSize)
-				dSha256Hash := DSha256(transactionBinaryData)
+				dSha256Hash := crypto.DSha256(transactionBinaryData)
 				mrklSlice = append(mrklSlice, dSha256Hash)
 				//if len(transactionBinaryData) > 500000 {
 				//	ioutil.WriteFile(string(dSha256Hash)+"-"+Int64ToStr(txSize), transactionBinaryData, 0644)
@@ -1217,7 +1157,7 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 	log.Debug("dataArray: %s", dataArray)
 	result := make(map[int32][][]byte)
 	for _, v := range dataArray {
-		result[0] = append(result[0], DSha256(v))
+		result[0] = append(result[0], crypto.DSha256(v))
 	}
 	var j int32
 	for len(result[j]) > 1 {
@@ -1230,9 +1170,9 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 				}
 			} else {
 				if _, ok := result[j+1]; !ok {
-					result[j+1] = [][]byte{DSha256(append(result[j][i], result[j][i+1]...))}
+					result[j+1] = [][]byte{crypto.DSha256(append(result[j][i], result[j][i+1]...))}
 				} else {
-					result[j+1] = append(result[j+1], DSha256([]byte(append(result[j][i], result[j][i+1]...))))
+					result[j+1] = append(result[j+1], crypto.DSha256([]byte(append(result[j][i], result[j][i+1]...))))
 				}
 			}
 		}
@@ -1253,37 +1193,6 @@ func TypeInt(txType string) int64 {
 		}
 	}
 	return 0
-}
-
-// EncryptCFB encrypts the text with AES CFB
-func EncryptCFB(text, key, iv []byte) ([]byte, []byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, nil, ErrInfo(err)
-	}
-	str := text
-	if len(iv) == 0 {
-		ciphertext := []byte(RandSeq(16))
-		iv = ciphertext[:16]
-	}
-	encrypter := cipher.NewCFBEncrypter(block, iv)
-	encrypted := make([]byte, len(str))
-	encrypter.XORKeyStream(encrypted, str)
-
-	return append(iv, encrypted...), iv, nil
-}
-
-// DecryptCFB decrypts the ciphertext with AES CFB
-func DecryptCFB(iv, encrypted, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	decrypter := cipher.NewCFBDecrypter(block, iv)
-	decrypted := make([]byte, len(encrypted))
-	decrypter.XORKeyStream(decrypted, encrypted)
-
-	return decrypted, nil
 }
 
 /*
