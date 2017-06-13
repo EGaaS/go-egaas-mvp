@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -67,7 +67,7 @@ func (c *Controller) Accounts() (string, error) {
 				amount = amount[:len(amount)-digit] + `.` + amount[len(amount)-digit:]
 			}
 		}
-		data = append(data, AccountInfo{AccountID: account, Address: lib.AddressToString(account),
+		data = append(data, AccountInfo{AccountID: account, Address: converter.AddressToString(account),
 			Amount: amount})
 	}
 

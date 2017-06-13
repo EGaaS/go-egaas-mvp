@@ -31,6 +31,7 @@ import (
 	"unicode"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/astaxie/beego/config"
@@ -76,6 +77,11 @@ var (
 	// в гоурутинах используется только для чтения
 	// In gourutin is used only for reading
 	globalLangReadOnly map[int]map[string]string
+	hashProv           = crypto.SHA256
+	doubleHashProv     = crypto.DoubleSHA256
+	signProv           = crypto.ECDSA
+	ellipticSize       = crypto.Elliptic256
+	cryptoProv         = crypto.AESCFB
 )
 
 // SessInit initializes sessions

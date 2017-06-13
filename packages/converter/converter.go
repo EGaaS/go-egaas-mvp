@@ -1,0 +1,529 @@
+package converter
+
+import (
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"math"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/shopspring/decimal"
+	log "github.com/sirupsen/logrus"
+)
+
+//TODO параметризировать
+func FillLeft(slice []byte) []byte {
+	if len(slice) >= 32 {
+		return slice
+	}
+	return append(make([]byte, 32-len(slice)), slice...)
+}
+
+//TODO перенести в конвертеры
+func EncodeLenInt64(data *[]byte, x int64) *[]byte {
+	var length int
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(x))
+	for length = 8; length > 0 && buf[length-1] == 0; length-- {
+	}
+	*data = append(append(*data, byte(length)), buf[:length]...)
+	return data
+}
+
+// TODO перенести в конвертеры
+func EncodeLenByte(out *[]byte, buf []byte) *[]byte {
+	*out = append(append(*out, EncodeLength(int64(len(buf)))...), buf...)
+	return out
+}
+
+// TODO перенести в конвертеры
+// EncodeLength encodes int64 number to []byte. If it is less than 128 then it returns []byte{length}.
+// Otherwise, it returns (0x80 | len of int64) + int64 as BigEndian []byte
+//
+//   67 => 0x43
+//   1024 => 0x820400
+//   1000000 => 0x830f4240
+//
+func EncodeLength(length int64) []byte {
+	if length >= 0 && length <= 127 {
+		return []byte{byte(length)}
+	}
+	buf := make([]byte, 9)
+	binary.BigEndian.PutUint64(buf[1:], uint64(length))
+	i := 1
+	for ; buf[i] == 0 && i < 8; i++ {
+	}
+	buf[0] = 0x80 | byte(9-i)
+	return append(buf[:1], buf[i:]...)
+}
+
+//TODO перенести в конвертеры
+// DecodeLenInt64 gets int64 from []byte and shift the slice. The []byte should  be
+// encoded with EncodeLengthPlusInt64.
+func DecodeLenInt64(data *[]byte) (int64, error) {
+	if len(*data) == 0 {
+		return 0, nil
+	}
+	length := int((*data)[0]) + 1
+	if len(*data) < length {
+		return 0, fmt.Errorf(`length of data %d < %d`, len(*data), length)
+	}
+	buf := make([]byte, 8)
+	copy(buf, (*data)[1:length])
+	x := int64(binary.LittleEndian.Uint64(buf))
+	*data = (*data)[length:]
+	return x, nil
+}
+
+// TODO перенести в конвертеры
+// DecodeLength decodes []byte to int64 and shifts buf. Bytes must be encoded with EncodeLength function.
+//
+//   0x43 => 67
+//   0x820400 => 1024
+//   0x830f4240 => 1000000
+//
+func DecodeLength(buf *[]byte) (ret int64, err error) {
+	if len(*buf) == 0 {
+		return
+	}
+	length := (*buf)[0]
+	if (length & 0x80) != 0 {
+		length &= 0x7F
+		if len(*buf) < int(length+1) {
+			return 0, fmt.Errorf(`input slice has small size`)
+		}
+		ret = int64(binary.BigEndian.Uint64(append(make([]byte, 8-length), (*buf)[1:length+1]...)))
+	} else {
+		ret = int64(length)
+		length = 0
+	}
+	*buf = (*buf)[length+1:]
+	return
+}
+
+// TODO перенести в конвертеры
+// BinMarshal converts v parameter to []byte slice.
+func BinMarshal(out *[]byte, v interface{}) (*[]byte, error) {
+	var err error
+
+	t := reflect.ValueOf(v)
+	if *out == nil {
+		*out = make([]byte, 0, 2048)
+	}
+
+	switch t.Kind() {
+	case reflect.Uint8, reflect.Int8:
+		*out = append(*out, uint8(t.Uint()))
+	case reflect.Uint32:
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, uint32(t.Uint()))
+		*out = append(*out, tmp...)
+	case reflect.Int32:
+		if uint32(t.Int()) < 128 {
+			*out = append(*out, uint8(t.Int()))
+		} else {
+			var i uint8
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, uint32(t.Int()))
+			for ; i < 4; i++ {
+				if tmp[i] != uint8(0) {
+					break
+				}
+			}
+			*out = append(*out, 128+4-i)
+			*out = append(*out, tmp[i:]...)
+		}
+	case reflect.Float64:
+		bin := float2Bytes(t.Float())
+		*out = append(*out, bin...)
+	case reflect.Int64:
+		EncodeLenInt64(out, t.Int())
+	case reflect.Uint64:
+		tmp := make([]byte, 8)
+		binary.BigEndian.PutUint64(tmp, t.Uint())
+		*out = append(*out, tmp...)
+	case reflect.String:
+		*out = append(append(*out, EncodeLength(int64(t.Len()))...), []byte(t.String())...)
+	case reflect.Struct:
+		for i := 0; i < t.NumField(); i++ {
+			if out, err = BinMarshal(out, t.Field(i).Interface()); err != nil {
+				return out, err
+			}
+		}
+	case reflect.Slice:
+		*out = append(append(*out, EncodeLength(int64(t.Len()))...), t.Bytes()...)
+	case reflect.Ptr:
+		if out, err = BinMarshal(out, t.Elem().Interface()); err != nil {
+			return out, err
+		}
+	default:
+		return out, fmt.Errorf(`unsupported type of BinMarshal`)
+	}
+	return out, nil
+}
+
+// TODO перенести в конвертеры
+// BinUnmarshal converts []byte slice which has been made with BinMarshal to v
+func BinUnmarshal(out *[]byte, v interface{}) error {
+	t := reflect.ValueOf(v)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if len(*out) == 0 {
+		return fmt.Errorf(`input slice is empty`)
+	}
+	switch t.Kind() {
+	case reflect.Uint8, reflect.Int8:
+		val := uint64((*out)[0])
+		t.SetUint(val)
+		*out = (*out)[1:]
+	case reflect.Uint32:
+		t.SetUint(uint64(binary.BigEndian.Uint32((*out)[:4])))
+		*out = (*out)[4:]
+	case reflect.Int32:
+		val := (*out)[0]
+		if val < 128 {
+			t.SetInt(int64(val))
+			*out = (*out)[1:]
+		} else {
+			var i uint8
+			size := val - 128
+			tmp := make([]byte, 4)
+			if len(*out) <= int(size) || size > 4 {
+				return fmt.Errorf(`wrong input data`)
+			}
+			for ; i < size; i++ {
+				tmp[4-size+i] = (*out)[i+1]
+			}
+			t.SetInt(int64(binary.BigEndian.Uint32(tmp)))
+			*out = (*out)[size+1:]
+		}
+	case reflect.Float64:
+		t.SetFloat(bytes2Float((*out)[:8]))
+		*out = (*out)[8:]
+	case reflect.Int64:
+		val, err := DecodeLenInt64(out)
+		if err != nil {
+			return err
+		}
+		t.SetInt(val)
+	case reflect.Uint64:
+		t.SetUint(binary.BigEndian.Uint64((*out)[:8]))
+		*out = (*out)[8:]
+	case reflect.String:
+		val, err := DecodeLength(out)
+		if err != nil {
+			return err
+		}
+		if len(*out) < int(val) {
+			return fmt.Errorf(`input slice is short`)
+		}
+		t.SetString(string((*out)[:val]))
+		*out = (*out)[val:]
+	case reflect.Struct:
+		for i := 0; i < t.NumField(); i++ {
+			if err := BinUnmarshal(out, t.Field(i).Addr().Interface()); err != nil {
+				return err
+			}
+		}
+	case reflect.Slice:
+		val, err := DecodeLength(out)
+		if err != nil {
+			return err
+		}
+		if len(*out) < int(val) {
+			return fmt.Errorf(`input slice is short`)
+		}
+		t.SetBytes((*out)[:val])
+		*out = (*out)[val:]
+	default:
+		return fmt.Errorf(`unsupported type of BinUnmarshal %v`, t.Kind())
+	}
+	return nil
+}
+
+// TODO перенести в отдельный модуль, может быть конвертеры
+// EscapeName deletes unaccessable characters for input name(s)
+func EscapeName(name string) string {
+	out := make([]byte, 1, len(name)+2)
+	out[0] = '"'
+	available := `() ,`
+	for _, ch := range []byte(name) {
+		if (ch >= '0' && ch <= '9') || ch == '_' || (ch >= 'a' && ch <= 'z') ||
+			(ch >= 'A' && ch <= 'Z') || strings.IndexByte(available, ch) >= 0 {
+			out = append(out, ch)
+		}
+	}
+	if strings.IndexAny(string(out), available) >= 0 {
+		return string(out[1:])
+	}
+	return string(append(out, '"'))
+}
+
+// Float2Bytes converts float64 to []byte
+func float2Bytes(float float64) []byte {
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, math.Float64bits(float))
+	return bytes
+}
+
+// Bytes2Float converts []byte to float64
+func bytes2Float(bytes []byte) float64 {
+	return math.Float64frombits(binary.LittleEndian.Uint64(bytes))
+}
+
+// UInt32ToStr converts uint32 to string
+func UInt32ToStr(num uint32) string {
+	return strconv.FormatInt(int64(num), 10)
+}
+
+// Int64ToStr converts int64 to string
+func Int64ToStr(num int64) string {
+	return strconv.FormatInt(num, 10)
+}
+
+// Int64ToByte converts int64 to []byte
+func Int64ToByte(num int64) []byte {
+	return []byte(strconv.FormatInt(num, 10))
+}
+
+// IntToStr converts integer to string
+func IntToStr(num int) string {
+	return strconv.Itoa(num)
+}
+
+// DecToBin converts interface to []byte
+func DecToBin(v interface{}, sizeBytes int64) []byte {
+	var dec int64
+	switch v.(type) {
+	case int:
+		dec = int64(v.(int))
+	case int64:
+		dec = v.(int64)
+	case string:
+		dec = StrToInt64(v.(string))
+	}
+	Hex := fmt.Sprintf("%0"+Int64ToStr(sizeBytes*2)+"x", dec)
+	return HexToBin([]byte(Hex))
+}
+
+// BinToHex converts interface to hex []byte
+func BinToHex(v interface{}) []byte {
+	var bin []byte
+	switch v.(type) {
+	case []byte:
+		bin = v.([]byte)
+	case int64:
+		bin = Int64ToByte(v.(int64))
+	case string:
+		bin = []byte(v.(string))
+	}
+	return []byte(fmt.Sprintf("%x", bin))
+}
+
+// HexToBin converts hex interface to binary []byte
+func HexToBin(ihexdata interface{}) []byte {
+	var hexdata string
+	switch ihexdata.(type) {
+	case []byte:
+		hexdata = string(ihexdata.([]byte))
+	case int64:
+		hexdata = Int64ToStr(ihexdata.(int64))
+	case string:
+		hexdata = ihexdata.(string)
+	}
+	var str []byte
+	str, err := hex.DecodeString(hexdata)
+	if err != nil {
+		log.Fatal("error")
+	}
+	return str
+}
+
+// BinToDec converts input binary []byte to int64
+func BinToDec(bin []byte) int64 {
+	var a uint64
+	l := len(bin)
+	for i, b := range bin {
+		shift := uint64((l - i - 1) * 8)
+		a |= uint64(b) << shift
+	}
+	return int64(a)
+}
+
+// BinToDecBytesShift converts the input binary []byte to int64 and shifts the input bin
+func BinToDecBytesShift(bin *[]byte, num int64) int64 {
+	return BinToDec(BytesShift(bin, num))
+}
+
+// BytesShift returns the index bytes of the input []byte and shift str pointer
+func BytesShift(str *[]byte, index int64) (ret []byte) {
+	if int64(len(*str)) < index || index == 0 {
+		*str = (*str)[:0]
+		return []byte{}
+	}
+	ret, *str = (*str)[:index], (*str)[index:]
+	return
+}
+
+// InterfaceToStr converts the interfaces to the string
+func InterfaceToStr(v interface{}) string {
+	var str string
+	switch v.(type) {
+	case int:
+		str = IntToStr(v.(int))
+	case float64:
+		str = Float64ToStr(v.(float64))
+	case int64:
+		str = Int64ToStr(v.(int64))
+	case string:
+		str = v.(string)
+	case []byte:
+		str = string(v.([]byte))
+	default:
+		if reflect.TypeOf(v).String() == `decimal.Decimal` {
+			str = v.(decimal.Decimal).String()
+		}
+	}
+	return str
+}
+
+// InterfaceSliceToStr converts the slice of interfaces to the slice of strings
+func InterfaceSliceToStr(i []interface{}) []string {
+	var str []string
+	for _, v := range i {
+		str = append(str, InterfaceToStr(v))
+	}
+	return str
+}
+
+// InterfaceToFloat64 converts the interfaces to the float64
+func InterfaceToFloat64(i interface{}) float64 {
+	var result float64
+	switch i.(type) {
+	case int:
+		result = float64(i.(int))
+	case float64:
+		result = i.(float64)
+	case int64:
+		result = float64(i.(int64))
+	case string:
+		result = StrToFloat64(i.(string))
+	case []byte:
+		result = BytesToFloat64(i.([]byte))
+	}
+	return result
+}
+
+// BytesShiftReverse gets []byte from the end of the input and cut the input pointer to []byte
+func BytesShiftReverse(str *[]byte, v interface{}) []byte {
+	var index int64
+	switch v.(type) {
+	case int:
+		index = int64(v.(int))
+	case int64:
+		index = v.(int64)
+	}
+
+	var substr []byte
+	slen := int64(len(*str))
+	if slen < index {
+		index = slen
+	}
+	substr = (*str)[slen-index:]
+	*str = (*str)[:slen-index]
+	return substr
+}
+
+// StrToInt64 converts string to int64
+func StrToInt64(s string) int64 {
+	int64, _ := strconv.ParseInt(s, 10, 64)
+	return int64
+}
+
+// BytesToInt64 converts []bytes to int64
+func BytesToInt64(s []byte) int64 {
+	int64, _ := strconv.ParseInt(string(s), 10, 64)
+	return int64
+}
+
+// StrToUint64 converts string to the unsinged int64
+func StrToUint64(s string) uint64 {
+	ret, _ := strconv.ParseUint(s, 10, 64)
+	return ret
+}
+
+// StrToInt converts string to integer
+func StrToInt(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
+}
+
+// Float64ToStr converts float64 to string
+func Float64ToStr(f float64) string {
+	return strconv.FormatFloat(f, 'f', 13, 64)
+}
+
+// StrToFloat64 converts string to float64
+func StrToFloat64(s string) float64 {
+	Float64, _ := strconv.ParseFloat(s, 64)
+	return Float64
+}
+
+// BytesToFloat64 converts []byte to float64
+func BytesToFloat64(s []byte) float64 {
+	Float64, _ := strconv.ParseFloat(string(s), 64)
+	return Float64
+}
+
+// BytesToInt converts []byte to integer
+func BytesToInt(s []byte) int {
+	i, _ := strconv.Atoi(string(s))
+	return i
+}
+
+// StrToMoney rounds money string to float64
+func StrToMoney(str string) float64 {
+	ind := strings.Index(str, ".")
+	new := ""
+	if ind != -1 {
+		end := 2
+		if len(str[ind+1:]) > 1 {
+			end = 3
+		}
+		new = str[:ind] + "." + str[ind+1:ind+end]
+	} else {
+		new = str
+	}
+	return StrToFloat64(new)
+}
+
+// AddressToString converts int64 address to EGAAS address as XXXX-...-XXXX.
+func AddressToString(address int64) (ret string) {
+	num := strconv.FormatUint(uint64(address), 10)
+	val := []byte(strings.Repeat("0", 20-len(num)) + num)
+
+	for i := 0; i < 4; i++ {
+		ret += string(val[i*4:(i+1)*4]) + `-`
+	}
+	ret += string(val[16:])
+	return
+}
+
+// EncodeLengthPlusData encoding interface into []byte
+func EncodeLengthPlusData(idata interface{}) []byte {
+	var data []byte
+	switch idata.(type) {
+	case int64:
+		data = Int64ToByte(idata.(int64))
+	case string:
+		data = []byte(idata.(string))
+	case []byte:
+		data = idata.([]byte)
+	}
+	//log.Debug("data: %x", data)
+	//log.Debug("len data: %d", len(data))
+	return append(EncodeLength(int64(len(data))), data...)
+}

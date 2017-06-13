@@ -23,14 +23,19 @@ import (
 	//	"crypto/x509"
 	//	"encoding/pem"
 	"fmt"
+	"log"
 	"time"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 //var err error
+var hashProvider = crypto.DoubleSHA256
+var signProvider = crypto.ECDSA
+var ellipticSize = crypto.Elliptic256
 
 // BlockGenerator generates blocks
 func BlockGenerator(chBreaker chan bool, chAnswer chan string) {
@@ -68,7 +73,7 @@ BEGIN:
 		d.sleepTime = 1
 
 		logger.Info(GoroutineName)
-		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
+		MonitorDaemonCh <- []string{GoroutineName, converter.Int64ToStr(time.Now().Unix())}
 
 		// проверим, не нужно ли нам выйти из цикла
 		// Check, whether we need to get out of the cycle
@@ -193,19 +198,19 @@ BEGIN:
 
 		// учтем прошедшее время
 		// take into account the passed time
-		sleep := int64(sleepTime) - (utils.Time() - prevBlock["time"])
+		sleep := int64(sleepTime) - (time.Now().Unix() - prevBlock["time"])
 		if sleep < 0 {
 			sleep = 0
 		}
 
-		logger.Debug("utils.Time() %v / prevBlock[time] %v", utils.Time(), prevBlock["time"])
+		logger.Debug("time.Now().Unix() %v / prevBlock[time] %v", time.Now().Unix(), prevBlock["time"])
 
 		logger.Debug("sleep %v", sleep)
 
 		// спим
 		// sleep
 		for i := 0; i < int(sleep); i++ {
-			utils.Sleep(1)
+			time.Sleep(time.Second)
 		}
 
 		// пока мы спали последний блок, скорее всего, изменился. Но с большой вероятностью наше место в очереди не изменилось. А если изменилось, то ничего страшного не прозойдет.
@@ -340,16 +345,23 @@ BEGIN:
 				transactionType := data[1:2]
 				logger.Debug("%v", transactionType)
 				logger.Debug("%x", transactionType)
-				mrklArray = append(mrklArray, utils.DSha256(data))
+				newhash, err := crypto.HashBytes(data, hashProvider)
+				if err != nil {
+					log.Fatal("Hashing error")
+				}
+				mrklArray = append(mrklArray, newhash)
 				logger.Debug("mrklArray %v", mrklArray)
 
-				hashMd5 := utils.Md5(data)
-				logger.Debug("hashMd5: %s", hashMd5)
+				hash2, err := crypto.HashBytes(data, hashProvider)
+				if err != nil {
+					log.Fatal(err)
+				}
+				logger.Debug("hashSHA256: %s", hash2)
 
 				dataHex := fmt.Sprintf("%x", data)
 				logger.Debug("dataHex %v", dataHex)
 
-				blockDataTx = append(blockDataTx, utils.EncodeLengthPlusData([]byte(data))...)
+				blockDataTx = append(blockDataTx, converter.EncodeLengthPlusData([]byte(data))...)
 
 				if configIni["db_type"] == "postgresql" {
 					usedTransactions += "decode('" + hash + "', 'hex'),"
@@ -372,7 +384,7 @@ BEGIN:
 			//			forSign = fmt.Sprintf("0,%v,%v,%v,%v,%v,%s", newBlockID, prevBlock[`hash`], Time, myWalletID, myStateID, string(mrklRoot))
 			logger.Debug("forSign: %v", forSign)
 			//		bytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, utils.HashSha1(forSign))
-			bytes, err := lib.SignECDSA(nodePrivateKey, forSign)
+			bytes, err := crypto.Sign(nodePrivateKey, forSign, hashProvider, signProvider, ellipticSize)
 			if err != nil {
 				if d.dPrintSleep(fmt.Sprintf("err %v %v", err, utils.GetParent()), d.sleepTime) {
 					break BEGIN
@@ -385,18 +397,18 @@ BEGIN:
 
 			// готовим заголовок
 			// Prepare the heading
-			newBlockIDBinary := utils.DecToBin(newBlockID, 4)
-			timeBinary := utils.DecToBin(Time, 4)
-			stateIDBinary := utils.DecToBin(myStateID, 1)
+			newBlockIDBinary := converter.DecToBin(newBlockID, 4)
+			timeBinary := converter.DecToBin(Time, 4)
+			stateIDBinary := converter.DecToBin(myStateID, 1)
 
 			// заголовок
 			// heading
-			blockHeader := utils.DecToBin(0, 1)
+			blockHeader := converter.DecToBin(0, 1)
 			blockHeader = append(blockHeader, newBlockIDBinary...)
 			blockHeader = append(blockHeader, timeBinary...)
-			lib.EncodeLenInt64(&blockHeader, myWalletID)
+			converter.EncodeLenInt64(&blockHeader, myWalletID)
 			blockHeader = append(blockHeader, stateIDBinary...)
-			blockHeader = append(blockHeader, utils.EncodeLengthPlusData(signatureBin)...)
+			blockHeader = append(blockHeader, converter.EncodeLengthPlusData(signatureBin)...)
 
 			// сам блок
 			// block itself

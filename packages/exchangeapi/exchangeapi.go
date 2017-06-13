@@ -17,12 +17,12 @@
 package exchangeapi
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/boltdb/bolt"
 	"github.com/op/go-logging"
@@ -33,10 +33,13 @@ const (
 )
 
 var (
-	boltDB   *bolt.DB
-	bucket   = []byte(`Keys`)
-	settings = []byte(`Settings`)
-	log      = logging.MustGetLogger("exchangeapi")
+	boltDB       *bolt.DB
+	bucket       = []byte(`Keys`)
+	settings     = []byte(`Settings`)
+	log          = logging.MustGetLogger("exchangeapi")
+	hashProv     = crypto.SHA256
+	cryptoProv   = crypto.AESCFB
+	ellipticSize = crypto.Elliptic256
 )
 
 // DefaultAPI is the default answer structure
@@ -130,8 +133,11 @@ func InitAPI() {
 }
 
 func encryptBytes(input []byte) (output []byte, err error) {
-	pass := sha256.Sum256([]byte(*utils.BoltPsw))
-	output, _, err = utils.EncryptCFB(input, pass[:], make([]byte, 16))
+	pass, err := crypto.HashBytes([]byte(*utils.BoltPsw), hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	output, _, err = crypto.EncryptBytes(input, pass[:], make([]byte, 16), cryptoProv)
 	output = output[16:]
 	if err != nil {
 		return
@@ -140,8 +146,11 @@ func encryptBytes(input []byte) (output []byte, err error) {
 }
 
 func decryptBytes(input []byte) (output []byte, err error) {
-	pass := sha256.Sum256([]byte(*utils.BoltPsw))
-	output, err = utils.DecryptCFB(make([]byte, 16), input, pass[:])
+	pass, err := crypto.HashBytes([]byte(*utils.BoltPsw), hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	output, err = crypto.DecryptBytes(make([]byte, 16), input, pass, cryptoProv)
 	return
 }
 
@@ -149,11 +158,11 @@ func genNewKey() ([]byte, error) {
 	if len(*utils.BoltPsw) == 0 {
 		return nil, fmt.Errorf(`-boltPsw password is not defined`)
 	}
-	privKey, pubKey, err := lib.GenBytesKeys()
+	privKey, pubKey, err := crypto.GenBytesKeys(ellipticSize)
 	if err != nil {
 		return nil, err
 	}
-	address := int64(lib.Address(pubKey))
+	address := int64(crypto.Address(pubKey))
 
 	err = boltDB.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(bucket)
@@ -164,7 +173,7 @@ func genNewKey() ([]byte, error) {
 		if err != nil {
 			return err
 		}
-		if err := b.Put([]byte(utils.Int64ToStr(address)), input); err != nil {
+		if err := b.Put([]byte(converter.Int64ToStr(address)), input); err != nil {
 			return fmt.Errorf("put in bucket: %s", err)
 		}
 		return nil

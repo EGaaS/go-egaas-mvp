@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -129,15 +130,18 @@ func (c *Controller) AjaxSendTx() interface{} {
 					}
 				}
 				if err == nil {
-					md5 := utils.Md5(data)
+					hash, err := crypto.HashBytes(data, hashProv)
+					if err != nil {
+						log.Fatal(err)
+					}
 					err = c.ExecSQL(`INSERT INTO transactions_status (
 						hash, time,	type, wallet_id, citizen_id	) VALUES (
-						[hex], ?, ?, ?, ? )`, md5, time.Now().Unix(), header.Type, int64(userID), int64(userID)) //c.SessStateID)
+						[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), header.Type, int64(userID), int64(userID)) //c.SessStateID)
 					if err == nil {
-						log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", md5, hex.EncodeToString(data))
-						err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", md5, hex.EncodeToString(data))
+						log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, hex.EncodeToString(data))
+						err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, hex.EncodeToString(data))
 						if err == nil {
-							result.Hash = string(md5)
+							result.Hash = string(hash)
 						}
 					}
 				}

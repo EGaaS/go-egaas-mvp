@@ -17,9 +17,12 @@
 package daemons
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"io"
+	"time"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 /*
@@ -62,7 +65,7 @@ func Disseminator(chBreaker chan bool, chAnswer chan string) {
 BEGIN:
 	for {
 		logger.Info(GoroutineName)
-		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
+		MonitorDaemonCh <- []string{GoroutineName, converter.Int64ToStr(time.Now().Unix())}
 
 		// проверим, не нужно ли нам выйти из цикла
 		// check if we have to break the cycle
@@ -151,12 +154,12 @@ BEGIN:
 			 * */
 			// We compose the data for sending
 			toBeSent := []byte{}
-			toBeSent = append(toBeSent, utils.DecToBin(fullNodeID, 2)...)
+			toBeSent = append(toBeSent, converter.DecToBin(fullNodeID, 2)...)
 			if len(data) > 0 { // блок // block
 				// если 0, то на приемнике будем читать блок, если = 1 , то сразу хэши тр-ий
 				// if 0, we will read the block on the receiver, if = 1, then immediately will read the hashes of transactions
-				toBeSent = append(toBeSent, utils.DecToBin(0, 1)...)
-				toBeSent = append(toBeSent, utils.DecToBin(utils.BytesToInt64(data["block_id"]), 3)...)
+				toBeSent = append(toBeSent, converter.DecToBin(0, 1)...)
+				toBeSent = append(toBeSent, converter.DecToBin(converter.BytesToInt64(data["block_id"]), 3)...)
 				toBeSent = append(toBeSent, data["hash"]...)
 				err = d.ExecSQL("UPDATE info_block SET sent = 1")
 				if err != nil {
@@ -166,7 +169,7 @@ BEGIN:
 					continue BEGIN
 				}
 			} else { // тр-ии без блока // transactions without block
-				toBeSent = append(toBeSent, utils.DecToBin(1, 1)...)
+				toBeSent = append(toBeSent, converter.DecToBin(1, 1)...)
 			}
 			logger.Debug("toBeSent block %x", toBeSent)
 
@@ -193,7 +196,7 @@ BEGIN:
 				continue BEGIN
 			}
 			for _, data := range transactions {
-				hexHash := utils.BinToHex([]byte(data["hash"]))
+				hexHash := converter.BinToHex([]byte(data["hash"]))
 				toBeSent = append(toBeSent, []byte(data["hash"])...)
 				logger.Debug("hash %x", data["hash"])
 				utils.WriteSelectiveLog("UPDATE transactions SET sent = 1 WHERE hex(hash) = " + string(hexHash))
@@ -205,7 +208,7 @@ BEGIN:
 					}
 					continue BEGIN
 				}
-				utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+				utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 			}
 
 			logger.Debug("toBeSent %x", toBeSent)
@@ -248,7 +251,7 @@ BEGIN:
 					continue BEGIN
 				}
 				logger.Debug("hash %x", hash)
-				hashHex := utils.BinToHex(hash)
+				hashHex := converter.BinToHex(hash)
 				utils.WriteSelectiveLog("UPDATE transactions SET sent = 1 WHERE hex(hash) = " + string(hashHex))
 				affect, err := d.ExecSQLGetAffect("UPDATE transactions SET sent = 1 WHERE hex(hash) = ?", hashHex)
 				if err != nil {
@@ -259,7 +262,7 @@ BEGIN:
 					}
 					continue BEGIN
 				}
-				utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+				utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 				toBeSent = append(toBeSent, data...)
 			}
 			rows.Close()
@@ -282,7 +285,7 @@ BEGIN:
 
 						// вначале шлем тип данных, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
 						// at first we send the data type to let the host understand how exactly it has to process the sent data
-						_, err = conn.Write(utils.DecToBin(dataType, 2))
+						_, err = conn.Write(converter.DecToBin(dataType, 2))
 						if err != nil {
 							logger.Error("%v", utils.ErrInfo(err))
 							return
@@ -290,7 +293,7 @@ BEGIN:
 
 						// в 4-х байтах пишем размер данных, которые пошлем далее
 						// we record the data size in 4 bytes which we will send further
-						size := utils.DecToBin(len(toBeSent), 4)
+						size := converter.DecToBin(len(toBeSent), 4)
 						_, err = conn.Write(size)
 						if err != nil {
 							logger.Error("%v", utils.ErrInfo(err))
@@ -331,7 +334,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 
 	// вначале шлем тип данных, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
 	// at first we send the data type to let the host understand how exactly it has to process the sent data
-	n, err := conn.Write(utils.DecToBin(dataType, 2))
+	n, err := conn.Write(converter.DecToBin(dataType, 2))
 	if err != nil {
 		logger.Error("%v", utils.ErrInfo(err))
 		return
@@ -340,7 +343,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 
 	// в 4-х байтах пишем размер данных, которые пошлем далее
 	// we record the data size in 4 bytes which we will send further
-	size := utils.DecToBin(len(toBeSent), 4)
+	size := converter.DecToBin(len(toBeSent), 4)
 	n, err = conn.Write(size)
 	if err != nil {
 		logger.Error("%v", utils.ErrInfo(err))
@@ -352,7 +355,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 		logger.Error("%v", utils.ErrInfo(err))
 		return
 	}
-	logger.Debug("n: %d / size: %v / len: %d  (host : %v)", n, utils.BinToDec(size), len(toBeSent), host)
+	logger.Debug("n: %d / size: %v / len: %d  (host : %v)", n, converter.BinToDec(size), len(toBeSent), host)
 
 	// в ответ получаем размер данных, которые нам хочет передать сервер
 	// as a response we recieve the data size which the server wants to transfer
@@ -363,7 +366,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 		return
 	}
 	logger.Debug("n: %x (host : %v)", n, host)
-	dataSize := utils.BinToDec(buf)
+	dataSize := converter.BinToDec(buf)
 	logger.Debug("dataSize %d (host : %v)", dataSize, host)
 	// и если данных менее MAX_TX_SIZE, то получаем их
 	// if data is less than MAX_TX_SIZE, so get them
@@ -381,9 +384,9 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 			// Parse the list of transactions
 			txHash := make([]byte, 16)
 			if len(binaryTxHashes) >= 16 {
-				txHash = utils.BytesShift(&binaryTxHashes, 16)
+				txHash = converter.BytesShift(&binaryTxHashes, 16)
 			}
-			txHash = utils.BinToHex(txHash)
+			txHash = converter.BinToHex(txHash)
 			logger.Debug("txHash %s (host : %v)", txHash, host)
 			utils.WriteSelectiveLog("SELECT data FROM transactions WHERE hex(hash) = " + string(txHash))
 			tx, err := d.Single("SELECT data FROM transactions WHERE hex(hash) = ?", txHash).Bytes()
@@ -393,9 +396,9 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 				logger.Error("%v", utils.ErrInfo(err))
 				return
 			}
-			utils.WriteSelectiveLog("tx: " + string(utils.BinToHex(tx)))
+			utils.WriteSelectiveLog("tx: " + string(converter.BinToHex(tx)))
 			if len(tx) > 0 {
-				binaryTx = append(binaryTx, utils.EncodeLengthPlusData(tx)...)
+				binaryTx = append(binaryTx, converter.EncodeLengthPlusData(tx)...)
 			}
 			if len(binaryTxHashes) == 0 {
 				break
@@ -408,7 +411,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 		// send to the server
 		// в первых 4-х байтах пишем размер данных, которые пошлем далее
 		// we record the data size in 4 bytes which we will send further
-		size := utils.DecToBin(len(binaryTx), 4)
+		size := converter.DecToBin(len(binaryTx), 4)
 		_, err = conn.Write(size)
 		if err != nil {
 			logger.Error("%v", utils.ErrInfo(err))

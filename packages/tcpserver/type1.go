@@ -17,14 +17,19 @@
 package tcpserver
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"io"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 /*
  * от disseminator
  */
+
+var cryptoProv = crypto.SHA256
 
 func (t *TCPServer) Type1() {
 	log.Debug("dataType: 1")
@@ -36,7 +41,7 @@ func (t *TCPServer) Type1() {
 		log.Error("%v", utils.ErrInfo(err))
 		return
 	}
-	size := utils.BinToDec(buf)
+	size := converter.BinToDec(buf)
 	log.Debug("size: %v / n: %v", size, n)
 	if size < 10485760 {
 		// сами данные
@@ -83,21 +88,21 @@ func (t *TCPServer) Type1() {
 		log.Debug("binaryData: %x", binaryData)
 		// full_node_id отправителя, чтобы знать у кого брать данные, когда они будут скачиваться другим демоном
 		// full_node_id of the sender to know where to take a data when it will be downloaded by another daemon
-		fullNodeID := utils.BinToDecBytesShift(&binaryData, 2)
+		fullNodeID := converter.BinToDecBytesShift(&binaryData, 2)
 		log.Debug("fullNodeID: %d", fullNodeID)
 		// если 0 - значит вначале идет инфа о блоке, если 1 - значит сразу идет набор хэшей тр-ий
 		// if 0, it means information about the block goes initially, if 1, it means the set of transactions hashes goes at first
-		newDataType := utils.BinToDecBytesShift(&binaryData, 1)
+		newDataType := converter.BinToDecBytesShift(&binaryData, 1)
 		log.Debug("newDataType: %d", newDataType)
 		if newDataType == 0 {
 			// ID блока, чтобы не скачать старый блок
 			// block id for not to upload the old block
-			newDataBlockID := utils.BinToDecBytesShift(&binaryData, 3)
+			newDataBlockID := converter.BinToDecBytesShift(&binaryData, 3)
 			log.Debug("newDataBlockID: %d / blockID: %d", newDataBlockID, blockID)
 			// нет смысла принимать старые блоки
 			// there is no reason to accept the old blocks
 			if newDataBlockID >= blockID {
-				newDataHash := utils.BinToHex(utils.BytesShift(&binaryData, 32))
+				newDataHash := converter.BinToHex(converter.BytesShift(&binaryData, 32))
 				err = t.ExecSQL(`
 						INSERT INTO queue_blocks (
 							hash,
@@ -116,7 +121,7 @@ func (t *TCPServer) Type1() {
 			} else {
 				// просто удалим хэш блока, что бы далее проверить тр-ии
 				// just delete the hash of the block to check transactions further
-				utils.BinToHex(utils.BytesShift(&binaryData, 32))
+				converter.BinToHex(converter.BytesShift(&binaryData, 32))
 			}
 		}
 		log.Debug("binaryData: %x", binaryData)
@@ -125,7 +130,7 @@ func (t *TCPServer) Type1() {
 		// Parse the list of transactions, but they could be absent
 		if len(binaryData) == 0 {
 			log.Debug("%v", utils.ErrInfo("len(binaryData) == 0"))
-			log.Debug("%x", utils.Int64ToByte(int64(0)))
+			log.Debug("%x", converter.Int64ToByte(int64(0)))
 			_, err = t.Conn.Write(utils.DecToBin(0, 4))
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
@@ -138,7 +143,7 @@ func (t *TCPServer) Type1() {
 				// if we came here from 'continue', then binaryData could already be empty
 				break
 			}
-			newDataTxHash := utils.BinToHex(utils.BytesShift(&binaryData, 16))
+			newDataTxHash := converter.BinToHex(converter.BytesShift(&binaryData, 16))
 			if len(newDataTxHash) == 0 {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -179,14 +184,14 @@ func (t *TCPServer) Type1() {
 				log.Debug("exists")
 				continue
 			}
-			needTx = append(needTx, utils.HexToBin(newDataTxHash)...)
+			needTx = append(needTx, converter.HexToBin(newDataTxHash)...)
 			if len(binaryData) == 0 {
 				break
 			}
 		}
 		if len(needTx) == 0 {
 			log.Debug("len(needTx) == 0")
-			_, err = t.Conn.Write(utils.DecToBin(0, 4))
+			_, err = t.Conn.Write(converter.DecToBin(0, 4))
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -197,7 +202,7 @@ func (t *TCPServer) Type1() {
 
 		// в 4-х байтах пишем размер данных, которые пошлем далее
 		// record the size of data in 4 bytes, we will send this data further
-		size := utils.DecToBin(len(needTx), 4)
+		size := converter.DecToBin(len(needTx), 4)
 		_, err = t.Conn.Write(size)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
@@ -220,7 +225,7 @@ func (t *TCPServer) Type1() {
 			log.Error("%v", utils.ErrInfo(err))
 			return
 		}
-		dataSize := utils.BinToDec(buf)
+		dataSize := converter.BinToDec(buf)
 		log.Debug("dataSize %v", dataSize)
 		// и если данных менее 10мб, то получаем их
 		// if the size of data is less than 10mb, we receive them
@@ -235,17 +240,20 @@ func (t *TCPServer) Type1() {
 
 			log.Debug("binaryTxs %x", binaryTxs)
 			for {
-				txSize := utils.DecodeLength(&binaryTxs)
+				txSize, err := converter.DecodeLength(&binaryTxs)
+				if err != nil {
+					log.Warning(err.Error())
+				}
 				if int64(len(binaryTxs)) < txSize {
 					log.Error("%v", utils.ErrInfo(err))
 					return
 				}
-				txBinData := utils.BytesShift(&binaryTxs, txSize)
+				txBinData := converter.BytesShift(&binaryTxs, txSize)
 				if len(txBinData) == 0 {
 					log.Error("%v", utils.ErrInfo(err))
 					return
 				}
-				txHex := utils.BinToHex(txBinData)
+				txHex := converter.BinToHex(txBinData)
 				// проверим размер
 				// check the size
 				if int64(len(txBinData)) > consts.MAX_TX_SIZE {
@@ -253,8 +261,12 @@ func (t *TCPServer) Type1() {
 					return
 				}
 
-				log.Debug("INSERT INTO queue_tx (hash, data, from_gate) %s, %s, 1", utils.Md5(txBinData), txHex)
-				err = t.ExecSQL(`INSERT INTO queue_tx (hash, data, from_gate) VALUES ([hex], [hex], 1)`, utils.Md5(txBinData), txHex)
+				hash, err := crypto.HashBytes(txBinData, cryptoProv)
+				if err != nil {
+					log.Fatal(err)
+				}
+				log.Debug("INSERT INTO queue_tx (hash, data, from_gate) %s, %s, 1", hash, txHex)
+				err = t.ExecSQL(`INSERT INTO queue_tx (hash, data, from_gate) VALUES ([hex], [hex], 1)`, hash, txHex)
 				if len(txBinData) == 0 {
 					log.Error("%v", utils.ErrInfo(err))
 					return

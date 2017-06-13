@@ -17,6 +17,9 @@
 package daemons
 
 import (
+	"time"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -57,7 +60,7 @@ func QueueParserTx(chBreaker chan bool, chAnswer chan string) {
 BEGIN:
 	for {
 		logger.Info(GoroutineName)
-		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
+		MonitorDaemonCh <- []string{GoroutineName, converter.Int64ToStr(time.Now().Unix())}
 
 		// проверим, не нужно ли нам выйти из цикла
 		// check if we have to break the cycle
@@ -101,7 +104,7 @@ BEGIN:
 			}
 			continue BEGIN
 		}
-		utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+		utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 
 		p := new(parser.Parser)
 		p.DCDB = d.DCDB

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	//	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -690,7 +691,10 @@ func (c *Controller) SaveQueue() (string, error) {
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
-	md5 := utils.Md5(data)
+	hash, err := crypto.HashBytes(data, hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = c.ExecSQL(`INSERT INTO transactions_status (
 				hash,
@@ -705,18 +709,18 @@ func (c *Controller) SaveQueue() (string, error) {
 				?,
 				?,
 				?
-			)`, md5, time.Now().Unix(), txType, walletID, citizenID)
+			)`, hash, time.Now().Unix(), txType, walletID, citizenID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", md5, utils.BinToHex(data))
-	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", md5, utils.BinToHex(data))
+	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, utils.BinToHex(data))
+	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, utils.BinToHex(data))
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	return `{"hash":"` + string(md5) + `"}`, nil
+	return `{"hash":"` + string(hash) + `"}`, nil
 }
 
 // CheckInputData calls utils.CheckInputData for the each item of the map

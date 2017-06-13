@@ -39,7 +39,8 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	//	_ "github.com/go-sql-driver/mysql"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	_ "github.com/lib/pq"
 	"github.com/op/go-logging"
 	"github.com/shopspring/decimal"
@@ -468,7 +469,7 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 	if err != nil {
 		log.Fatal("Hashing error")
 	}
-	txHash = utils.BinToHex(txHash)
+	txHash = converter.BinToHex(txHash)
 	err = db.ExecSQL("INSERT INTO log_transactions (hash, time) VALUES ([hex], ?)", txHash, time)
 	log.Debug("INSERT INTO log_transactions (hash, time) VALUES ([hex], %s)", txHash)
 	if err != nil {
@@ -483,7 +484,7 @@ func (db *DCDB) DelLogTx(binaryTx []byte) error {
 	if err != nil {
 		log.Fatal("Hashig error")
 	}
-	txHash = utils.BinToHex(txHash)
+	txHash = converter.BinToHex(txHash)
 	affected, err := db.ExecSQLGetAffect("DELETE FROM log_transactions WHERE hex(hash) = ?", txHash)
 	log.Debug("DELETE FROM log_transactions WHERE hex(hash) = %s / affected = %d", txHash, affected)
 	if err != nil {
@@ -1299,9 +1300,9 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
-	hash = utils.BinToHex(hash)
+	hash = converter.BinToHex(hash)
 	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", hash)
-	err := db.ExecSQL("DELETE FROM queue_tx WHERE hex(hash) = ?", hash)
+	err = db.ExecSQL("DELETE FROM queue_tx WHERE hex(hash) = ?", hash)
 	if err != nil {
 		return ErrInfo(err)
 	}

@@ -20,11 +20,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/astaxie/beego/config"
 	"github.com/op/go-logging"
-	"os"
-	"strings"
 )
 
 var (
@@ -61,7 +63,7 @@ func (d *daemon) dSleep(sleep int) bool {
 		if CheckDaemonsRestart(d.chBreaker, d.chAnswer, d.goRoutineName) {
 			return true
 		}
-		utils.Sleep(1)
+		time.Sleep(time.Second)
 	}
 	return false
 }
@@ -96,7 +98,7 @@ func (d *daemon) unlockPrintSleep(err error, sleep int) bool {
 		if CheckDaemonsRestart(d.chBreaker, d.chAnswer, d.goRoutineName) {
 			return true
 		}
-		utils.Sleep(1)
+		time.Sleep(time.Second)
 	}
 	return false
 }
@@ -114,7 +116,7 @@ func (d *daemon) unlockPrintSleepInfo(err error, sleep int) bool {
 		if CheckDaemonsRestart(d.chBreaker, d.chAnswer, d.goRoutineName) {
 			return true
 		}
-		utils.Sleep(1)
+		time.Sleep(time.Second)
 	}
 	return false
 }
@@ -127,7 +129,7 @@ func ConfigInit() {
 		for {
 			logger.Debug("ConfigInit monitor")
 			if _, err := os.Stat(*utils.Dir + "/config.ini"); os.IsNotExist(err) {
-				utils.Sleep(1)
+				time.Sleep(time.Second)
 				continue
 			}
 			confIni, err := config.NewConfig("ini", *utils.Dir+"/config.ini")
@@ -141,7 +143,7 @@ func ConfigInit() {
 			if len(configIni["db_type"]) > 0 {
 				break
 			}
-			utils.Sleep(3)
+			time.Sleep(time.Second * 3)
 		}
 	}()
 }
@@ -171,7 +173,7 @@ func DbConnect(chBreaker chan bool, chAnswer chan string, goRoutineName string) 
 			return nil
 		}
 		if utils.DB == nil || utils.DB.DB == nil {
-			utils.Sleep(1)
+			time.Sleep(time.Second)
 		} else {
 			break
 		}

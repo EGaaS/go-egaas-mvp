@@ -34,6 +34,7 @@ import (
 	"net/http"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
@@ -197,7 +198,7 @@ func ParseBlockHeader(binaryBlock *[]byte) *BlockData {
 	*/
 	result.BlockId = BinToDecBytesShift(binaryBlock, 4)
 	result.Time = BinToDecBytesShift(binaryBlock, 4)
-	result.WalletId, _ = lib.DecodeLenInt64(binaryBlock) //BytesToInt64(BytesShift(binaryBlock, DecodeLength(binaryBlock)))
+	result.WalletId, _ = converter.DecodeLenInt64(binaryBlock) //BytesToInt64(BytesShift(binaryBlock, DecodeLength(binaryBlock)))
 	// Delete after re-build blocks
 	/*	if result.WalletId == 0x31 {
 		result.WalletId = 1
@@ -871,7 +872,7 @@ func EncodeLengthPlusData(idata interface{}) []byte {
 	}
 	//log.Debug("data: %x", data)
 	//log.Debug("len data: %d", len(data))
-	return append(lib.EncodeLength(int64(len(data))), data...)
+	return append(converter.EncodeLength(int64(len(data))), data...)
 }
 
 // UInt32ToStr converts uint32 to string
@@ -1061,6 +1062,52 @@ func CopyFileContents(src, dst string) error {
 	return ErrInfo(err)
 }
 
+func Md5(v interface{}) []byte {
+	var msg []byte
+	switch v.(type) {
+	case string:
+		msg = []byte(v.(string))
+	case []byte:
+		msg = v.([]byte)
+	}
+	hash, err := crypto.HashBytes(msg, crypto.MD5)
+	if err != nil {
+		return nil
+	}
+	return BinToHex(hash)
+}
+
+func DSha256(v interface{}) []byte {
+	var data []byte
+	switch v.(type) {
+	case string:
+		data = []byte(v.(string))
+	case []byte:
+		data = v.([]byte)
+	}
+	hash, err := crypto.HashBytes(data, crypto.DoubleSHA256)
+	if err != nil {
+		return nil
+	}
+	return []byte(fmt.Sprintf("%x", hash))
+}
+
+// Sha256 returns SHA256 hash
+func Sha256(v interface{}) []byte {
+	var data []byte
+	switch v.(type) {
+	case string:
+		data = []byte(v.(string))
+	case []byte:
+		data = v.([]byte)
+	}
+	hash, err := crypto.HashBytes(data, crypto.SHA256)
+	if err != nil {
+		return nil
+	}
+	return []byte(fmt.Sprintf("%x", hash))
+}
+
 // CheckSign checks the signature
 func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin bool) (bool, error) {
 	defer func() {
@@ -1091,7 +1138,7 @@ func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin
 			return false, fmt.Errorf("sign error %d!=%d", len(publicKeys), len(signsSlice))
 		}
 	}
-	return lib.CheckECDSA(publicKeys[0], forSign, signsSlice[0])
+	return crypto.CheckSign(publicKeys[0], forSign, signsSlice[0], crypto.SHA256, crypto.ECDSA, crypto.Elliptic256)
 }
 
 // GetMrklroot returns MerkleTreeRoot
@@ -1115,7 +1162,10 @@ func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 			// separate one transaction from the list of transactions
 			if txSize > 0 {
 				transactionBinaryData := BytesShift(&binaryData, txSize)
-				dSha256Hash := crypto.DSha256(transactionBinaryData)
+				dSha256Hash, err := crypto.HashBytes(transactionBinaryData, crypto.DoubleSHA256)
+				if err != nil {
+					log.Fatal(err)
+				}
 				mrklSlice = append(mrklSlice, dSha256Hash)
 				//if len(transactionBinaryData) > 500000 {
 				//	ioutil.WriteFile(string(dSha256Hash)+"-"+Int64ToStr(txSize), transactionBinaryData, 0644)
@@ -1157,7 +1207,11 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 	log.Debug("dataArray: %s", dataArray)
 	result := make(map[int32][][]byte)
 	for _, v := range dataArray {
-		result[0] = append(result[0], crypto.DSha256(v))
+		hash, err := crypto.HashBytes(v, crypto.DoubleSHA256)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result[0] = append(result[0], hash)
 	}
 	var j int32
 	for len(result[j]) > 1 {
@@ -1170,9 +1224,17 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 				}
 			} else {
 				if _, ok := result[j+1]; !ok {
-					result[j+1] = [][]byte{crypto.DSha256(append(result[j][i], result[j][i+1]...))}
+					hash, err := crypto.HashBytes(append(result[j][i], result[j][i+1]...), crypto.DoubleSHA256)
+					if err != nil {
+						log.Fatal(err)
+					}
+					result[j+1] = [][]byte{hash}
 				} else {
-					result[j+1] = append(result[j+1], crypto.DSha256([]byte(append(result[j][i], result[j][i+1]...))))
+					hash, err := crypto.HashBytes([]byte(append(result[j][i], result[j][i+1]...)), crypto.DoubleSHA256)
+					if err != nil {
+						log.Fatal(err)
+					}
+					result[j+1] = append(result[j+1], hash)
 				}
 			}
 		}
@@ -1490,7 +1552,7 @@ func ShellExecute(cmdline string) {
 
 // DecodeLength decodes length from []byte
 func DecodeLength(buf *[]byte) (ret int64) {
-	ret, _ = lib.DecodeLength(buf)
+	ret, _ = converter.DecodeLength(buf)
 	return
 }
 
@@ -1673,7 +1735,7 @@ func FirstBlock(exit bool) {
 
 		if len(*FirstBlockPublicKey) == 0 {
 			log.Debug("len(*FirstBlockPublicKey) == 0")
-			priv, pub, _ := lib.GenHexKeys()
+			priv, pub, _ := crypto.GenHexKeys(crypto.Elliptic256)
 			err := ioutil.WriteFile(*Dir+"/PrivateKey", []byte(priv), 0644)
 			if err != nil {
 				log.Error("%v", ErrInfo(err))
@@ -1682,7 +1744,7 @@ func FirstBlock(exit bool) {
 		}
 		if len(*FirstBlockNodePublicKey) == 0 {
 			log.Debug("len(*FirstBlockNodePublicKey) == 0")
-			priv, pub, _ := lib.GenHexKeys()
+			priv, pub, _ := crypto.GenHexKeys(crypto.Elliptic256)
 			err := ioutil.WriteFile(*Dir+"/NodePrivateKey", []byte(priv), 0644)
 			if err != nil {
 				log.Error("%v", ErrInfo(err))
@@ -1705,19 +1767,19 @@ func FirstBlock(exit bool) {
 		}
 
 		var block, tx []byte
-		iAddress := int64(lib.Address(PublicKeyBytes))
-		now := lib.Time32()
-		_, err := lib.BinMarshal(&block, &consts.BlockHeader{Type: 0, BlockID: 1, Time: now, WalletID: iAddress})
+		iAddress := int64(crypto.Address(PublicKeyBytes))
+		now := uint32(time.Now().Unix())
+		_, err := converter.BinMarshal(&block, &consts.BlockHeader{Type: 0, BlockID: 1, Time: now, WalletID: iAddress})
 		if err != nil {
 			log.Error("%v", ErrInfo(err))
 		}
-		_, err = lib.BinMarshal(&tx, &consts.FirstBlock{TxHeader: consts.TxHeader{Type: 1,
+		_, err = converter.BinMarshal(&tx, &consts.FirstBlock{TxHeader: consts.TxHeader{Type: 1,
 			Time: now, WalletID: iAddress, CitizenID: 0},
 			PublicKey: PublicKeyBytes, NodePublicKey: NodePublicKeyBytes, Host: string(Host)})
 		if err != nil {
 			log.Error("%v", ErrInfo(err))
 		}
-		lib.EncodeLenByte(&block, tx)
+		converter.EncodeLenByte(&block, tx)
 
 		firstBlockDir := ""
 		if len(*FirstBlockDir) == 0 {
