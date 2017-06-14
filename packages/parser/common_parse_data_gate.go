@@ -18,9 +18,11 @@ package parser
 
 import (
 	"errors"
+	"time"
 	//"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -48,11 +50,11 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 		// проверим, есть ли такой тип тр-ий
 		// check if the transaction type exist
 		if p.dataType < 128 && len(consts.TxTypes[p.dataType]) == 0 {
-			return p.ErrInfo("Incorrect tx type " + utils.IntToStr(p.dataType))
+			return p.ErrInfo("Incorrect tx type " + converter.IntToStr(p.dataType))
 		}
 
 		log.Debug("p.dataType: %d", p.dataType)
-		transactionBinaryData = append(utils.DecToBin(int64(p.dataType), 1), transactionBinaryData...)
+		transactionBinaryData = append(converter.DecToBin(int64(p.dataType), 1), transactionBinaryData...)
 		transactionBinaryDataFull = transactionBinaryData
 
 		// нет ли хэша этой тр-ии у нас в БД?
@@ -62,7 +64,7 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			return p.ErrInfo(err)
 		}
 
-		hash, err := crypto.HashBytes(transactionBinaryData, hashProv)
+		hash, err := crypto.Hash(transactionBinaryData, hashProv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -88,13 +90,13 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 		// Time of transaction can be slightly longer than time of a node.
 		// A node can use wrong time
 		// Time of a transaction used only for fighting off attacks of yesterday transactions
-		curTime := utils.Time()
+		curTime := time.Now().Unix()
 		if p.TxContract != nil {
 			if int64(p.TxPtr.(*consts.TXHeader).Time)-consts.MAX_TX_FORW > curTime || int64(p.TxPtr.(*consts.TXHeader).Time) < curTime-consts.MAX_TX_BACK {
 				return p.ErrInfo(errors.New("incorrect tx time"))
 			}
 		} else {
-			if utils.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > curTime || utils.BytesToInt64(p.TxSlice[2]) < curTime-consts.MAX_TX_BACK {
+			if converter.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > curTime || converter.BytesToInt64(p.TxSlice[2]) < curTime-consts.MAX_TX_BACK {
 				return p.ErrInfo(errors.New("incorrect tx time"))
 			}
 			// $this->transaction_array[3] могут подсунуть пустой

@@ -49,7 +49,7 @@ import (
 var Mutex = &sync.Mutex{}
 var log = logging.MustGetLogger("daemons")
 var hashProv = crypto.SHA256
-var cryptoProv = crypto.AESCFB
+var cryptoProv = crypto.AESCBC
 var signProv = crypto.ECDSA
 var ellipticSize = crypto.Elliptic256
 
@@ -173,7 +173,7 @@ func (r *ListResult) Int64() ([]int64, error) {
 		return result, r.err
 	}
 	for _, v := range r.result {
-		result = append(result, StrToInt64(v))
+		result = append(result, converter.StrToInt64(v))
 	}
 	return result, nil
 }
@@ -211,7 +211,7 @@ func (r *oneRow) Int64() (map[string]int64, error) {
 		return result, r.err
 	}
 	for k, v := range r.result {
-		result[k] = StrToInt64(v)
+		result[k] = converter.StrToInt64(v)
 	}
 	return result, nil
 }
@@ -222,7 +222,7 @@ func (r *oneRow) Float64() (map[string]float64, error) {
 		return result, r.err
 	}
 	for k, v := range r.result {
-		result[k] = StrToFloat64(v)
+		result[k] = converter.StrToFloat64(v)
 	}
 	return result, nil
 }
@@ -233,7 +233,7 @@ func (r *oneRow) Int() (map[string]int, error) {
 		return result, r.err
 	}
 	for k, v := range r.result {
-		result[k] = StrToInt(v)
+		result[k] = converter.StrToInt(v)
 	}
 	return result, nil
 }
@@ -243,7 +243,7 @@ func (r *SingleResult) Int64() (int64, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-	return BytesToInt64(r.result), nil
+	return converter.BytesToInt64(r.result), nil
 }
 
 // Int converts bytes to int
@@ -251,7 +251,7 @@ func (r *SingleResult) Int() (int, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-	return BytesToInt(r.result), nil
+	return converter.BytesToInt(r.result), nil
 }
 
 // Float64 converts string to float64
@@ -259,7 +259,7 @@ func (r *SingleResult) Float64() (float64, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-	return StrToFloat64(string(r.result)), nil
+	return converter.StrToFloat64(string(r.result)), nil
 }
 
 // String returns string
@@ -466,7 +466,7 @@ func (db *DCDB) OneRow(query string, args ...interface{}) *oneRow {
 
 // InsertInLogTx inserts md5 hash and time into log_transaction
 func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
-	txHash, err := crypto.HashBytes(binaryTx, hashProv)
+	txHash, err := crypto.Hash(binaryTx, hashProv)
 	if err != nil {
 		log.Fatal("Hashing error")
 	}
@@ -481,7 +481,7 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 
 // DelLogTx deletes a row with the specified md5 hash in log_transaction
 func (db *DCDB) DelLogTx(binaryTx []byte) error {
-	txHash, err := crypto.HashBytes(binaryTx, hashProv)
+	txHash, err := crypto.Hash(binaryTx, hashProv)
 	if err != nil {
 		log.Fatal("Hashig error")
 	}
@@ -524,11 +524,11 @@ func (db *DCDB) ExecSQLGetLastInsertID(query, table string, args ...interface{})
 		} else {
 			switch v.(type) {
 			case int:
-				lastID = IntToStr(v.(int))
+				lastID = converter.IntToStr(v.(int))
 			case int64:
-				lastID = Int64ToStr(v.(int64))
+				lastID = converter.Int64ToStr(v.(int64))
 			case float64:
-				lastID = Float64ToStr(v.(float64))
+				lastID = converter.Float64ToStr(v.(float64))
 			case string:
 				lastID = v.(string)
 			case []byte:
@@ -597,7 +597,7 @@ func (db *DCDB) CheckInstall(DaemonCh chan bool, AnswerDaemonCh chan string, Gor
 			if err != nil {
 				log.Error("%v", ErrInfo(err))
 			}
-			Sleep(1)
+			time.Sleep(time.Second)
 		} else {
 			break
 		}
@@ -765,10 +765,10 @@ func (db *DCDB) GetLastBlockData() (map[string]int64, error) {
 		return result, ErrInfo(err)
 	}
 	// ID блока
-	result["blockId"] = int64(BinToDec(lastBlockBin[1:5]))
+	result["blockId"] = int64(converter.BinToDec(lastBlockBin[1:5]))
 	// Время последнего блока
 	// the time of the last block
-	result["lastBlockTime"] = int64(BinToDec(lastBlockBin[5:9]))
+	result["lastBlockTime"] = int64(converter.BinToDec(lastBlockBin[5:9]))
 	return result, nil
 }
 
@@ -1044,9 +1044,9 @@ func (db *DCDB) DbLock(DaemonCh chan bool, AnswerDaemonCh chan string, goRoutine
 			}
 			ok = true
 		} else {
-			t := StrToInt64(exists["lock_time"])
-			if Time()-t > 600 {
-				log.Error("%d %s %d", t, exists["script_name"], Time()-t)
+			t := converter.StrToInt64(exists["lock_time"])
+			if time.Now().Unix()-t > 600 {
+				log.Error("%d %s %d", t, exists["script_name"], time.Now().Unix()-t)
 				if Mobile() {
 					db.ExecSQL(`DELETE FROM main_lock`)
 				}
@@ -1054,7 +1054,7 @@ func (db *DCDB) DbLock(DaemonCh chan bool, AnswerDaemonCh chan string, goRoutine
 		}
 		Mutex.Unlock()
 		if !ok {
-			time.Sleep(time.Duration(RandInt(300, 400)) * time.Millisecond)
+			time.Sleep(time.Duration(crypto.RandInt(300, 400)) * time.Millisecond)
 		} else {
 			break
 		}
@@ -1080,7 +1080,7 @@ func (db *DCDB) SetAI(table string, AI int64) error {
 		if err != nil {
 			return ErrInfo(err)
 		}
-		err = db.ExecSQL("ALTER SEQUENCE " + pgGetSerialSequence + " RESTART WITH " + Int64ToStr(AI))
+		err = db.ExecSQL("ALTER SEQUENCE " + pgGetSerialSequence + " RESTART WITH " + converter.Int64ToStr(AI))
 		if err != nil {
 			return ErrInfo(err)
 		}
@@ -1098,7 +1098,7 @@ func (db *DCDB) PrintSleep(v interface{}, sleep time.Duration) {
 		err = v.(error)
 	}
 	log.Error("%v (%v)", err, GetParent())
-	Sleep(sleep)
+	time.Sleep(sleep)
 }
 
 // DbUnlock unlocks database
@@ -1171,9 +1171,9 @@ func (db *DCDB) GetBlockDataFromBlockChain(blockID int64) (*BlockData, error) {
 	log.Debug("data: %x\n", data["data"])
 	if len(data["data"]) > 0 {
 		binaryData := []byte(data["data"])
-		BytesShift(&binaryData, 1) // не нужно. 0 - блок, >0 - тр-ии
+		converter.BytesShift(&binaryData, 1) // не нужно. 0 - блок, >0 - тр-ии
 		BlockData = ParseBlockHeader(&binaryData)
-		BlockData.Hash = BinToHex([]byte(data["hash"]))
+		BlockData.Hash = converter.BinToHex([]byte(data["hash"]))
 	}
 	return BlockData, nil
 }
@@ -1181,7 +1181,7 @@ func (db *DCDB) GetBlockDataFromBlockChain(blockID int64) (*BlockData, error) {
 // GetTxTypeAndUserID returns tx type, wallet and citizen id from the block data
 func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citizenID int64) {
 	tmp := binaryBlock[:]
-	txType = BinToDecBytesShift(&binaryBlock, 1)
+	txType = converter.BinToDecBytesShift(&binaryBlock, 1)
 	if consts.IsStruct(int(txType)) {
 		var txHead consts.TxHeader
 		converter.BinUnmarshal(&tmp, &txHead)
@@ -1198,9 +1198,13 @@ func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citiz
 			}
 		}
 	} else {
-		BytesShift(&binaryBlock, 4) // уберем время
-		walletID = BytesToInt64(BytesShift(&binaryBlock, DecodeLength(&binaryBlock)))
-		citizenID = BytesToInt64(BytesShift(&binaryBlock, DecodeLength(&binaryBlock)))
+		converter.BytesShift(&binaryBlock, 4) // уберем время
+		length, err := converter.DecodeLength(&binaryBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+		walletID = converter.BytesToInt64(converter.BytesShift(&binaryBlock, length))
+		citizenID = converter.BytesToInt64(converter.BytesShift(&binaryBlock, length))
 	}
 	return
 }
@@ -1214,18 +1218,22 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 
 	// вначале пишется user_id, чтобы в режиме пула можно было понять, кому шлется и чей ключ использовать
 	// at the beginning the user ID is written to know in the pool mode to whom it is sent and what key to use
-	myUserID := BinToDecBytesShift(&*binaryTx, 5)
+	myUserID := converter.BinToDecBytesShift(&*binaryTx, 5)
 	log.Debug("myUserId: %d", myUserID)
 
 	// изымем зашифрванный ключ, а всё, что останется в $binary_tx - сами зашифрованные хэши тр-ий/блоков
 	// remove the encrypted key, and all that stay in $binary_tx will be encrypted keys of the transactions/blocks
-	encryptedKey := BytesShift(&*binaryTx, DecodeLength(&*binaryTx))
+	length, err := converter.DecodeLength(&*binaryTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	encryptedKey := converter.BytesShift(&*binaryTx, length)
 	log.Debug("encryptedKey: %x", encryptedKey)
 	log.Debug("encryptedKey: %s", encryptedKey)
 
 	// далее идет 16 байт IV
 	// 16 bytes IV go further
-	iv := BytesShift(&*binaryTx, 16)
+	iv := converter.BytesShift(&*binaryTx, 16)
 	log.Debug("iv: %s", iv)
 	log.Debug("iv: %x", iv)
 
@@ -1264,7 +1272,7 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 	log.Debug("binaryTx %x", *binaryTx)
 	log.Debug("iv %s", iv)
 
-	decrypted, err := crypto.DecryptBytes(*binaryTx, decKey, iv, cryptoProv)
+	decrypted, err := crypto.Decrypt(*binaryTx, decKey, iv, cryptoProv)
 	if err != nil {
 		return nil, nil, nil, ErrInfo(err)
 	}
@@ -1297,7 +1305,7 @@ func (db *DCDB) GetBinSign(forSign string) ([]byte, error) {
 
 // InsertReplaceTxInQueue replaces a row in queue_tx
 func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
-	hash, err := crypto.HashBytes(data, hashProv)
+	hash, err := crypto.Hash(data, hashProv)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
@@ -1307,8 +1315,8 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 	if err != nil {
 		return ErrInfo(err)
 	}
-	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, BinToHex(data))
-	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, BinToHex(data))
+	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, converter.BinToHex(data))
+	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, converter.BinToHex(data))
 	if err != nil {
 		return ErrInfo(err)
 	}
@@ -1337,7 +1345,7 @@ func (db *DCDB) GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockW
 
 	prevBlockFullNodePosition := func(fullNodesList []map[string]string, prevBlockFullNodeID int64) int {
 		for i, fullNodes := range fullNodesList {
-			if StrToInt64(fullNodes["id"]) == prevBlockFullNodeID {
+			if converter.StrToInt64(fullNodes["id"]) == prevBlockFullNodeID {
 				return i
 			}
 		}
@@ -1350,8 +1358,8 @@ func (db *DCDB) GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockW
 	myPosition := func(fullNodesList []map[string]string, myWalletID, myStateID int64) int {
 		log.Debug("%v %v", fullNodesList, myWalletID)
 		for i, fullNodes := range fullNodesList {
-			if StrToInt64(fullNodes["state_id"]) == myStateID || StrToInt64(fullNodes["wallet_id"]) == myWalletID ||
-				StrToInt64(fullNodes["final_delegate_state_id"]) == myWalletID || StrToInt64(fullNodes["final_delegate_wallet_id"]) == myWalletID {
+			if converter.StrToInt64(fullNodes["state_id"]) == myStateID || converter.StrToInt64(fullNodes["wallet_id"]) == myWalletID ||
+				converter.StrToInt64(fullNodes["final_delegate_state_id"]) == myWalletID || converter.StrToInt64(fullNodes["final_delegate_wallet_id"]) == myWalletID {
 				return i
 			}
 		}
@@ -1515,7 +1523,7 @@ func (db *DCDB) IsNodeState(state int64, host string) bool {
 			return true
 		}
 		for _, id := range strings.Split(val, `,`) {
-			if StrToInt64(id) == state {
+			if converter.StrToInt64(id) == state {
 				return true
 			}
 		}
@@ -1533,11 +1541,11 @@ func (db *DCDB) IsTable(tblname string) bool {
 
 // SendTx writes transaction info to transactions_status & queue_tx
 func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
-	hash, err := crypto.HashBytes(data, hashProv)
+	hash, err := crypto.Hash(data, hashProv)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
-	hash = BinToHex(hash)
+	hash = converter.BinToHex(hash)
 	err = db.ExecSQL(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), txType, adminWallet, adminWallet)

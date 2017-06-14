@@ -119,7 +119,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	if *utils.Dir == "" {
 		*utils.Dir = configIni["dir"]
 	}
-	utils.OneCountry = utils.StrToInt64(configIni["one_country"])
+	utils.OneCountry = converter.StrToInt64(configIni["one_country"])
 	utils.PrivCountry = configIni["priv_country"] == `1` || configIni["priv_country"] == `true`
 	if len(configIni["lang"]) > 0 {
 		utils.LangList = strings.Split(configIni["lang"], `,`)
@@ -162,7 +162,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 					log.Debug("waiting killer %d", i)
 					if _, err := os.Stat(*utils.Dir + "/daylight.pid"); err == nil {
 						fmt.Println("waiting killer")
-						utils.Sleep(1)
+						time.Sleep(time.Second)
 					} else { // если daylight.pid нет, значит завершился // if there is no daylight.pid, so it is finished
 						break
 					}
@@ -248,7 +248,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		// waiting for connection to the database
 		for {
 			if utils.DB == nil || utils.DB.DB == nil {
-				utils.Sleep(1)
+				time.Sleep(time.Second)
 				continue
 			}
 			break

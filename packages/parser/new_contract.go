@@ -119,7 +119,7 @@ func (p *Parser) NewContract() error {
 	}
 	for i, item := range root.Children {
 		if item.Type == script.ObjContract {
-			root.Children[i].Info.(*script.ContractInfo).TableID = utils.StrToInt64(tblid)
+			root.Children[i].Info.(*script.ContractInfo).TableID = converter.StrToInt64(tblid)
 		}
 	}
 

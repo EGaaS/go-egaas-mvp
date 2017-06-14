@@ -82,7 +82,7 @@ var (
 	doubleHashProv     = crypto.DoubleSHA256
 	signProv           = crypto.ECDSA
 	ellipticSize       = crypto.Elliptic256
-	cryptoProv         = crypto.AESCFB
+	cryptoProv         = crypto.AESCBC
 )
 
 // SessInit initializes sessions
@@ -364,7 +364,7 @@ func makeTemplate(html, name string, tData interface{}) (string, error) {
 			return converter.InterfaceToFloat64(a) * converter.InterfaceToFloat64(b)
 		},
 		"round": func(a interface{}, num int) float64 {
-			return converter.Round(converter.InterfaceToFloat64(a), num)
+			return converter.RoundWithPrecision(converter.InterfaceToFloat64(a), num)
 		},
 		"len": func(s []map[string]string) int {
 			return len(s)

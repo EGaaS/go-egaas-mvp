@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 // selectiveRollback rollbacks the specified fields
@@ -54,8 +53,8 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		//log.Debug("logData",logData)
 		addSQLUpdate := ""
 		for k, v := range jsonMap {
-			if utils.InSliceString(k, []string{"hash", "tx_hash", "public_key_0", "node_public_key"}) && len(v) != 0 {
-				addSQLUpdate += k + `=decode('` + string(utils.BinToHex([]byte(v))) + `','HEX'),`
+			if converter.InSliceString(k, []string{"hash", "tx_hash", "public_key_0", "node_public_key"}) && len(v) != 0 {
+				addSQLUpdate += k + `=decode('` + string(converter.BinToHex([]byte(v))) + `','HEX'),`
 			} else {
 				addSQLUpdate += k + `='` + strings.Replace(v, `'`, `''`, -1) + `',`
 			}

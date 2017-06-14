@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -73,7 +74,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 		utils.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
 	}
-	utils.WriteSelectiveLog("afect: " + utils.Int64ToStr(afect))
+	utils.WriteSelectiveLog("afect: " + converter.Int64ToStr(afect))
 
 	txCounter := make(map[int64]int64)
 	p.fullTxBinaryData = p.BinaryData
@@ -93,13 +94,13 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			// separate one transaction from the list of transactions
 			//log.Debug("++p.BinaryData=%x\n", p.BinaryData)
 			//log.Debug("transactionSize", transactionSize)
-			transactionBinaryData := utils.BytesShift(&p.BinaryData, transactionSize)
+			transactionBinaryData := converter.BytesShift(&p.BinaryData, transactionSize)
 			transactionBinaryDataFull := transactionBinaryData
 			//ioutil.WriteFile("/tmp/dctx", transactionBinaryDataFull, 0644)
 			//ioutil.WriteFile("/tmp/dctxhash", utils.Md5(transactionBinaryDataFull), 0644)
 			// добавляем взятую тр-ию в набор тр-ий для RollbackTo, в котором пойдем в обратном порядке
 			// add the the transaction in a set of transactions for RollbackTo where we will go in reverse order
-			txForRollbackTo = append(txForRollbackTo, utils.EncodeLengthPlusData(transactionBinaryData)...)
+			txForRollbackTo = append(txForRollbackTo, converter.EncodeLengthPlusData(transactionBinaryData)...)
 			//log.Debug("transactionBinaryData: %x\n", transactionBinaryData)
 			//log.Debug("txForRollbackTo: %x\n", txForRollbackTo)
 
@@ -112,7 +113,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				return utils.ErrInfo(err)
 			}
 
-			hash, err := crypto.HashBytes(transactionBinaryDataFull, hashProv)
+			hash, err := crypto.Hash(transactionBinaryDataFull, hashProv)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -127,9 +128,9 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				}
 				return utils.ErrInfo(err)
 			}
-			utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+			utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 			//log.Debug("transactionBinaryData", transactionBinaryData)
-			hash, err = crypto.HashBytes(transactionBinaryData, hashProv)
+			hash, err = crypto.Hash(transactionBinaryData, hashProv)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -153,7 +154,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 					if !utils.CheckInputData(p.TxSlice[3], "int64") {
 						return utils.ErrInfo(fmt.Errorf("empty user_id"))
 					}
-					userID = utils.BytesToInt64(p.TxSlice[3])
+					userID = converter.BytesToInt64(p.TxSlice[3])
 				} else {
 					return utils.ErrInfo(fmt.Errorf("empty user_id"))
 				}
@@ -177,7 +178,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				// time in the transaction cannot be more than MAX_TX_FORW seconds of block time
 				// и  время в транзакции не может быть меньше времени блока -24ч.
 				// and time in transaction cannot be less than -24 of block time
-				if utils.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > p.BlockData.Time || utils.BytesToInt64(p.TxSlice[2]) < p.BlockData.Time-consts.MAX_TX_BACK {
+				if converter.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > p.BlockData.Time || converter.BytesToInt64(p.TxSlice[2]) < p.BlockData.Time-consts.MAX_TX_BACK {
 					err0 := p.RollbackTo(txForRollbackTo, true)
 					if err0 != nil {
 						log.Error("error: %v", err0)
@@ -187,7 +188,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 
 				// проверим, есть ли такой тип тр-ий
 				// check if such type of transaction exists
-				_, ok := consts.TxTypes[utils.BytesToInt(p.TxSlice[1])]
+				_, ok := consts.TxTypes[converter.BytesToInt(p.TxSlice[1])]
 				if !ok {
 					return utils.ErrInfo(fmt.Errorf("nonexistent type"))
 				}
@@ -217,7 +218,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 					return utils.ErrInfo(err)
 				}
 			} else {
-				MethodName := consts.TxTypes[utils.BytesToInt(p.TxSlice[1])]
+				MethodName := consts.TxTypes[converter.BytesToInt(p.TxSlice[1])]
 				log.Debug("MethodName", MethodName+"Init")
 				err := utils.CallMethod(p, MethodName+"Init")
 				if _, ok := err.(error); ok {
@@ -251,7 +252,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			// даем юзеру понять, что его тр-ия попала в блок
 			// let user know that his transaction  is added in the block
-			hash, err = crypto.HashBytes(transactionBinaryData, hashProv)
+			hash, err = crypto.Hash(transactionBinaryData, hashProv)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -260,7 +261,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 
 			// Тут было time(). А значит если бы в цепочке блоков были блоки в которых были бы одинаковые хэши тр-ий, то ParseDataFull вернул бы error
 			// here was a time(). That means if blocks with the same hashes of transactions were in the chain of blocks, ParseDataFull would return the error
-			err = p.InsertInLogTx(transactionBinaryDataFull, utils.BytesToInt64(p.TxMap["time"]))
+			err = p.InsertInLogTx(transactionBinaryDataFull, converter.BytesToInt64(p.TxMap["time"]))
 			if err != nil {
 				return utils.ErrInfo(err)
 			}

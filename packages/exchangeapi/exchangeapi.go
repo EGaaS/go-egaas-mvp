@@ -38,7 +38,7 @@ var (
 	settings     = []byte(`Settings`)
 	log          = logging.MustGetLogger("exchangeapi")
 	hashProv     = crypto.SHA256
-	cryptoProv   = crypto.AESCFB
+	cryptoProv   = crypto.AESCBC
 	ellipticSize = crypto.Elliptic256
 	signProv     = crypto.ECDSA
 )
@@ -111,7 +111,7 @@ func InitAPI() {
 			err = boltDB.Update(func(tx *bolt.Tx) error {
 				var encrypted []byte
 
-				encrypted, err = encryptBytes([]byte(forpsw))
+				encrypted, err = Encrypt([]byte(forpsw))
 				if err != nil {
 					return err
 				}
@@ -133,12 +133,12 @@ func InitAPI() {
 	}
 }
 
-func encryptBytes(input []byte) (output []byte, err error) {
-	pass, err := crypto.HashBytes([]byte(*utils.BoltPsw), hashProv)
+func Encrypt(input []byte) (output []byte, err error) {
+	pass, err := crypto.Hash([]byte(*utils.BoltPsw), hashProv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	output, _, err = crypto.EncryptBytes(input, pass[:], make([]byte, 16), cryptoProv)
+	output, _, err = crypto.Encrypt(input, pass[:], make([]byte, 16), cryptoProv)
 	output = output[16:]
 	if err != nil {
 		return
@@ -147,11 +147,11 @@ func encryptBytes(input []byte) (output []byte, err error) {
 }
 
 func decryptBytes(input []byte) (output []byte, err error) {
-	pass, err := crypto.HashBytes([]byte(*utils.BoltPsw), hashProv)
+	pass, err := crypto.Hash([]byte(*utils.BoltPsw), hashProv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	output, err = crypto.DecryptBytes(make([]byte, 16), input, pass, cryptoProv)
+	output, err = crypto.Decrypt(make([]byte, 16), input, pass, cryptoProv)
 	return
 }
 
@@ -170,7 +170,7 @@ func genNewKey() ([]byte, error) {
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
-		input, err := encryptBytes(privKey)
+		input, err := Encrypt(privKey)
 		if err != nil {
 			return err
 		}

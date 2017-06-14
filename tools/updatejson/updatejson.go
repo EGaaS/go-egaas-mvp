@@ -122,7 +122,7 @@ func main() {
 	}
 
 	key, _ := hex.DecodeString(Key)
-	pass, err := crypto.HashBytes([]byte(psw), hashProv)
+	pass, err := crypto.Hash([]byte(psw), hashProv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func main() {
 			}
 		}
 		infile := filepath.Join(set.InPath, set.File)
-		hash, err := crypto.HashBytes([]byte(infile), hashProv)
+		hash, err := crypto.Hash([]byte(infile), hashProv)
 		if err != nil {
 			exit(err)
 		}

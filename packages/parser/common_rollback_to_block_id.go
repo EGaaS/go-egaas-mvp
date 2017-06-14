@@ -19,6 +19,8 @@ package parser
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -90,14 +92,18 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 	if err != nil && err != sql.ErrNoRows {
 		return p.ErrInfo(err)
 	}
-	utils.BytesShift(&data, 1)
-	iblock := utils.BinToDecBytesShift(&data, 4)
-	time := utils.BinToDecBytesShift(&data, 4)
-	size := utils.DecodeLength(&data)
-	walletID := utils.BinToDecBytesShift(&data, size)
-	StateID := utils.BinToDecBytesShift(&data, 1)
+	converter.BytesShift(&data, 1)
+	iblock := converter.BinToDecBytesShift(&data, 4)
+	time := converter.BinToDecBytesShift(&data, 4)
+	length, err := converter.DecodeLength(&data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	size := length
+	walletID := converter.BinToDecBytesShift(&data, size)
+	StateID := converter.BinToDecBytesShift(&data, 1)
 	err = p.ExecSQL("UPDATE info_block SET hash = [hex], block_id = ?, time = ?, wallet_id = ?, state_id = ?",
-		utils.BinToHex(hash), iblock, time, walletID, StateID)
+		converter.BinToHex(hash), iblock, time, walletID, StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

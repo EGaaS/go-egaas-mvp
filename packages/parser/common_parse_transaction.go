@@ -46,7 +46,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 
 		// хэш транзакции
 		// hash of the transaction
-		hash, err := crypto.HashBytes(*transactionBinaryData, doubleHashProv)
+		hash, err := crypto.Hash(*transactionBinaryData, doubleHashProv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -54,7 +54,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 		input := (*transactionBinaryData)[:]
 		// первый байт - тип транзакции
 		// the first byte is type of the transaction
-		txType := utils.BinToDecBytesShift(transactionBinaryData, 1)
+		txType := converter.BinToDecBytesShift(transactionBinaryData, 1)
 		isStruct := consts.IsStruct(int(txType))
 		if txType > 127 { // транзакция с контрактом
 			// transaction with the contract
@@ -65,7 +65,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			}
 			isStruct = false
 			p.TxStateID = uint32(p.TxPtr.(*consts.TXHeader).StateID)
-			p.TxStateIDStr = utils.UInt32ToStr(p.TxStateID)
+			p.TxStateIDStr = converter.UInt32ToStr(p.TxStateID)
 			if p.TxStateID > 0 {
 				p.TxCitizenID = int64(p.TxPtr.(*consts.TXHeader).WalletID)
 				p.TxWalletID = 0
@@ -171,7 +171,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			if int(txType) == 4 { // TXNewCitizen
 				head := consts.HeaderNew(p.TxPtr)
 				p.TxStateID = uint32(head.StateID)
-				p.TxStateIDStr = utils.UInt32ToStr(p.TxStateID)
+				p.TxStateIDStr = converter.UInt32ToStr(p.TxStateID)
 				if head.StateID > 0 {
 					p.TxCitizenID = int64(head.WalletID)
 					p.TxWalletID = 0
@@ -188,13 +188,13 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			}
 			fmt.Println(`PARSED STRUCT %v`, p.TxPtr)
 		}
-		transSlice = append(transSlice, utils.Int64ToByte(txType))
+		transSlice = append(transSlice, converter.Int64ToByte(txType))
 		if len(*transactionBinaryData) == 0 {
 			return transSlice, utils.ErrInfo(fmt.Errorf("incorrect tx"))
 		}
 		// следующие 4 байта - время транзакции
 		// the next 4 bytes are the tyme of the transaction
-		transSlice = append(transSlice, utils.Int64ToByte(utils.BinToDecBytesShift(transactionBinaryData, 4)))
+		transSlice = append(transSlice, converter.Int64ToByte(converter.BinToDecBytesShift(transactionBinaryData, 4)))
 		if len(*transactionBinaryData) == 0 {
 			return transSlice, utils.ErrInfo(fmt.Errorf("incorrect tx"))
 		}
@@ -221,7 +221,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 				length := utils.DecodeLength(transactionBinaryData)
 				i++
 				if length > 0 && length < consts.MAX_TX_SIZE {
-					data := utils.BytesShift(transactionBinaryData, length)
+					data := converter.BytesShift(transactionBinaryData, length)
 					returnSlice = append(returnSlice, data)
 					log.Debug("%x", data)
 					log.Debug("%s", data)

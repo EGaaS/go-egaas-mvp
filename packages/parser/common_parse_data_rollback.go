@@ -140,7 +140,7 @@ func (p *Parser) ParseDataRollback() error {
 			sizesSlice = append(sizesSlice, txSize)
 			// удалим тр-ию
 			// remove the transaction
-			utils.BytesShift(&binForSize, txSize)
+			converter.BytesShift(&binForSize, txSize)
 			if len(binForSize) == 0 {
 				break
 			}
@@ -152,11 +152,11 @@ func (p *Parser) ParseDataRollback() error {
 			p.UpdDaemonTime(p.GoroutineName)
 			// отделим одну транзакцию
 			// separate one transaction
-			transactionBinaryData := utils.BytesShiftReverse(&p.BinaryData, sizesSlice[i])
+			transactionBinaryData := converter.BytesShiftReverse(&p.BinaryData, sizesSlice[i])
 			// узнаем кол-во байт, которое занимает размер и удалим размер
 			// we'll get know the quantaty of bytes which the size takes
-			utils.BytesShiftReverse(&p.BinaryData, len(converter.EncodeLength(sizesSlice[i])))
-			hash, err := crypto.HashBytes(transactionBinaryData, hashProv)
+			converter.BytesShiftReverse(&p.BinaryData, len(converter.EncodeLength(sizesSlice[i])))
+			hash, err := crypto.Hash(transactionBinaryData, hashProv)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -168,7 +168,7 @@ func (p *Parser) ParseDataRollback() error {
 				utils.WriteSelectiveLog(err)
 				return p.ErrInfo(err)
 			}
-			utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+			utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 			affected, err := p.ExecSQLGetAffect("DELETE FROM log_transactions WHERE hex(hash) = ?", p.TxHash)
 			log.Debug("DELETE FROM log_transactions WHERE hex(hash) = %s / affected = %d", p.TxHash, affected)
 			if err != nil {
@@ -183,7 +183,7 @@ func (p *Parser) ParseDataRollback() error {
 			}
 			// пишем тр-ию в очередь на проверку, авось пригодится
 			// put the transaction in the turn for checking suddenly we will need it
-			dataHex := utils.BinToHex(transactionBinaryData)
+			dataHex := converter.BinToHex(transactionBinaryData)
 			log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", p.TxHash)
 			err = p.ExecSQL("DELETE FROM queue_tx  WHERE hex(hash) = ?", p.TxHash)
 			if err != nil {
@@ -207,7 +207,7 @@ func (p *Parser) ParseDataRollback() error {
 					return p.ErrInfo(err)
 				}
 			} else {
-				p.dataType = utils.BytesToInt(p.TxSlice[1])
+				p.dataType = converter.BytesToInt(p.TxSlice[1])
 				MethodName := consts.TxTypes[p.dataType]
 				result := utils.CallMethod(p, MethodName+"Init")
 				if _, ok := result.(error); ok {

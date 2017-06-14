@@ -18,10 +18,12 @@ package stopdaemons
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/system"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/op/go-logging"
-	"os"
 )
 
 var log = logging.MustGetLogger("stop_daemons")
@@ -31,7 +33,7 @@ func WaitStopTime() {
 	var first bool
 	for {
 		if utils.DB == nil || utils.DB.DB == nil {
-			utils.Sleep(3)
+			time.Sleep(time.Second * 3)
 			continue
 		}
 		if !first {
@@ -69,6 +71,6 @@ func WaitStopTime() {
 			fmt.Println("removed " + *utils.Dir + "/daylight.pid")
 			system.FinishThrust(1)
 		}
-		utils.Sleep(1)
+		time.Sleep(1)
 	}
 }

@@ -167,7 +167,7 @@ BEGIN:
 
 		p := new(parser.Parser)
 		p.DCDB = d.DCDB
-		hash, err := crypto.HashBytes(data, hashProvider)
+		hash, err := crypto.Hash(data, hashProvider)
 		if err != nil {
 			log.Fatal(err)
 		}

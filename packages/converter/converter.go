@@ -687,7 +687,7 @@ func NumString(in string) string {
 	return string(append(buf, out...))
 }
 
-func round(num float64) int64 {
+func Round(num float64) int64 {
 	//log.Debug("num", num)
 	//num += ROUND_FIX
 	//	return int(StrToFloat64(Float64ToStr(num)) + math.Copysign(0.5, num))
@@ -696,8 +696,8 @@ func round(num float64) int64 {
 }
 
 // Round rounds float64 value
-func Round(num float64, precision int) float64 {
+func RoundWithPrecision(num float64, precision int) float64 {
 	num += consts.ROUND_FIX
 	output := math.Pow(10, float64(precision))
-	return float64(round(num*output)) / output
+	return float64(Round(num*output)) / output
 }

@@ -72,7 +72,7 @@ func (t *TCPServer) Type2() {
 			return
 		}
 		decryptedBinDataFull := decryptedBinData
-		hash, err := crypto.HashBytes(decryptedBinDataFull, cryptoProv)
+		hash, err := crypto.Hash(decryptedBinDataFull, cryptoProv)
 		if err != nil {
 			log.Fatal(err)
 		}

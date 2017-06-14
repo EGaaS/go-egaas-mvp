@@ -48,7 +48,7 @@ func (c *Controller) WalletHistory() (string, error) {
 	if err != nil {
 		return ``, utils.ErrInfo(err)
 	}
-	rb := utils.StrToInt64(current[`rb_id`])
+	rb := converter.StrToInt64(current[`rb_id`])
 	if len(current) > 0 && rb != 0 {
 		balance, _ := decimal.NewFromString(current[`amount`])
 		for len(list) <= 100 && rb > 0 {
@@ -60,7 +60,7 @@ func (c *Controller) WalletHistory() (string, error) {
 			if err = json.Unmarshal([]byte(prev[`data`]), &data); err != nil {
 				return ``, utils.ErrInfo(err)
 			}
-			rb = utils.StrToInt64(data[`rb_id`])
+			rb = converter.StrToInt64(data[`rb_id`])
 			if amount, ok := data[`amount`]; ok {
 				var dif decimal.Decimal
 				val, _ := decimal.NewFromString(amount)

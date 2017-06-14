@@ -261,7 +261,7 @@ func (t *TCPServer) Type1() {
 					return
 				}
 
-				hash, err := crypto.HashBytes(txBinData, cryptoProv)
+				hash, err := crypto.Hash(txBinData, cryptoProv)
 				if err != nil {
 					log.Fatal(err)
 				}

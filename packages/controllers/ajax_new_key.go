@@ -109,7 +109,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 			}
 		}
 		seed = strings.Join(phrase, ` `)
-		hash, err := crypto.HashBytes([]byte(seed), hashProv)
+		hash, err := crypto.Hash([]byte(seed), hashProv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -176,7 +176,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 		fmt.Printf("NewKey Sign %x %d\r\n", sign, len(sign))
 		fmt.Printf("NewKey Key %x %d\r\n", pubkey, len(pubkey))
 	*/
-	hash, err := crypto.HashBytes(data, hashProv)
+	hash, err := crypto.Hash(data, hashProv)
 	err = c.ExecSQL(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), header.Type, int64(idkey), int64(idkey))

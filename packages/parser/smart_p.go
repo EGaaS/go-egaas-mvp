@@ -288,7 +288,7 @@ func DBInsert(p *Parser, tblname string, params string, val ...interface{}) (ret
 func DBInsertReport(p *Parser, tblname string, params string, val ...interface{}) (ret int64, err error) {
 	names := strings.Split(tblname, `_`)
 	if names[0] != `global` {
-		state := utils.StrToInt64(names[0])
+		state := converter.StrToInt64(names[0])
 		if state != int64(p.TxStateID) {
 			err = fmt.Errorf(`Wrong state in DBInsertReport`)
 			return
@@ -329,7 +329,7 @@ func DBUpdate(p *Parser, tblname string, id int64, params string, val ...interfa
 	if err = p.AccessColumns(tblname, columns); err != nil {
 		return
 	}
-	_, err = p.selectiveLoggingAndUpd(columns, val, tblname, []string{`id`}, []string{utils.Int64ToStr(id)}, true)
+	_, err = p.selectiveLoggingAndUpd(columns, val, tblname, []string{`id`}, []string{converter.Int64ToStr(id)}, true)
 	return
 }
 
@@ -392,8 +392,10 @@ func DBString(tblname string, name string, id int64) (string, error) {
 
 // Sha256 возвращает значение хэша SHA256
 // Sha256 returns SHA256 hash value
+// Attention! Hashing errors ignored!
 func Sha256(text string) string {
-	return string(utils.Sha256(text))
+	hash, _ := crypto.Hash([]byte(text), hashProv)
+	return string(hash)
 }
 
 // PubToID возвращает числовой идентификатор для указанного в шестнадцатеричной форме публичного ключа.
@@ -583,7 +585,7 @@ func IsContract(p *Parser, names ...interface{}) bool {
 				return true
 			}
 		} else if len(p.TxSlice) > 1 {
-			if consts.TxTypes[utils.BytesToInt(p.TxSlice[1])] == name {
+			if consts.TxTypes[converter.BytesToInt(p.TxSlice[1])] == name {
 				return true
 			}
 		}
@@ -594,7 +596,7 @@ func IsContract(p *Parser, names ...interface{}) bool {
 // IsGovAccount проверяет является ли указанный аккаунт владельцем государства
 // IsGovAccount checks whether the specified account is the owner of the state
 func IsGovAccount(p *Parser, citizen int64) bool {
-	return utils.StrToInt64(StateVal(p, `gov_account`)) == citizen
+	return converter.StrToInt64(StateVal(p, `gov_account`)) == citizen
 }
 
 // AddressToID преобразует строковое представление номера кошелька в число
@@ -661,7 +663,7 @@ func (p *Parser) EvalIf(conditions string) (bool, error) {
 		blockTime = p.BlockData.Time
 	}
 
-	return smart.EvalIf(conditions, utils.Int64ToStr(int64(p.TxStateID)), &map[string]interface{}{`state`: p.TxStateID,
+	return smart.EvalIf(conditions, converter.Int64ToStr(int64(p.TxStateID)), &map[string]interface{}{`state`: p.TxStateID,
 		`citizen`: p.TxCitizenID, `wallet`: p.TxWalletID, `parser`: p,
 		`block_time`: blockTime, `time`: time})
 }
@@ -676,7 +678,7 @@ func StateVal(p *Parser, name string) string {
 // Int преобразует строку в число
 // Int converts a string to a number
 func Int(val string) int64 {
-	return utils.StrToInt64(val)
+	return converter.StrToInt64(val)
 }
 
 // Str преобразует значение в строку
@@ -710,7 +712,7 @@ func UpdateContract(p *Parser, name, value, conditions string) error {
 		fields []string
 		values []interface{}
 	)
-	prefix := utils.Int64ToStr(int64(p.TxStateID))
+	prefix := converter.Int64ToStr(int64(p.TxStateID))
 	cnt, err := p.OneRow(`SELECT id,conditions, active FROM "`+prefix+`_smart_contracts" WHERE name = ?`, name).String()
 	if err != nil {
 		return err
@@ -744,7 +746,7 @@ func UpdateContract(p *Parser, name, value, conditions string) error {
 	if len(fields) == 0 {
 		return fmt.Errorf(`empty value and condition`)
 	}
-	root, err := smart.CompileBlock(value, prefix, false, utils.StrToInt64(cnt["id"]))
+	root, err := smart.CompileBlock(value, prefix, false, converter.StrToInt64(cnt["id"]))
 	if err != nil {
 		return err
 	}
@@ -755,7 +757,7 @@ func UpdateContract(p *Parser, name, value, conditions string) error {
 	}
 	for i, item := range root.Children {
 		if item.Type == script.ObjContract {
-			root.Children[i].Info.(*script.ContractInfo).TableID = utils.StrToInt64(cnt[`id`])
+			root.Children[i].Info.(*script.ContractInfo).TableID = converter.StrToInt64(cnt[`id`])
 			root.Children[i].Info.(*script.ContractInfo).Active = cnt[`active`] == `1`
 		}
 	}
@@ -790,7 +792,7 @@ func UpdateParam(p *Parser, name, value, conditions string) error {
 		return fmt.Errorf(`empty value and condition`)
 	}
 	_, err := p.selectiveLoggingAndUpd(fields, values,
-		utils.Int64ToStr(int64(p.TxStateID))+"_state_parameters", []string{"name"}, []string{name}, true)
+		converter.Int64ToStr(int64(p.TxStateID))+"_state_parameters", []string{"name"}, []string{name}, true)
 	if err != nil {
 		return err
 	}
@@ -812,7 +814,7 @@ func UpdateMenu(p *Parser, name, value, conditions string) error {
 		fields = append(fields, "conditions")
 		values = append(values, conditions)
 	}
-	_, err := p.selectiveLoggingAndUpd(fields, values, utils.Int64ToStr(int64(p.TxStateID))+"_menu",
+	_, err := p.selectiveLoggingAndUpd(fields, values, converter.Int64ToStr(int64(p.TxStateID))+"_menu",
 		[]string{"name"}, []string{name}, true)
 	if err != nil {
 		return err
@@ -824,7 +826,7 @@ func UpdateMenu(p *Parser, name, value, conditions string) error {
 // CheckSignature checks the additional signatures for the contract
 func CheckSignature(i *map[string]interface{}, name string) error {
 	state, name := script.ParseContract(name)
-	pref := utils.Int64ToStr(int64(state))
+	pref := converter.Int64ToStr(int64(state))
 	if state == 0 {
 		pref = `global`
 	}
@@ -885,7 +887,7 @@ func UpdatePage(p *Parser, name, value, menu, conditions string) error {
 		fields = append(fields, "menu")
 		values = append(values, menu)
 	}
-	_, err := p.selectiveLoggingAndUpd(fields, values, utils.Int64ToStr(int64(p.TxStateID))+"_pages",
+	_, err := p.selectiveLoggingAndUpd(fields, values, converter.Int64ToStr(int64(p.TxStateID))+"_pages",
 		[]string{"name"}, []string{name}, true)
 	if err != nil {
 		return err

@@ -106,11 +106,11 @@ func checkKey() bool {
 			log.Fatal(err)
 		}
 		gSettings.Address = crypto.Address(pubKey)
-		hash, err := crypto.HashBytes(pass, hashProv)
+		hash, err := crypto.Hash(pass, hashProv)
 		if err != nil {
 			log.Fatal(err)
 		}
-		privKey, _, err = crypto.EncryptBytes(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
+		privKey, _, err = crypto.Encrypt(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -130,12 +130,12 @@ func checkKey() bool {
 				continue
 			}
 		}
-		hash, err := crypto.HashBytes(pass, hashProv)
+		hash, err := crypto.Hash(pass, hashProv)
 		if err != nil {
 			log.Fatal(err)
 		}
 		pass = pass[:0]
-		gPrivate, err = crypto.DecryptBytes(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
+		gPrivate, err = crypto.Decrypt(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
 		if err != nil {
 			fmt.Println(err)
 			continue

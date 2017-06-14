@@ -85,7 +85,7 @@ func httpListener(ListenHTTPHost string, BrowserHTTPHost *string) {
 			panic("Error listening ")
 		}
 		if i > 1 {
-			host = ":7" + utils.IntToStr(i) + "79"
+			host = ":7" + converter.IntToStr(i) + "79"
 			*BrowserHTTPHost = "http://" + host
 		}
 		log.Debug("host", host)

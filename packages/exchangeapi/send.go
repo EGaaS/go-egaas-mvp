@@ -65,7 +65,7 @@ func send(r *http.Request) interface{} {
 
 	err = boltDB.View(func(tx *bolt.Tx) error {
 		var err error
-		encpriv := tx.Bucket(bucket).Get([]byte(utils.Int64ToStr(sender)))
+		encpriv := tx.Bucket(bucket).Get([]byte(converter.Int64ToStr(sender)))
 		if len(encpriv) == 0 {
 			return fmt.Errorf(`Sender has not been found`)
 		}
@@ -123,8 +123,8 @@ func send(r *http.Request) interface{} {
 		return result
 	}
 	sign := make([]byte, 0)
-	sign = append(sign, utils.EncodeLengthPlusData(signature)...)
-	binsign := utils.EncodeLengthPlusData(sign)
+	sign = append(sign, converter.EncodeLengthPlusData(signature)...)
+	binsign := converter.EncodeLengthPlusData(sign)
 
 	data := make([]byte, 0)
 	data = converter.DecToBin(txType, 1)

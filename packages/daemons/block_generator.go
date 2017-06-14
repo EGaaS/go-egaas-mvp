@@ -345,14 +345,14 @@ BEGIN:
 				transactionType := data[1:2]
 				logger.Debug("%v", transactionType)
 				logger.Debug("%x", transactionType)
-				newhash, err := crypto.HashBytes(data, hashProvider)
+				newhash, err := crypto.Hash(data, hashProvider)
 				if err != nil {
 					log.Fatal("Hashing error")
 				}
 				mrklArray = append(mrklArray, newhash)
 				logger.Debug("mrklArray %v", mrklArray)
 
-				hash2, err := crypto.HashBytes(data, hashProvider)
+				hash2, err := crypto.Hash(data, hashProvider)
 				if err != nil {
 					log.Fatal(err)
 				}

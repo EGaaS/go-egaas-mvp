@@ -144,7 +144,7 @@ func (p *Parser) limitRequest(vimit interface{}, txType string, vperiod interfac
 }*/
 
 func (p *Parser) dataPre() {
-	hash, err := crypto.HashBytes(p.BinaryData, doubleHashProv)
+	hash, err := crypto.Hash(p.BinaryData, doubleHashProv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func (p *Parser) dataPre() {
 // и она каждый раз успешно проходила бы фронтальную проверку
 // And it would have successfully passed a frontal test
 func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
-	searchedHash, err := crypto.HashBytes(txBinary, hashProv)
+	searchedHash, err := crypto.Hash(txBinary, hashProv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -457,7 +457,7 @@ func (p *Parser) AccessRights(condition string, iscondition bool) error {
 	if iscondition {
 		param = `conditions`
 	}
-	conditions, err := p.Single(`SELECT `+param+` FROM "`+utils.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
+	conditions, err := p.Single(`SELECT `+param+` FROM "`+converter.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
 		condition).String()
 	if err != nil {
 		return err
@@ -481,7 +481,7 @@ func (p *Parser) AccessTable(table, action string) error {
 
 	//	prefix := utils.Int64ToStr(int64(p.TxStateID))
 	govAccount, _ := utils.StateParam(int64(p.TxStateID), `gov_account`)
-	if table == `dlt_wallets` && p.TxContract != nil && p.TxCitizenID == utils.StrToInt64(govAccount) {
+	if table == `dlt_wallets` && p.TxContract != nil && p.TxCitizenID == converter.StrToInt64(govAccount) {
 		return nil
 	}
 
@@ -688,7 +688,7 @@ func (p *Parser) payFPrice() error {
 	} else { // contract
 		if p.TxStateID > 0 && p.TxCitizenID != 0 && p.TxContract != nil {
 			//fromID = p.TxContract.TxGovAccount
-			fromID = utils.StrToInt64(StateVal(p, `gov_account`))
+			fromID = converter.StrToInt64(StateVal(p, `gov_account`))
 		} else {
 			// списываем напрямую с dlt_wallets у юзера
 			// write directly from dlt_wallets of user
@@ -722,15 +722,15 @@ func (p *Parser) payFPrice() error {
 			return err
 		}*/
 	if _, err := p.selectiveLoggingAndUpd([]string{`-amount`}, []interface{}{egs}, `dlt_wallets`, []string{`wallet_id`},
-		[]string{utils.Int64ToStr(fromID)}, true); err != nil {
+		[]string{converter.Int64ToStr(fromID)}, true); err != nil {
 		return err
 	}
 	if _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{egs.Sub(commission)}, `dlt_wallets`, []string{`wallet_id`},
-		[]string{utils.Int64ToStr(toID)}, true); err != nil {
+		[]string{converter.Int64ToStr(toID)}, true); err != nil {
 		return err
 	}
 	if _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{commission}, `dlt_wallets`, []string{`wallet_id`},
-		[]string{utils.Int64ToStr(consts.COMMISSION_WALLET)}, true); err != nil {
+		[]string{converter.Int64ToStr(consts.COMMISSION_WALLET)}, true); err != nil {
 		return err
 	}
 	fmt.Printf(" Paid commission %v\r\n", commission)

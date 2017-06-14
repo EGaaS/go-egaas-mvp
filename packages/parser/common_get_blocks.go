@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -95,7 +96,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 			ClearTmp(blocks)
 			return utils.ErrInfo(errors.New("len(binaryBlock) == 0"))
 		}
-		utils.BytesShift(&binaryBlock, 1) // уберем 1-й байт - тип (блок/тр-я)
+		converter.BytesShift(&binaryBlock, 1) // уберем 1-й байт - тип (блок/тр-я)
 		// remove the 1st byte - type (block/transaction)
 		// распарсим заголовок блока
 		// parse the heading of a block
@@ -117,7 +118,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				return utils.ErrInfo(err)
 			}
 		}
-		if badBlocks[blockData.BlockId] == string(utils.BinToHex(blockData.Sign)) {
+		if badBlocks[blockData.BlockId] == string(converter.BinToHex(blockData.Sign)) {
 			ClearTmp(blocks)
 			return utils.ErrInfo(errors.New("bad block"))
 		}
@@ -234,7 +235,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 		utils.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
 	}
-	utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
+	utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 
 	// откатываем наши блоки до начала вилки
 	// we roll back our blocks before fork started
@@ -368,7 +369,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 					return utils.ErrInfo(err)
 				}
 				binary := []byte(lastMyBlock["data"])
-				utils.BytesShift(&binary, 1) // уберем 1-й байт - тип (блок/тр-я) // remove the first byte which is the type (block/territory)
+				converter.BytesShift(&binary, 1) // уберем 1-й байт - тип (блок/тр-я) // remove the first byte which is the type (block/territory)
 				lastMyBlockData := utils.ParseBlockHeader(&binary)
 				err = p.ExecSQL(`
 					UPDATE info_block
@@ -376,7 +377,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 							block_id = ?,
 							time = ?,
 							sent = 0
-					`, utils.BinToHex(lastMyBlock["hash"]), lastMyBlockData.BlockId, lastMyBlockData.Time)
+					`, converter.BinToHex(lastMyBlock["hash"]), lastMyBlockData.BlockId, lastMyBlockData.Time)
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
@@ -421,7 +422,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
-			blockHex := utils.BinToHex(block)
+			blockHex := converter.BinToHex(block)
 
 			// пишем в цепочку блоков
 			// record in the chain of blocks
