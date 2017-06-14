@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/daylight"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
@@ -62,7 +63,7 @@ func main() {
 			//			fmt.Println(fmt.Sprintf("======Event(%d) - Signaled by Command (%s)", cr.TargetID, cr.Type))
 			if cr.TargetID > 1 && cr.Type == "closed" {
 				if utils.DB != nil && utils.DB.DB != nil {
-					utils.DB.ExecSQL(`INSERT INTO stop_daemons(stop_time) VALUES (?)`, utils.Time())
+					utils.DB.ExecSQL(`INSERT INTO stop_daemons(stop_time) VALUES (?)`, time.Now().Unix())
 				} else {
 					thrust.Exit()
 					system.FinishThrust(0)

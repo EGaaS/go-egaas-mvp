@@ -23,7 +23,6 @@ import (
 
 	//	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -64,7 +63,7 @@ func (c *Controller) SaveQueue() (string, error) {
 	//	fmt.Printf("PublicKey %d %x\r\n", lenpub, publicKey)
 	txType := utils.TypeInt(itxType)
 	sign := make([]byte, 0)
-	signature, err := lib.JSSignToBytes(c.r.FormValue("signature1"))
+	signature, err := crypto.JSSignToBytes(c.r.FormValue("signature1"))
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

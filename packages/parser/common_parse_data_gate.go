@@ -21,6 +21,7 @@ import (
 	//"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -61,7 +62,11 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			return p.ErrInfo(err)
 		}
 
-		p.TxHash = string(utils.Md5(transactionBinaryData))
+		hash, err := crypto.HashBytes(transactionBinaryData, hashProv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		p.TxHash = string(hash)
 
 		// преобразуем бинарные данные транзакции в массив
 		// transforming binary data of the transaction to an array

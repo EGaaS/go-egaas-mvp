@@ -37,7 +37,6 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	//	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
@@ -49,8 +48,10 @@ import (
 // Mutex for locking DB
 var Mutex = &sync.Mutex{}
 var log = logging.MustGetLogger("daemons")
-var hashProvider = crypto.MD5
-var cryptoProvider = crypto.AESCFB
+var hashProv = crypto.SHA256
+var cryptoProv = crypto.AESCFB
+var signProv = crypto.ECDSA
+var ellipticSize = crypto.Elliptic256
 
 // DB is a database variable
 var DB *DCDB
@@ -465,7 +466,7 @@ func (db *DCDB) OneRow(query string, args ...interface{}) *oneRow {
 
 // InsertInLogTx inserts md5 hash and time into log_transaction
 func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
-	txHash, err := crypto.HashBytes(binaryTx, hashProvider)
+	txHash, err := crypto.HashBytes(binaryTx, hashProv)
 	if err != nil {
 		log.Fatal("Hashing error")
 	}
@@ -480,7 +481,7 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 
 // DelLogTx deletes a row with the specified md5 hash in log_transaction
 func (db *DCDB) DelLogTx(binaryTx []byte) error {
-	txHash, err := crypto.HashBytes(binaryTx, hashProvider)
+	txHash, err := crypto.HashBytes(binaryTx, hashProv)
 	if err != nil {
 		log.Fatal("Hashig error")
 	}
@@ -897,7 +898,7 @@ func (db *DCDB) GetMyWalletID() (int64, error) {
 	}
 	if walletID == 0 {
 		//		walletId, err = db.Single("SELECT wallet_id FROM dlt_wallets WHERE address = ?", *WalletAddress).Int64()
-		walletID = lib.StringToAddress(*WalletAddress)
+		walletID = converter.StringToAddress(*WalletAddress)
 	}
 	return walletID, nil
 }
@@ -925,7 +926,7 @@ func (db *DCDB) GetWalletIDByPublicKey(publicKey []byte) (int64, error) {
 		}
 		returns walletId, nil*/
 	key, _ := hex.DecodeString(string(publicKey))
-	return int64(lib.Address(key)), nil
+	return crypto.Address(key), nil
 }
 
 /*func (db *DCDB) GetCitizenIdByPublicKey(publicKey []byte) (int64, error) {
@@ -1183,12 +1184,12 @@ func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citiz
 	txType = BinToDecBytesShift(&binaryBlock, 1)
 	if consts.IsStruct(int(txType)) {
 		var txHead consts.TxHeader
-		lib.BinUnmarshal(&tmp, &txHead)
+		converter.BinUnmarshal(&tmp, &txHead)
 		walletID = txHead.WalletID
 		citizenID = txHead.CitizenID
 	} else if txType > 127 {
 		header := consts.TXHeader{}
-		err := lib.BinUnmarshal(&tmp, &header)
+		err := converter.BinUnmarshal(&tmp, &header)
 		if err == nil {
 			if header.StateID > 0 {
 				citizenID = int64(header.WalletID)
@@ -1263,7 +1264,7 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 	log.Debug("binaryTx %x", *binaryTx)
 	log.Debug("iv %s", iv)
 
-	decrypted, err := crypto.DecryptBytes(*binaryTx, decKey, iv, cryptoProvider)
+	decrypted, err := crypto.DecryptBytes(*binaryTx, decKey, iv, cryptoProv)
 	if err != nil {
 		return nil, nil, nil, ErrInfo(err)
 	}
@@ -1291,12 +1292,12 @@ func (db *DCDB) GetBinSign(forSign string) ([]byte, error) {
 					return nil, ErrInfo(err)
 				}
 				return rsa.SignPKCS1v15(crand.Reader, privateKey, crypto.SHA1, HashSha1(forSign))*/
-	return lib.SignECDSA(nodePrivateKey, forSign)
+	return crypto.Sign(nodePrivateKey, forSign, hashProv, signProv, ellipticSize)
 }
 
 // InsertReplaceTxInQueue replaces a row in queue_tx
 func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
-	hash, err := crypto.HashBytes(data, hashProvider)
+	hash, err := crypto.HashBytes(data, hashProv)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
@@ -1532,7 +1533,7 @@ func (db *DCDB) IsTable(tblname string) bool {
 
 // SendTx writes transaction info to transactions_status & queue_tx
 func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
-	hash, err := crypto.HashBytes(data, hashProvider)
+	hash, err := crypto.HashBytes(data, hashProv)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}

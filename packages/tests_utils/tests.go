@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-daylight library. If not, see <http://www.gnu.org/licenses/>.
 
+// TODO NOT REFACTORED AT ALL
 package tests_utils
 
 import (
@@ -21,14 +22,15 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"github.com/astaxie/beego/config"
-	"github.com/EGaaS/go-egaas-mvp/packages/parser"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"io"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/parser"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/astaxie/beego/config"
 	//	"crypto/rand"
 	//	"crypto/rsa"
 	"crypto/x509"

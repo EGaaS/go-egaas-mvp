@@ -40,6 +40,7 @@ var (
 	hashProv     = crypto.SHA256
 	cryptoProv   = crypto.AESCFB
 	ellipticSize = crypto.Elliptic256
+	signProv     = crypto.ECDSA
 )
 
 // DefaultAPI is the default answer structure

@@ -20,10 +20,14 @@ import (
 	"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/shopspring/decimal"
 )
+
+var hashProv = crypto.SHA256
+var doubleHashProv = crypto.SHA256
 
 /*
 фронт. проверка + занесение данных из блока в таблицы и info_block
@@ -108,8 +112,12 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				return utils.ErrInfo(err)
 			}
 
-			utils.WriteSelectiveLog("UPDATE transactions SET used=1 WHERE hex(hash) = " + string(utils.Md5(transactionBinaryDataFull)))
-			affect, err := p.ExecSQLGetAffect("UPDATE transactions SET used=1 WHERE hex(hash) = ?", utils.Md5(transactionBinaryDataFull))
+			hash, err := crypto.HashBytes(transactionBinaryDataFull, hashProv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			utils.WriteSelectiveLog("UPDATE transactions SET used=1 WHERE hex(hash) = " + string(hash))
+			affect, err := p.ExecSQLGetAffect("UPDATE transactions SET used=1 WHERE hex(hash) = ?", hash)
 			if err != nil {
 				utils.WriteSelectiveLog(err)
 				utils.WriteSelectiveLog("RollbackTo")
@@ -121,7 +129,11 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
 			//log.Debug("transactionBinaryData", transactionBinaryData)
-			p.TxHash = string(utils.Md5(transactionBinaryData))
+			hash, err = crypto.HashBytes(transactionBinaryData, hashProv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			p.TxHash = string(hash)
 			log.Debug("p.TxHash %s", p.TxHash)
 			p.TxSlice, err = p.ParseTransaction(&transactionBinaryData)
 			log.Debug("p.TxSlice %v", p.TxSlice)
@@ -239,8 +251,12 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			// даем юзеру понять, что его тр-ия попала в блок
 			// let user know that his transaction  is added in the block
-			p.ExecSQL("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockId, utils.Md5(transactionBinaryDataFull))
-			log.Debug("UPDATE transactions_status SET block_id = %d WHERE hex(hash) = %s", p.BlockData.BlockId, utils.Md5(transactionBinaryDataFull))
+			hash, err = crypto.HashBytes(transactionBinaryData, hashProv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			p.ExecSQL("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockId, hash)
+			log.Debug("UPDATE transactions_status SET block_id = %d WHERE hex(hash) = %s", p.BlockData.BlockId, hash)
 
 			// Тут было time(). А значит если бы в цепочке блоков были блоки в которых были бы одинаковые хэши тр-ий, то ParseDataFull вернул бы error
 			// here was a time(). That means if blocks with the same hashes of transactions were in the chain of blocks, ParseDataFull would return the error

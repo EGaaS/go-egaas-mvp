@@ -20,7 +20,8 @@ import (
 	//	"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -61,8 +62,12 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 			binaryData := transactionBinaryData
 			// узнаем кол-во байт, которое занимает размер и удалим размер
 			// get know the quantity of bytes, which the size takes and remove it
-			utils.BytesShiftReverse(&binaryData, len(lib.EncodeLength(sizesSlice[i])))
-			p.TxHash = string(utils.Md5(transactionBinaryData))
+			utils.BytesShiftReverse(&binaryData, len(converter.EncodeLength(sizesSlice[i])))
+			hash, err := crypto.HashBytes(transactionBinaryData, hashProv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			p.TxHash = string(hash)
 			p.TxSlice, err = p.ParseTransaction(&transactionBinaryData)
 			if err != nil {
 				return utils.ErrInfo(err)

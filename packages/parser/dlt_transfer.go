@@ -19,7 +19,9 @@ package parser
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/shopspring/decimal"
 )
@@ -61,7 +63,7 @@ func (p *Parser) DLTTransferFront() error {
 		if err != nil {
 			return p.ErrInfo(err)
 		}
-		if lib.KeyToAddress(bkey) != lib.AddressToString(p.TxWalletID) {
+		if crypto.KeyToAddress(bkey) != converter.AddressToString(p.TxWalletID) {
 			return p.ErrInfo("incorrect public_key")
 		}
 	}
@@ -126,7 +128,7 @@ func (p *Parser) DLTTransferFront() error {
 // DLTTransfer proceeds DLTTransfer transaction
 func (p *Parser) DLTTransfer() error {
 	log.Debug("wallet address %s", p.TxMaps.String["walletAddress"])
-	address := lib.StringToAddress(p.TxMaps.String["walletAddress"])
+	address := converter.StringToAddress(p.TxMaps.String["walletAddress"])
 	walletID, err := p.Single(`SELECT wallet_id FROM dlt_wallets WHERE wallet_id = ?`, address).Int64()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -159,7 +161,7 @@ func (p *Parser) DLTTransfer() error {
 	if walletID == 0 {
 		log.Debug("walletID == 0")
 		log.Debug("%s", string(p.TxMaps.String["walletAddress"]))
-		walletID = lib.StringToAddress(p.TxMaps.String["walletAddress"])
+		walletID = converter.StringToAddress(p.TxMaps.String["walletAddress"])
 		_, err = p.selectiveLoggingAndUpd([]string{"+amount"}, []interface{}{p.TxMaps.Decimal["amount"].String()}, "dlt_wallets",
 			[]string{"wallet_id"}, []string{utils.Int64ToStr(walletID)}, true)
 	} else {
@@ -179,7 +181,7 @@ func (p *Parser) DLTTransfer() error {
 	// пишем в общую историю тр-ий
 	// record into the general transaction history
 	dltTransactionsID, err := p.ExecSQLGetLastInsertID(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
-		p.TxWalletID, walletID, lib.AddressToString(int64(utils.StrToUint64(p.TxMaps.String["walletAddress"]))), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
+		p.TxWalletID, walletID, converter.AddressToString(int64(utils.StrToUint64(p.TxMaps.String["walletAddress"]))), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -189,7 +191,7 @@ func (p *Parser) DLTTransfer() error {
 	}
 
 	dltTransactionsID, err = p.ExecSQLGetLastInsertID(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
-		p.TxWalletID, p.BlockData.WalletId, lib.AddressToString(p.BlockData.WalletId), p.TxMaps.Decimal["commission"].String(), 0, "Commission", p.BlockData.Time, p.BlockData.BlockId)
+		p.TxWalletID, p.BlockData.WalletId, converter.AddressToString(p.BlockData.WalletId), p.TxMaps.Decimal["commission"].String(), 0, "Commission", p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

@@ -17,7 +17,7 @@
 package parser
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -33,7 +33,7 @@ func (p *Parser) rollbackAI(table string, num int64) error {
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
-	tblname := lib.EscapeName(table)
+	tblname := converter.EscapeName(table)
 	log.Debug("AiID: %s", AiID)
 	// если табла была очищена, то тут будет 0, поэтому нелья чистить таблы под нуль
 	// if the table was cleaned up, then 0 appears, that's why we can not clean the tables to zero

@@ -25,6 +25,8 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	//	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
@@ -142,11 +144,15 @@ func (p *Parser) limitRequest(vimit interface{}, txType string, vperiod interfac
 }*/
 
 func (p *Parser) dataPre() {
-	p.blockHashHex = utils.DSha256(p.BinaryData)
-	p.blockHex = utils.BinToHex(p.BinaryData)
+	hash, err := crypto.HashBytes(p.BinaryData, doubleHashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.blockHashHex = hash
+	p.blockHex = converter.BinToHex(p.BinaryData)
 	// определим тип данных
 	// define the data type
-	p.dataType = int(utils.BinToDec(utils.BytesShift(&p.BinaryData, 1)))
+	p.dataType = int(converter.BinToDec(converter.BytesShift(&p.BinaryData, 1)))
 	log.Debug("dataType", p.dataType)
 }
 
@@ -156,40 +162,44 @@ func (p *Parser) dataPre() {
 // и она каждый раз успешно проходила бы фронтальную проверку
 // And it would have successfully passed a frontal test
 func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
-	hash, err := p.Single(`SELECT hash FROM log_transactions WHERE hex(hash) = ?`, utils.Md5(txBinary)).String()
-	log.Debug("SELECT hash FROM log_transactions WHERE hex(hash) = %s", utils.Md5(txBinary))
+	searchedHash, err := crypto.HashBytes(txBinary, hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hash, err := p.Single(`SELECT hash FROM log_transactions WHERE hex(hash) = ?`, searchedHash).String()
+	log.Debug("SELECT hash FROM log_transactions WHERE hex(hash) = %s", searchedHash)
 	if err != nil {
 		log.Error("%s", utils.ErrInfo(err))
 		return utils.ErrInfo(err)
 	}
 	log.Debug("hash %x", hash)
 	if len(hash) > 0 {
-		return utils.ErrInfo(fmt.Errorf("double tx in log_transactions %s", utils.Md5(txBinary)))
+		return utils.ErrInfo(fmt.Errorf("double tx in log_transactions %s", searchedHash))
 	}
 
 	if transactions {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ? and verified = 1", utils.Md5(txBinary)).Int64()
+		exists, err := p.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ? and verified = 1", searchedHash).Int64()
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
 		if exists > 0 {
-			return utils.ErrInfo(fmt.Errorf("double tx in transactions %s", utils.Md5(txBinary)))
+			return utils.ErrInfo(fmt.Errorf("double tx in transactions %s", searchedHash))
 		}
 	}
 
 	if txQueue {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", utils.Md5(txBinary)).Int64()
+		exists, err := p.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", searchedHash).Int64()
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
 		if exists > 0 {
-			return utils.ErrInfo(fmt.Errorf("double tx in queue_tx %s", utils.Md5(txBinary)))
+			return utils.ErrInfo(fmt.Errorf("double tx in queue_tx %s", searchedHash))
 		}
 	}
 

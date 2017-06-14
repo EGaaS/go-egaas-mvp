@@ -17,7 +17,9 @@
 package script
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"log"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 )
 
 type evalCode struct {
@@ -26,7 +28,8 @@ type evalCode struct {
 }
 
 var (
-	evals = make(map[uint64]*evalCode)
+	evals        = make(map[uint64]*evalCode)
+	checksumProv = crypto.CRC64
 )
 
 // CompileEval compiles conditional exppression
@@ -35,7 +38,11 @@ func (vm *VM) CompileEval(input string, state uint32) error {
 	block, err := vm.CompileBlock([]rune(source), state, false, 0)
 	//	fmt.Println(`Compile Eval`, err, input)
 	if err == nil {
-		evals[lib.CRC64([]byte(input))] = &evalCode{Source: input, Code: block}
+		checksum, err := crypto.CalcChecksum([]byte(input), checksumProv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		evals[checksum] = &evalCode{Source: input, Code: block}
 		return nil
 	}
 	return err
@@ -47,14 +54,17 @@ func (vm *VM) EvalIf(input string, state uint32, vars *map[string]interface{}) (
 	if len(input) == 0 {
 		return true, nil
 	}
-	crc := lib.CRC64([]byte(input))
-	if eval, ok := evals[crc]; !ok || eval.Source != input {
+	checksum, err := crypto.CalcChecksum([]byte(input), checksumProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if eval, ok := evals[checksum]; !ok || eval.Source != input {
 		if err := vm.CompileEval(input, state); err != nil {
 			return false, err
 		}
 	}
 	rt := vm.RunInit(CostDefault)
-	ret, err := rt.Run(evals[crc].Code.Children[0], nil, vars)
+	ret, err := rt.Run(evals[checksum].Code.Children[0], nil, vars)
 	if err == nil {
 		return valueToBool(ret[0]), nil
 	}

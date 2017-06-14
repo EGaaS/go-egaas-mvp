@@ -125,7 +125,7 @@ BEGIN:
 			continue
 		}
 
-		curTime := time.Unix().Now()
+		curTime := time.Now().Unix()
 
 		// проверим, прошло ли время с момента последнего обновления
 		// check if the time of the last updating passed

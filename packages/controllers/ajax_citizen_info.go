@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -54,7 +55,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 		data   map[string]string
 	)
 	c.w.Header().Add("Access-Control-Allow-Origin", "*")
-	stateCode := utils.StrToInt64(c.r.FormValue(`stateId`))
+	stateCode := converter.StrToInt64(c.r.FormValue(`stateId`))
 	_, err = c.CheckStateName(stateCode)
 	c.r.ParseMultipartForm(16 << 20) // Max memory 16 MiB
 	formdata := c.r.MultipartForm
@@ -101,7 +102,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 		}
 	}
 	if err == nil {
-		data, err = c.OneRow(`SELECT * FROM "`+utils.Int64ToStr(stateCode)+`_citizenship_requests" WHERE dlt_wallet_id = ? order by id desc`, walletID).String()
+		data, err = c.OneRow(`SELECT * FROM "`+converter.Int64ToStr(stateCode)+`_citizenship_requests" WHERE dlt_wallet_id = ? order by id desc`, walletID).String()
 		if err != nil || data == nil || len(data) == 0 {
 			err = fmt.Errorf(`unknown request for wallet %s`, walletID)
 		} /*else {

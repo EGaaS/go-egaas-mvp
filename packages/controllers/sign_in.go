@@ -19,7 +19,7 @@ package controllers
 import (
 	"encoding/hex"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -66,7 +66,8 @@ func (c *Controller) AjaxSignIn() interface{} {
 		result.Error = "incorrect signature"
 		return result
 	}
-	result.Address = lib.KeyToAddress(bkey)
+
+	result.Address = crypto.KeyToAddress(bkey)
 	log.Debug("address : %s", result.Address)
 	log.Debug("c.r.RemoteAddr %s", c.r.RemoteAddr)
 	log.Debug("c.r.Header.Get(User-Agent) %s", c.r.Header.Get("User-Agent"))

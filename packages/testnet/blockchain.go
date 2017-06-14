@@ -21,12 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -81,16 +82,20 @@ func GetTx() {
 		explorer, err := utils.DB.GetAll(`SELECT b.data, b.time, b.tx, b.id FROM block_chain as b
 		where b.id > $1	order by b.id desc limit 30 offset 0`, -1, txLatest)
 		if err == nil && len(explorer) > 0 {
-			txLatest = utils.StrToInt64(explorer[0][`id`])
+			txLatest = converter.StrToInt64(explorer[0][`id`])
 			for i := len(explorer); i > 0; i-- {
 				item := explorer[i-1]
-				if utils.StrToInt64(item[`tx`]) == 0 {
+				if converter.StrToInt64(item[`tx`]) == 0 {
 					continue
 				}
 				block := ([]byte(item[`data`]))[1:]
 				utils.ParseBlockHeader(&block)
 				for len(block) > 0 {
-					size := int(utils.DecodeLength(&block))
+					size64, err := converter.DecodeLength(&block)
+					if err != nil {
+						log.Fatal(err)
+					}
+					size := int(size64)
 					if size == 0 || len(block) < size {
 						break
 					}
@@ -107,19 +112,23 @@ func GetTx() {
 							name = fmt.Sprintf("unknown %d", itype)
 						}
 						input := block[1:]
-						txtime = utils.BinToDecBytesShift(&input, 4)
-						length := utils.DecodeLength(&input)
+						txtime = converter.BinToDecBytesShift(&input, 4)
+						length, err := converter.DecodeLength(&input)
+						if err != nil {
+							log.Fatal(err)
+						}
 						if length > 0 && length < 30 {
-							wallet = utils.BytesToInt64(utils.BytesShift(&input, length))
-							length = utils.DecodeLength(&input)
+							wallet = converter.BytesToInt64(converter.BytesShift(&input, length))
+							length, err = converter.DecodeLength(&input)
+							if err != nil {
+								log.Fatal(err)
+							}
 							if length > 0 && length < 20 {
-								state = utils.BytesToInt64(utils.BytesShift(&input, length))
+								state = converter.BytesToInt64(converter.BytesShift(&input, length))
 							}
 						} else {
 							break
 						}
-						//wallet, _ = utils.DecodeLenInt64(&input)
-						//state, _ = utils.DecodeLenInt64(&input)
 					} else {
 						itype -= 128
 						tmp := make([]byte, 4)
@@ -155,7 +164,7 @@ func GetTx() {
 						}
 						input := block[:]
 						header := consts.TXHeader{}
-						if err = lib.BinUnmarshal(&input, &header); err != nil {
+						if err = converter.BinUnmarshal(&input, &header); err != nil {
 							break
 						}
 						txtime = int64(header.Time)
@@ -166,15 +175,15 @@ func GetTx() {
 					case `GenCitizen`:
 						comment = `1`
 					}
-					if name == `GenCitizen` && txTop.TxName == name && txTop.BlockID == utils.StrToInt64(item[`id`]) &&
-						txTop.Address == lib.AddressToString(wallet) {
-						txTop.Comment = fmt.Sprintf(`%d`, utils.StrToInt64(txTop.Comment)+1)
+					if name == `GenCitizen` && txTop.TxName == name && txTop.BlockID == converter.StrToInt64(item[`id`]) &&
+						txTop.Address == converter.AddressToString(wallet) {
+						txTop.Comment = fmt.Sprintf(`%d`, converter.StrToInt64(txTop.Comment)+1)
 					} else {
 						txTop = txTop.next
 						txID++
 						txTop.ID = txID
-						txTop.BlockID = utils.StrToInt64(item[`id`])
-						txTop.Address = lib.AddressToString(wallet)
+						txTop.BlockID = converter.StrToInt64(item[`id`])
+						txTop.Address = converter.AddressToString(wallet)
 						txTop.Comment = comment
 						txTop.TxName = name
 						txTop.Time = time.Unix(txtime, 0).String()[:19]

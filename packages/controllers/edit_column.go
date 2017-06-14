@@ -17,8 +17,10 @@
 package controllers
 
 import (
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"strings"
+	"time"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 type editColumnPage struct {
@@ -44,7 +46,7 @@ func (c *Controller) EditColumn() (string, error) {
 
 	txType := "EditColumn"
 	txTypeID := utils.TypeInt(txType)
-	timeNow := utils.Time()
+	timeNow := time.Now().Unix()
 
 	tableName := c.r.FormValue("tableName")
 	columnName := c.r.FormValue("columnName")

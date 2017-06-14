@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc64"
+	"io"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -28,6 +29,7 @@ type CryptoProvider int
 type HashProvider int
 type SignProvider int
 type EllipticSize int
+type ChecksumProvider int
 
 const (
 	MD5 HashProvider = iota
@@ -37,6 +39,7 @@ const (
 
 const (
 	AESCFB CryptoProvider = iota
+	AESCBC
 )
 
 const (
@@ -45,6 +48,10 @@ const (
 
 const (
 	Elliptic256 EllipticSize = iota
+)
+
+const (
+	CRC64 ChecksumProvider = iota
 )
 
 const (
@@ -108,6 +115,12 @@ func EncryptBytes(msg []byte, key []byte, iv []byte, prov CryptoProvider) ([]byt
 	switch prov {
 	case AESCFB:
 		return encryptCFB(msg, key, iv)
+	case AESCBC:
+		res, err := encryptCBC(msg, key, iv)
+		if err != nil {
+			return nil, nil, err
+		}
+		return res, nil, nil
 	default:
 		return nil, nil, errors.New(UnknownProviderError)
 	}
@@ -128,6 +141,8 @@ func DecryptBytes(msg []byte, key []byte, iv []byte, prov CryptoProvider) ([]byt
 	switch prov {
 	case AESCFB:
 		return decryptCFB(msg, key, iv)
+	case AESCBC:
+		return decryptCBC(msg, key, iv)
 	default:
 		return nil, errors.New(UnknownProviderError)
 	}
@@ -249,6 +264,7 @@ func GenHexKeys(size EllipticSize) (string, string, error) {
 	return hex.EncodeToString(priv), hex.EncodeToString(pub), nil
 }
 
+// TODO уточнить зачем два разных хеша
 // Address gets int64 EGGAS address from the public key
 func Address(pubKey []byte) int64 {
 	h256 := sha256.Sum256(pubKey)
@@ -276,6 +292,35 @@ func PrivateToPublic(key []byte, size EllipticSize) ([]byte, error) {
 	priv.D = bi
 	priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
 	return append(converter.FillLeft(priv.PublicKey.X.Bytes()), converter.FillLeft(priv.PublicKey.Y.Bytes())...), nil
+}
+
+// TODO убрать вместе с хексом
+// PrivateToPublicHex returns the hex public key for the specified hex private key.
+func PrivateToPublicHex(hexkey string) (string, error) {
+	key, err := hex.DecodeString(hexkey)
+	if err != nil {
+		return ``, errors.New("Decode hex error")
+	}
+	pubKey, err := PrivateToPublic(key, Elliptic256)
+	if err != nil {
+		return ``, err
+	}
+	return hex.EncodeToString(pubKey), nil
+}
+
+// TODO убрать отсюда
+// KeyToAddress converts a public key to EGAAS address XXXX-...-XXXX.
+func KeyToAddress(pubKey []byte) string {
+	return converter.AddressToString(Address(pubKey))
+}
+
+func CalcChecksum(input []byte, checksumProv ChecksumProvider) (uint64, error) {
+	switch checksumProv {
+	case CRC64:
+		return calcCRC64(input), nil
+	default:
+		return 0, errors.New(UnknownProviderError)
+	}
 }
 
 // CRC64 returns crc64 sum
@@ -372,7 +417,7 @@ func encryptCFB(plainText, key, iv []byte) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 	if len(iv) == 0 {
-		ciphertext := []byte(randSeq(16))
+		ciphertext := []byte(RandSeq(16))
 		iv = ciphertext[:16]
 	}
 	encrypter := cipher.NewCFBEncrypter(block, iv)
@@ -380,6 +425,28 @@ func encryptCFB(plainText, key, iv []byte) ([]byte, []byte, error) {
 	encrypter.XORKeyStream(encrypted, plainText)
 
 	return append(iv, encrypted...), iv, nil
+}
+
+// CBCEncrypt encrypts the text by using the key parameter. It uses CBC mode of AES.
+func encryptCBC(text, key, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	plaintext := PKCS7Padding(text, aes.BlockSize)
+	if iv == nil {
+		iv = make([]byte, aes.BlockSize, aes.BlockSize+len(plaintext))
+		if _, err := io.ReadFull(crand.Reader, iv); err != nil {
+			return nil, err
+		}
+	}
+	if len(iv) < aes.BlockSize {
+		return nil, fmt.Errorf(`wrong size of iv %d`, len(iv))
+	}
+	mode := cipher.NewCBCEncrypter(block, iv[:aes.BlockSize])
+	encrypted := make([]byte, len(plaintext))
+	mode.CryptBlocks(encrypted, plaintext)
+	return append(iv, encrypted...), nil
 }
 
 //In previous version of this func the parameters order was another (iv, encrypted, key)
@@ -394,7 +461,28 @@ func decryptCFB(cipherText, key, iv []byte) ([]byte, error) {
 	return decrypted, nil
 }
 
-func randSeq(n int) string {
+// CBCDecrypt decrypts the text by using key. It uses CBC mode of AES.
+func decryptCBC(ciphertext, key, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	if len(ciphertext) < aes.BlockSize || len(ciphertext)%aes.BlockSize != 0 {
+		return nil, fmt.Errorf(`Wrong size of cipher %d`, len(ciphertext))
+	}
+	if iv == nil {
+		iv = ciphertext[:aes.BlockSize]
+		ciphertext = ciphertext[aes.BlockSize:]
+	}
+	ret := make([]byte, len(ciphertext))
+	cipher.NewCBCDecrypter(block, iv[:aes.BlockSize]).CryptBlocks(ret, ciphertext)
+	if ret, err = PKCS7UnPadding(ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func RandSeq(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	rand.Seed(time.Now().UnixNano())
 	b := make([]rune, n)
@@ -402,4 +490,109 @@ func randSeq(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+// TODO в приватные
+// PKCS7Padding realizes PKCS#7 encoding which is described in RFC 5652.
+func PKCS7Padding(src []byte, blockSize int) []byte {
+	padding := blockSize - len(src)%blockSize
+	return append(src, bytes.Repeat([]byte{byte(padding)}, padding)...)
+}
+
+//TODO в приватные
+// PKCS7UnPadding realizes PKCS#7 decoding.
+func PKCS7UnPadding(src []byte) ([]byte, error) {
+	length := len(src)
+	if length < int(src[length-1]) {
+		return nil, fmt.Errorf(`incorrect input of PKCS7UnPadding`)
+	}
+	return src[:length-int(src[length-1])], nil
+}
+
+// JSSignToBytes converts hex signature which has got from the browser to []byte
+func JSSignToBytes(in string) ([]byte, error) {
+	r, s, err := parseSign(in)
+	if err != nil {
+		return nil, err
+	}
+	return append(converter.FillLeft(r.Bytes()), converter.FillLeft(s.Bytes())...), nil
+}
+
+// SharedEncrypt creates a shared key and encrypts text. The first 32 characters are the created public key.
+// The cipher text can be only decrypted with the original private key.
+func SharedEncrypt(public, text []byte, hashProv HashProvider, signProv SignProvider, cryptoProv CryptoProvider, ellipticSize EllipticSize) ([]byte, error) {
+	priv, pub, err := GenBytesKeys(ellipticSize)
+	if err != nil {
+		return nil, err
+	}
+	shared, err := getSharedKey(priv, public, hashProv, signProv, ellipticSize)
+	if err != nil {
+		return nil, err
+	}
+	val, _, err := EncryptBytes(shared, text, pub, cryptoProv)
+	return val, err
+}
+
+// SharedDecrypt decrypts the ciphertext by using private key.
+func SharedDecrypt(private, ciphertext []byte, hashProv HashProvider, signProv SignProvider, cryptoProv CryptoProvider, ellipticSize EllipticSize) ([]byte, error) {
+	if len(ciphertext) <= 64 {
+		return nil, fmt.Errorf(`too short cipher %d`, len(ciphertext))
+	}
+	shared, err := getSharedKey(private, ciphertext[:64], hashProv, signProv, ellipticSize)
+	if err != nil {
+		return nil, err
+	}
+	val, _, err := EncryptBytes(shared, ciphertext[64:], ciphertext[:aes.BlockSize], cryptoProv)
+	return val, err
+}
+
+// GetSharedKey creates and returns the shared key = private * public.
+// public must be the public key from the different private key.
+func getSharedKey(private, public []byte, hashProv HashProvider, signProv SignProvider, ellipticSize EllipticSize) (shared []byte, err error) {
+	var pubkeyCurve elliptic.Curve
+	switch ellipticSize {
+	case Elliptic256:
+		pubkeyCurve = elliptic.P256()
+	default:
+		return nil, errors.New(UnknownProviderError)
+	}
+
+	switch signProv {
+	case ECDSA:
+		private = converter.FillLeft(private)
+		public = converter.FillLeft(public)
+		pub := new(ecdsa.PublicKey)
+		pub.Curve = pubkeyCurve
+		pub.X = new(big.Int).SetBytes(public[0:32])
+		pub.Y = new(big.Int).SetBytes(public[32:])
+
+		bi := new(big.Int).SetBytes(private)
+		priv := new(ecdsa.PrivateKey)
+		priv.PublicKey.Curve = pubkeyCurve
+		priv.D = bi
+		priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
+
+		if priv.Curve.IsOnCurve(pub.X, pub.Y) {
+			x, _ := pub.Curve.ScalarMult(pub.X, pub.Y, priv.D.Bytes())
+			key, err := HashBytes([]byte(hex.EncodeToString(x.Bytes())), hashProv)
+			if err != nil {
+				return nil, errors.New(UnknownProviderError)
+			}
+			shared = key
+		} else {
+			err = fmt.Errorf("Not IsOnCurve")
+		}
+	default:
+		return nil, errors.New(UnknownProviderError)
+	}
+
+	return
+}
+
+// RandInt returns a random integer between min and max
+func RandInt(min int, max int) int {
+	if max-min <= 0 {
+		return 1
+	}
+	return min + rand.Intn(max-min)
 }

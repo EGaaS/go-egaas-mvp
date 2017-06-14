@@ -282,7 +282,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	// save the current pid and version
 	if !utils.Mobile() {
 		pid := os.Getpid()
-		PidAndVer, err := json.Marshal(map[string]string{"pid": utils.IntToStr(pid), "version": consts.VERSION})
+		PidAndVer, err := json.Marshal(map[string]string{"pid": converter.IntToStr(pid), "version": consts.VERSION})
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 		}
@@ -355,7 +355,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		for {
 			daemonNameAndTime := <-daemons.MonitorDaemonCh
 			daemonsTable[daemonNameAndTime[0]] = daemonNameAndTime[1]
-			if utils.Time()%10 == 0 {
+			if time.Now().Unix()%10 == 0 {
 				log.Debug("daemonsTable: %v\n", daemonsTable)
 			}
 		}
@@ -366,7 +366,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	IosLog("signals")
 	stopdaemons.Signals()
 
-	utils.Sleep(1)
+	time.Sleep(time.Second)
 
 	// мониторим сигнал из БД о том, что демонам надо завершаться
 	// monitor the signal from the database that the daemons must be completed
@@ -383,7 +383,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 				// ждем, пока произойдет подключение к БД в другой гоурутине
 				// wait while connection to a DB in other gourutina takes place
 				if utils.DB == nil || utils.DB.DB == nil {
-					utils.Sleep(1)
+					time.Sleep(time.Second)
 					fmt.Println("wait DB")
 				} else {
 					break
@@ -442,7 +442,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		httpListenerV6()
 
 		if *utils.Console == 0 && !utils.Mobile() {
-			utils.Sleep(1)
+			time.Sleep(time.Second)
 			if thrustWindowLoder != nil {
 				thrustWindowLoder.Close()
 				thrustWindow := thrust.NewWindow(thrust.WindowOptions{
@@ -491,6 +491,6 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	log.Debug("ALL RIGHT")
 	IosLog("ALL RIGHT")
 	fmt.Println("ALL RIGHT")
-	utils.Sleep(3600 * 24 * 90)
+	time.Sleep(time.Second * 3600 * 24 * 90)
 	log.Debug("EXIT")
 }

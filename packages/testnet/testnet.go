@@ -30,7 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/astaxie/beego/config"
@@ -129,7 +129,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 	var result NewStateResult
 
 	errFunc := func(msg string) {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, lib.EscapeForJSON(msg))))
+		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, converter.EscapeForJSON(msg))))
 	}
 
 	r.ParseForm()
@@ -138,7 +138,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 	country := escape(strings.TrimSpace(r.FormValue(`country`)))
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if len(email) == 0 || !utils.ValidateEmail(email) {
+	if len(email) == 0 || !converter.ValidateEmail(email) {
 		errFunc(`Email is not valid`)
 		return
 	}
@@ -177,7 +177,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		result.Error = err.Error()
 	} else {
-		result.Result = utils.StrToInt64(id)
+		result.Result = converter.StrToInt64(id)
 		resp, err := http.Get(strings.TrimRight(gSettings.Node, `/`) + `/ajax?json=ajax_new_state&testnet=` + id)
 		if err != nil {
 			errFunc(err.Error())
@@ -204,7 +204,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		result.Private = upd[`private`]
-		result.Wallet = lib.AddressToString(utils.StrToInt64(upd[`wallet`]))
+		result.Wallet = converter.AddressToString(converter.StrToInt64(upd[`wallet`]))
 	}
 
 	if jsonData, err := json.Marshal(result); err == nil {
@@ -218,11 +218,11 @@ func newregisterHandler(w http.ResponseWriter, r *http.Request) {
 	var result NewRegisterResult
 
 	errFunc := func(msg string) {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, lib.EscapeForJSON(msg))))
+		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, converter.EscapeForJSON(msg))))
 	}
 
 	r.ParseForm()
-	state := utils.StrToInt64(r.FormValue(`state`))
+	state := converter.StrToInt64(r.FormValue(`state`))
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if state == 0 {
@@ -296,7 +296,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		available, state int64
 		err              error
 	)
-	state = utils.StrToInt64(r.FormValue(`state`))
+	state = converter.StrToInt64(r.FormValue(`state`))
 	if state == 0 {
 		message = `State parameter is not defined`
 	} else {
@@ -369,7 +369,7 @@ func main() {
 	if err != nil || len(list) == 0 {
 		log.Fatalln(`GetAllTables`, err)
 	}
-	if !utils.InSliceString(`testnet_emails`, list) {
+	if !converter.InSliceString(`testnet_emails`, list) {
 		if err = utils.DB.ExecSQL(`CREATE SEQUENCE testnet_emails_id_seq START WITH 1;
 CREATE TABLE "testnet_emails" (
 "id" integer NOT NULL DEFAULT nextval('testnet_emails_id_seq'),
@@ -447,7 +447,7 @@ CREATE INDEX testnet_index_email ON "testnet_emails" (email);`); err != nil {
 				}
 
 			}*/
-	if !utils.InSliceString(`testnet_keys`, list) {
+	if !converter.InSliceString(`testnet_keys`, list) {
 		if err = utils.DB.ExecSQL(`CREATE TABLE "testnet_keys" (
 		"id" bigint NOT NULL DEFAULT '0',
 		"state_id" integer NOT NULL DEFAULT '0',

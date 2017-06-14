@@ -52,7 +52,7 @@ func (c *Controller) Accounts() (string, error) {
 	data := make([]AccountInfo, 0)
 
 	cents, _ := utils.StateParam(c.SessStateID, `money_digit`)
-	digit := utils.StrToInt(cents)
+	digit := converter.StrToInt(cents)
 
 	currency, _ := utils.StateParam(c.SessStateID, `currency_name`)
 
@@ -90,7 +90,7 @@ func (c *Controller) Accounts() (string, error) {
 	}
 
 	for _, item := range list {
-		newAccount(utils.StrToInt64(item[`id_anonym`]), item[`amount`])
+		newAccount(converter.StrToInt64(item[`id_anonym`]), item[`amount`])
 	}
 	txType := "NewAccount"
 	pageData := accountsPage{Data: c.Data, List: data, Currency: currency, TxType: txType,

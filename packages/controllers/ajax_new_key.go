@@ -68,7 +68,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 	var seed string
 	key := c.r.FormValue("key")
 	name := c.r.FormValue("name")
-	stateID := utils.StrToInt64(c.r.FormValue("state_id"))
+	stateID := converter.StrToInt64(c.r.FormValue("state_id"))
 	bkey, err := hex.DecodeString(key)
 	if err != nil {
 		result.Error = err.Error()
@@ -88,7 +88,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 		result.Error = `unknown govAccount`
 		return result
 	}
-	if utils.StrToInt64(govAccount) != idkey {
+	if converter.StrToInt64(govAccount) != idkey {
 		result.Error = `access denied`
 		return result
 	}

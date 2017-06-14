@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	qrcode "github.com/skip2/go-qrcode"
 )
@@ -35,7 +35,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if qr := r.FormValue("qr"); len(qr) > 0 {
-		if qr[0] == '1' || lib.IsValidAddress(qr) {
+		if qr[0] == '1' || converter.IsValidAddress(qr) {
 			png, _ := qrcode.Encode(qr, qrcode.Medium, 170)
 			w.Header().Set("Content-Type", "image/png")
 			w.Write(png)
@@ -88,7 +88,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 		}
 		c.StateName = stateName
 		c.StateID = sessStateID
-		c.StateIDStr = utils.Int64ToStr(sessStateID)
+		c.StateIDStr = converter.Int64ToStr(sessStateID)
 	}
 	c.dbInit = dbInit
 
@@ -137,7 +137,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	// InstallStep2,Login,UpdatingBlockchain были только во втором случае? Похоже не нужны больше.
 	// Why CfCatalog,CfPagePreview,CfStart,Index,IndexCf,InstallStep0,InstallStep1,
 	// InstallStep2,Login,UpdatingBlockchain were in the second case only? They seem not need anymore.
-	
+
 	if ok, _ := regexp.MatchString(`^(?i)`+pages+`|GetServerTime|TxStatus|AnonymHistory|RewritePrimaryKeySave|SendPromisedAmountToPool|SaveEmailAndSendTestMess|sendMobile|rewritePrimaryKey|EImportData|EDataBaseDump|Update|exchangeAdmin|exchangeSupport|exchangeUser|ETicket|newPhoto|NodeConfigControl|SaveDecryptComment|EncryptChatMessage|GetChatMessages|SendToTheChat|SaveToken|SendToPool|ClearDbLite|ClearDb|UploadVideo|daylightKey|PoolAddUsers|SaveQueue|AlertMessage|SaveHost|PoolDataBaseDump|GenerateNewPrimaryKey|GenerateNewNodeKey|SaveNotifications|ProgressBar|MinersMap|EncryptComment|Logout|SaveVideo|SaveShopData|SaveRaceCountry|MyNoticeData|HolidaysList|ClearVideo|CheckCfCurrency|WalletsListCfProject|SendTestEmail|SendSms|SaveUserCoords|SaveGeolocation|SaveEmailSms|Profile|DeleteVideo|CropPhoto$`, controllerName); !ok {
 		html = "Access denied 0"
 	} else {

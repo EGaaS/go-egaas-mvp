@@ -7,11 +7,16 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"io/ioutil"
 	"math/big"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 )
 
+var ellipticSize = crypto.Elliptic256
+
+// TODO рефакторинг, похоже на SharedKey
 func main() {
 	var (
 		private, public []byte
@@ -37,11 +42,11 @@ func main() {
 			priv.D = bi
 			priv.PublicKey.X, priv.PublicKey.Y = priv.PublicKey.Curve.ScalarBaseMult(bi.Bytes())
 			privKey = hex.EncodeToString(priv.D.Bytes())
-			pubKey = hex.EncodeToString(append(lib.FillLeft(priv.PublicKey.X.Bytes()),
-				lib.FillLeft(priv.PublicKey.Y.Bytes())...))
+			pubKey = hex.EncodeToString(append(converter.FillLeft(priv.PublicKey.X.Bytes()),
+				converter.FillLeft(priv.PublicKey.Y.Bytes())...))
 		}
 	} else {
-		privKey, pubKey, err = lib.GenHexKeys()
+		privKey, pubKey, err = crypto.GenHexKeys(ellipticSize)
 		if err != nil {
 			fmt.Println(`Error`, err)
 		}

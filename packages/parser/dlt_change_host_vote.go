@@ -19,7 +19,9 @@ package parser
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -62,7 +64,7 @@ func (p *Parser) DLTChangeHostVoteFront() error {
 		if err != nil {
 			return p.ErrInfo(err)
 		}
-		if lib.KeyToAddress(bkey) != lib.AddressToString(p.TxWalletID) {
+		if crypto.KeyToAddress(bkey) != converter.AddressToString(p.TxWalletID) {
 			return p.ErrInfo("incorrect public_key")
 		}
 	}

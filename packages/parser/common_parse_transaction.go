@@ -23,7 +23,8 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -45,7 +46,11 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 
 		// хэш транзакции
 		// hash of the transaction
-		transSlice = append(transSlice, utils.DSha256(*transactionBinaryData))
+		hash, err := crypto.HashBytes(*transactionBinaryData, doubleHashProv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		transSlice = append(transSlice, hash)
 		input := (*transactionBinaryData)[:]
 		// первый байт - тип транзакции
 		// the first byte is type of the transaction
@@ -55,7 +60,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			// transaction with the contract
 			var err error
 			p.TxPtr = &consts.TXHeader{}
-			if err = lib.BinUnmarshal(&input, p.TxPtr); err != nil {
+			if err = converter.BinUnmarshal(&input, p.TxPtr); err != nil {
 				return nil, err
 			}
 			isStruct = false
@@ -88,41 +93,41 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 					switch fitem.Type.String() {
 					case `uint64`:
 						var val uint64
-						lib.BinUnmarshal(&input, &val)
+						converter.BinUnmarshal(&input, &val)
 						v = val
 					case `float64`:
 						var val float64
-						lib.BinUnmarshal(&input, &val)
+						converter.BinUnmarshal(&input, &val)
 						v = val
 					case `int64`:
-						v, err = lib.DecodeLenInt64(&input)
+						v, err = converter.DecodeLenInt64(&input)
 					case script.Decimal:
 						var s string
-						if err = lib.BinUnmarshal(&input, &s); err != nil {
+						if err = converter.BinUnmarshal(&input, &s); err != nil {
 							return nil, err
 						}
 						v, err = decimal.NewFromString(s)
 					case `string`:
 						var s string
-						if err = lib.BinUnmarshal(&input, &s); err != nil {
+						if err = converter.BinUnmarshal(&input, &s); err != nil {
 							return nil, err
 						}
 						v = s
 					case `[]uint8`:
 						var b []byte
-						if err = lib.BinUnmarshal(&input, &b); err != nil {
+						if err = converter.BinUnmarshal(&input, &b); err != nil {
 							return nil, err
 						}
 						v = hex.EncodeToString(b)
 					case `[]interface {}`:
-						count, err := lib.DecodeLength(&input)
+						count, err := converter.DecodeLength(&input)
 						if err != nil {
 							return nil, err
 						}
 						isforv = true
 						list := make([]interface{}, 0)
 						for count > 0 {
-							length, err := lib.DecodeLength(&input)
+							length, err := converter.DecodeLength(&input)
 							if err != nil {
 								return nil, err
 							}
@@ -159,7 +164,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			//			fmt.Println(`Contract data`, p.TxData)
 		} else if isStruct {
 			p.TxPtr = consts.MakeStruct(consts.TxTypes[int(txType)])
-			if err := lib.BinUnmarshal(&input, p.TxPtr); err != nil {
+			if err := converter.BinUnmarshal(&input, p.TxPtr); err != nil {
 				return nil, err
 			}
 			p.TxVars = make(map[string]string)
@@ -203,11 +208,11 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 
 			//walletId & citizenId
 			for i := 2; i < 4; i++ {
-				data := lib.FieldToBytes(t.Field(0).Interface(), i)
+				data := converter.FieldToBytes(t.Field(0).Interface(), i)
 				returnSlice = append(returnSlice, data)
 			}
 			for i := 1; i < t.NumField(); i++ {
-				data := lib.FieldToBytes(t.Interface(), i)
+				data := converter.FieldToBytes(t.Interface(), i)
 				returnSlice = append(returnSlice, data)
 			}
 		} else {

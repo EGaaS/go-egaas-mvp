@@ -17,6 +17,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -45,7 +47,7 @@ func (c *Controller) EditTable() (string, error) {
 	var err error
 
 	txType := "EditTable"
-	timeNow := utils.Time()
+	timeNow := time.Now().Unix()
 
 	var tableName string
 	if utils.CheckInputData(c.r.FormValue("name"), "string") {

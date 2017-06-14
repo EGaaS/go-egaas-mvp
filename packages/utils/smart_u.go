@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
@@ -555,11 +555,11 @@ func Back(vars *map[string]string, pars ...string) string {
 	}
 	var params string
 	if len(pars) == 3 {
-		params = lib.Escape(pars[2])
+		params = converter.Escape(pars[2])
 	}
 	return fmt.Sprintf(`<script language="JavaScript" type="text/javascript">
 	hist_push(['load_%s', '%s', {%s}]);
-</script>`, lib.Escape(pars[0]), lib.Escape(pars[1]), params)
+</script>`, converter.Escape(pars[0]), converter.Escape(pars[1]), params)
 }
 
 // JSONScript returns json object
@@ -679,19 +679,19 @@ func GetList(vars *map[string]string, pars ...string) string {
 	where := ``
 	order := ``
 	limit := -1
-	fields := lib.Escape(pars[2])
+	fields := converter.Escape(pars[2])
 	keys := strings.Split(fields, `,`)
 	if len(pars) >= 4 {
-		where = ` where ` + lib.Escape(pars[3])
+		where = ` where ` + converter.Escape(pars[3])
 	}
 	if len(pars) >= 5 {
-		order = ` order by ` + lib.EscapeName(pars[4])
+		order = ` order by ` + converter.EscapeName(pars[4])
 	}
 	if len(pars) >= 6 {
 		limit = StrToInt(pars[5])
 	}
 
-	value, err := DB.GetAll(`select `+fields+` from `+lib.EscapeName(pars[1])+where+order, limit)
+	value, err := DB.GetAll(`select `+fields+` from `+converter.EscapeName(pars[1])+where+order, limit)
 	if err != nil {
 		return err.Error()
 	}
@@ -709,7 +709,7 @@ func GetList(vars *map[string]string, pars ...string) string {
 		for key, ival := range item {
 			if strings.IndexByte(ival, '<') >= 0 {
 				//				item[key] = lib.StripTags(ival)
-				ival = lib.StripTags(ival)
+				ival = converter.StripTags(ival)
 			}
 			if ival == `NULL` {
 				ival = ``
@@ -810,12 +810,12 @@ func GetRowVars(vars *map[string]string, pars ...string) string {
 	}
 	where := ``
 	if len(pars) == 4 {
-		where = ` where ` + lib.EscapeName(pars[2]) + `='` + lib.Escape(pars[3]) + `'`
+		where = ` where ` + converter.EscapeName(pars[2]) + `='` + converter.Escape(pars[3]) + `'`
 	} else if len(pars) == 3 {
-		where = ` where ` + lib.Escape(pars[2])
+		where = ` where ` + converter.Escape(pars[2])
 	}
-	fmt.Println(`select * from ` + lib.EscapeName(pars[1]) + where)
-	value, err := DB.OneRow(`select * from ` + lib.EscapeName(pars[1]) + where).String()
+	fmt.Println(`select * from ` + converter.EscapeName(pars[1]) + where)
+	value, err := DB.OneRow(`select * from ` + converter.EscapeName(pars[1]) + where).String()
 	if err != nil {
 		return err.Error()
 	}
@@ -823,7 +823,7 @@ func GetRowVars(vars *map[string]string, pars ...string) string {
 		if val == `NULL` {
 			val = ``
 		}
-		(*vars)[pars[0]+`_`+key] = lib.StripTags(val)
+		(*vars)[pars[0]+`_`+key] = converter.StripTags(val)
 	}
 	return ``
 }
@@ -835,18 +835,18 @@ func GetOne(vars *map[string]string, pars ...string) string {
 	}
 	where := ``
 	if len(pars) == 4 {
-		where = ` where ` + lib.EscapeName(pars[2]) + `='` + lib.Escape(pars[3]) + `'`
+		where = ` where ` + converter.EscapeName(pars[2]) + `='` + converter.Escape(pars[3]) + `'`
 	} else if len(pars) == 3 {
-		where = ` where ` + lib.Escape(pars[2])
+		where = ` where ` + converter.Escape(pars[2])
 	}
-	value, err := DB.Single(`select ` + lib.Escape(pars[0]) + ` from ` + lib.EscapeName(pars[1]) + where).String()
+	value, err := DB.Single(`select ` + converter.Escape(pars[0]) + ` from ` + converter.EscapeName(pars[1]) + where).String()
 	if err != nil {
 		return err.Error()
 	}
 	if value == `NULL` {
 		value = ``
 	}
-	return strings.Replace(lib.StripTags(value), "\n", "\n<br>", -1)
+	return strings.Replace(converter.StripTags(value), "\n", "\n<br>", -1)
 }
 
 func getClass(class string) (string, string) {
@@ -922,7 +922,7 @@ func Tag(vars *map[string]string, pars ...string) (out string) {
 			title = pars[1]
 		}
 		if len(pars) > 2 {
-			class, more = getClass(lib.Escape(pars[2]))
+			class, more = getClass(converter.Escape(pars[2]))
 		}
 		return fmt.Sprintf(`<%s class="%s" %s>%s</%[1]s>`, pars[0], class, more, title)
 	}
@@ -1155,7 +1155,7 @@ func BtnEdit(vars *map[string]string, pars ...string) string {
 		params = pars[2]
 	}
 	return fmt.Sprintf(`<button style="width: 44px;" type="button" class="btn btn-labeled btn-default" onclick="load_template('%s', {%s})"><span class="btn-label"><em class="fa fa-%s"></em></span></button>`,
-		lib.Escape(pars[0]), params, lib.Escape(pars[1]))
+		converter.Escape(pars[0]), params, converter.Escape(pars[1]))
 }
 
 // BlockInfo returns returns a link for popup block
@@ -1221,10 +1221,10 @@ func BtnContract(vars *map[string]string, pars ...string) string {
 		class = pars[4]
 	}
 	if len(pars) >= 7 {
-		onsuccess = lib.Escape(pars[5])
-		page = lib.Escape(pars[6])
+		onsuccess = converter.Escape(pars[5])
+		page = converter.Escape(pars[6])
 		if len(pars) == 8 {
-			pageparam = lib.Escape(pars[7])
+			pageparam = converter.Escape(pars[7])
 		}
 	}
 	(*vars)["wibtncont"] = `1`
@@ -1250,7 +1250,7 @@ func Table(vars *map[string]string, pars *map[string]string) string {
 	tableMore := ``
 	adaptive := ``
 	if val, ok := (*pars)[`Order`]; ok {
-		order = `order by ` + lib.Escape(val)
+		order = `order by ` + converter.Escape(val)
 	}
 	if val, ok := (*pars)[`Class`]; ok {
 		tableClass, tableMore = getClass(val)
@@ -1259,7 +1259,7 @@ func Table(vars *map[string]string, pars *map[string]string) string {
 		adaptive = `data-role="table"`
 	}
 	if val, ok := (*pars)[`Where`]; ok {
-		where = `where ` + lib.Escape(val)
+		where = `where ` + converter.Escape(val)
 	}
 	if val, ok := (*pars)[`Limit`]; ok && len(val) > 0 {
 		opar := strings.Split(val, `,`)
@@ -1270,10 +1270,10 @@ func Table(vars *map[string]string, pars *map[string]string) string {
 		}
 	}
 	if val, ok := (*pars)[`Fields`]; ok {
-		fields = lib.Escape(val)
+		fields = converter.Escape(val)
 	}
 	list, err := DB.GetAll(fmt.Sprintf(`select %s from %s %s %s%s`, fields,
-		lib.EscapeName((*pars)[`Table`]), where, order, limit), -1)
+		converter.EscapeName((*pars)[`Table`]), where, order, limit), -1)
 	if err != nil {
 		return err.Error()
 	}
@@ -1320,7 +1320,7 @@ func Table(vars *map[string]string, pars *map[string]string) string {
 				value = ``
 			}
 			if key != `state_id` {
-				(*vars)[key] = lib.StripTags(value)
+				(*vars)[key] = converter.StripTags(value)
 			}
 		}
 		for _, th := range *columns {
@@ -1515,14 +1515,14 @@ func ValueByID(vars *map[string]string, pars ...string) string {
 	if len(pars) < 3 {
 		return ``
 	}
-	value, err := DB.OneRow(`select * from ` + lib.EscapeName(pars[0]) + ` where id='` + lib.Escape(pars[1]) + `'`).String()
+	value, err := DB.OneRow(`select * from ` + converter.EscapeName(pars[0]) + ` where id='` + converter.Escape(pars[1]) + `'`).String()
 	if err != nil {
 		return err.Error()
 	}
 	keys := make(map[string]string)
-	src := strings.Split(lib.Escape(pars[2]), `,`)
+	src := strings.Split(converter.Escape(pars[2]), `,`)
 	if len(pars) == 4 {
-		dest := strings.Split(lib.Escape(pars[3]), `,`)
+		dest := strings.Split(converter.Escape(pars[3]), `,`)
 		for i, val := range src {
 			if len(dest) > i {
 				keys[val] = dest[i]
@@ -1606,7 +1606,7 @@ func TXButton(vars *map[string]string, pars *map[string]string) string {
 
 			onsuccess += `)`
 		} else {
-			onsuccess = lib.Escape(pars[0])
+			onsuccess = converter.Escape(pars[0])
 		}
 	}
 
@@ -1677,7 +1677,7 @@ func TXButton(vars *map[string]string, pars *map[string]string) string {
 func getSelect(linklist string) (data []map[string]string, id string, name string, err error) {
 	var count int64
 	tbl := strings.Split(linklist, `.`)
-	tblname := lib.EscapeName(tbl[0])
+	tblname := converter.EscapeName(tbl[0])
 	name = tbl[1]
 	id = `id`
 	if len(tbl) > 2 {
@@ -1689,7 +1689,7 @@ func getSelect(linklist string) (data []map[string]string, id string, name strin
 	}
 	if count > 0 && count <= 50 {
 		data, err = DB.GetAll(fmt.Sprintf(`select %s, %s from %s order by %s`, id,
-			lib.EscapeName(name), tblname, lib.EscapeName(name)), -1)
+			converter.EscapeName(name), tblname, converter.EscapeName(name)), -1)
 	}
 	return
 }
@@ -1742,7 +1742,7 @@ func TXForm(vars *map[string]string, pars *map[string]string) string {
 
 			onsuccess += `)`
 		} else {
-			onsuccess = lib.Escape(pars[0])
+			onsuccess = converter.Escape(pars[0])
 		}
 	}
 
@@ -1796,7 +1796,7 @@ txlist:
 					return err.Error()
 				} else if len(data) > 0 {
 					for _, item := range data {
-						sellist.List[int(StrToInt64(item[id]))] = lib.StripTags(item[name])
+						sellist.List[int(StrToInt64(item[id]))] = converter.StripTags(item[name])
 					}
 				}
 			} else if alist := strings.Split(StateVal(vars, linklist), `,`); len(alist) > 0 {
@@ -1847,7 +1847,7 @@ func IDToAddress(vars *map[string]string, pars ...string) string {
 	if id == 0 {
 		return `unknown address`
 	}
-	return lib.AddressToString(id)
+	return converter.AddressToString(id)
 }
 
 // Ring returns a ring HTML control
@@ -1925,7 +1925,7 @@ func WiBalance(vars *map[string]string, pars ...string) string {
 			   <div class="panel-body text-center">
 				  <h4 class="mt0">%s %s</h4>
 				  <p class="mb0 text-muted">Balance</p>
-			   </div></div></div></div>`, lib.NumString(pars[0]), lib.Escape(pars[1]))
+			   </div></div></div></div>`, converter.NumString(pars[0]), converter.Escape(pars[1]))
 }
 
 // WiAccount returns an account widget
@@ -1939,7 +1939,7 @@ func WiAccount(vars *map[string]string, pars ...string) string {
 			<div class="col-xs-8 pv-lg">
 			   <div class="h1 m0 text-bold">%s</div>
 			   <div class="text-uppercase">ACCOUNT NUMBER</div>
-			</div></div></div>`, lib.Escape(pars[0]))
+			</div></div></div>`, converter.Escape(pars[0]))
 }
 
 // Source returns HTML control for source code
@@ -1967,7 +1967,7 @@ func WiCitizen(vars *map[string]string, pars ...string) string {
 	if len(pars) > 3 && len(pars[3]) > 0 {
 		flag = fmt.Sprintf(`<img src="%s" alt="Image" class="wd-xs">`, pars[3])
 	}
-	address := lib.AddressToString(StrToInt64(pars[1]))
+	address := converter.AddressToString(StrToInt64(pars[1]))
 	(*vars)["wicitizen"] = `1`
 	return fmt.Sprintf(`<div class="panel widget"><div class="panel-body">
 			<div class="row row-table"><div class="col-xs-6 text-center">
@@ -1985,7 +1985,7 @@ func WiCitizen(vars *map[string]string, pars ...string) string {
 				  data-clipboard-text="%s" onClick="CopyToClipboard('.clipboard')"  data-notify="" 
 				  data-message="Copied to clipboard" data-options="{&quot;status&quot;:&quot;info&quot;}"></i></p>
 				  <p class="m0 text-muted">Citizen ID</p>
-		</div></div></div></div>`, image, lib.Escape(pars[0]), flag, address, address)
+		</div></div></div></div>`, image, converter.Escape(pars[0]), flag, address, address)
 }
 
 // Mult multiplies two float64 values
@@ -2064,7 +2064,7 @@ func Select(vars *map[string]string, pars ...string) string {
 				return err.Error()
 			} else if len(data) > 0 {
 				for _, item := range data {
-					list = append(list, SelInfo{ID: StrToInt64(item[id]), Name: lib.StripTags(item[name])})
+					list = append(list, SelInfo{ID: StrToInt64(item[id]), Name: converter.StripTags(item[name])})
 				}
 			}
 		} else if alist := strings.Split(StateVal(vars, pars[1]), `,`); len(alist) > 0 {
@@ -2125,15 +2125,15 @@ func MenuGroup(vars *map[string]string, pars ...string) string {
 		}
 		(*vars)[`menuid`] = id*/
 	if len(pars) > 1 {
-		idname = lib.Escape(pars[1])
+		idname = converter.Escape(pars[1])
 	}
 	if len(pars) > 2 {
-		icon = fmt.Sprintf(`<em class="%s"></em>`, lib.Escape(pars[2]))
+		icon = fmt.Sprintf(`<em class="%s"></em>`, converter.Escape(pars[2]))
 	}
 	return fmt.Sprintf(`<li id="li%s"><span>%s
      <span>%s</span></span>
 	 <ul id="ul%[1]s">`,
-		idname, icon, LangRes(vars, lib.Escape(pars[0])))
+		idname, icon, LangRes(vars, converter.Escape(pars[0])))
 }
 
 // MenuItem returns a menu item
@@ -2146,39 +2146,39 @@ func MenuItem(vars *map[string]string, pars ...string) string {
 	}*/
 	off := 0
 	if len(pars) > 1 {
-		action = lib.Escape(pars[1])
+		action = converter.Escape(pars[1])
 	}
 	if !strings.HasPrefix(action, `load_`) {
 		action = `load_template`
 		off = 1
 	}
 	if len(pars) > 2-off {
-		page = lib.Escape(pars[2-off])
+		page = converter.Escape(pars[2-off])
 	}
 	if len(pars) > 3-off {
-		params = lib.Escape(pars[3-off])
+		params = converter.Escape(pars[3-off])
 	}
 	if len(pars) > 4-off {
-		icon = fmt.Sprintf(`<em class="%s"></em>`, lib.Escape(pars[4-off]))
+		icon = fmt.Sprintf(`<em class="%s"></em>`, converter.Escape(pars[4-off]))
 	}
 	return fmt.Sprintf(`<li id="li%s">
 		<a href="#" title="%s" onClick="%s('%s',{%s});">
 		%s<span>%[2]s</span></a></li>`,
-		page, LangRes(vars, lib.Escape(pars[0])), action, page, params, icon)
+		page, LangRes(vars, converter.Escape(pars[0])), action, page, params, icon)
 }
 
 // MenuPage returns a special comment for the menu
 func MenuPage(vars *map[string]string, pars ...string) string {
-	return fmt.Sprintf(`<!--%s-->`, lib.Escape(pars[0]))
+	return fmt.Sprintf(`<!--%s-->`, converter.Escape(pars[0]))
 }
 
 // MenuBack returns a special menu link
 func MenuBack(vars *map[string]string, pars ...string) string {
 	var link string
 	if len(pars) > 1 {
-		link = fmt.Sprintf(`load_template('%s')`, lib.Escape(pars[1]))
+		link = fmt.Sprintf(`load_template('%s')`, converter.Escape(pars[1]))
 	}
-	return fmt.Sprintf(`<!--%s=%s-->`, lib.Escape(pars[0]), link)
+	return fmt.Sprintf(`<!--%s=%s-->`, converter.Escape(pars[0]), link)
 }
 
 // MenuEnd closes menu tags
@@ -2206,10 +2206,10 @@ func ChartBar(vars *map[string]string, pars *map[string]string) string {
 	where := ``
 	limit := ``
 	if val, ok := (*pars)[`Order`]; ok {
-		order = `order by ` + lib.Escape(val)
+		order = `order by ` + converter.Escape(val)
 	}
 	if val, ok := (*pars)[`Where`]; ok {
-		where = `where ` + lib.Escape(val)
+		where = `where ` + converter.Escape(val)
 	}
 	if val, ok := (*pars)[`Limit`]; ok && len(val) > 0 {
 		opar := strings.Split(val, `,`)
@@ -2219,8 +2219,8 @@ func ChartBar(vars *map[string]string, pars *map[string]string) string {
 			limit = fmt.Sprintf(` offset %d limit %d`, StrToInt64(opar[0]), StrToInt64(opar[1]))
 		}
 	}
-	list, err := DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, lib.EscapeName(value), lib.EscapeName(label),
-		lib.EscapeName((*pars)[`Table`]), where, order, limit), -1)
+	list, err := DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, converter.EscapeName(value), converter.EscapeName(label),
+		converter.EscapeName((*pars)[`Table`]), where, order, limit), -1)
 	if err != nil {
 		return err.Error()
 	}
@@ -2228,8 +2228,8 @@ func ChartBar(vars *map[string]string, pars *map[string]string) string {
 		if item[value] == `NULL` {
 			item[value] = ``
 		}
-		data = append(data, lib.StripTags(item[value]))
-		labels = append(labels, `'`+lib.StripTags(item[label])+`'`)
+		data = append(data, converter.StripTags(item[value]))
+		labels = append(labels, `'`+converter.StripTags(item[label])+`'`)
 	}
 	//	}
 	return fmt.Sprintf(`<div><canvas id="%s"></canvas>
@@ -2297,10 +2297,10 @@ func ChartPie(vars *map[string]string, pars *map[string]string) string {
 		where := ``
 		limit := ``
 		if val, ok := (*pars)[`Order`]; ok {
-			order = `order by ` + lib.Escape(val)
+			order = `order by ` + converter.Escape(val)
 		}
 		if val, ok := (*pars)[`Where`]; ok {
-			where = `where ` + lib.Escape(val)
+			where = `where ` + converter.Escape(val)
 		}
 		if val, ok := (*pars)[`Limit`]; ok && len(val) > 0 {
 			opar := strings.Split(val, `,`)
@@ -2312,8 +2312,8 @@ func ChartPie(vars *map[string]string, pars *map[string]string) string {
 		} else {
 			limit = fmt.Sprintf(` limit %d`, len(colors))
 		}
-		list, err := DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, lib.EscapeName(value), lib.EscapeName(label),
-			lib.EscapeName((*pars)[`Table`]), where, order, limit), -1)
+		list, err := DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, converter.EscapeName(value), converter.EscapeName(label),
+			converter.EscapeName((*pars)[`Table`]), where, order, limit), -1)
 		if err != nil {
 			return err.Error()
 		}
@@ -2327,7 +2327,7 @@ func ChartPie(vars *map[string]string, pars *map[string]string) string {
 				color: '#%s',
 				highlight: '#%s',
 				label: '%s'
-			}`, lib.StripTags(item[value]), color, color, lib.StripTags(item[label])))
+			}`, converter.StripTags(item[value]), color, color, converter.StripTags(item[label])))
 		}
 	}
 	return fmt.Sprintf(`<div><canvas id="%s"></canvas>

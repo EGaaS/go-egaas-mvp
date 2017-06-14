@@ -31,6 +31,7 @@ import (
 	"unicode"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -107,7 +108,7 @@ func ConfigInit() {
 		for {
 			log.Debug("ConfigInit monitor")
 			if _, err := os.Stat(*utils.Dir + "/config.ini"); os.IsNotExist(err) {
-				utils.Sleep(1)
+				time.Sleep(time.Second)
 				continue
 			}
 			config, err := config.NewConfig("ini", *utils.Dir+"/config.ini")
@@ -121,7 +122,7 @@ func ConfigInit() {
 			if len(configIni["db_type"]) > 0 {
 				break
 			}
-			utils.Sleep(3)
+			time.Sleep(time.Second * 3)
 		}
 	}()
 	globalLangReadOnly = make(map[int]map[string]string)
@@ -234,7 +235,7 @@ func GetSessWalletID(sess session.SessionStore) int64 {
 	case int:
 		return int64(sessUserID.(int))
 	case string:
-		return utils.StrToInt64(sessUserID.(string))
+		return converter.StrToInt64(sessUserID.(string))
 	}
 	return 0
 }
@@ -249,7 +250,7 @@ func GetSessCitizenID(sess session.SessionStore) int64 {
 	case int:
 		return int64(sessUserID.(int))
 	case string:
-		return utils.StrToInt64(sessUserID.(string))
+		return converter.StrToInt64(sessUserID.(string))
 	}
 	return 0
 }
@@ -305,7 +306,7 @@ func CheckLang(lang int) bool {
 
 // GetLang returns the user's language
 func GetLang(w http.ResponseWriter, r *http.Request, parameters map[string]string) int {
-	lang := utils.StrToInt(parameters["lang"])
+	lang := converter.StrToInt(parameters["lang"])
 	if !CheckLang(lang) {
 		if langCookie, err := r.Cookie("lang"); err == nil {
 			lang, _ = strconv.Atoi(langCookie.Value)
@@ -357,13 +358,13 @@ func makeTemplate(html, name string, tData interface{}) (string, error) {
 			return "d"
 		},
 		"div": func(a, b interface{}) float64 {
-			return utils.InterfaceToFloat64(a) / utils.InterfaceToFloat64(b)
+			return converter.InterfaceToFloat64(a) / converter.InterfaceToFloat64(b)
 		},
 		"mult": func(a, b interface{}) float64 {
-			return utils.InterfaceToFloat64(a) * utils.InterfaceToFloat64(b)
+			return converter.InterfaceToFloat64(a) * converter.InterfaceToFloat64(b)
 		},
 		"round": func(a interface{}, num int) float64 {
-			return utils.Round(utils.InterfaceToFloat64(a), num)
+			return converter.Round(converter.InterfaceToFloat64(a), num)
 		},
 		"len": func(s []map[string]string) int {
 			return len(s)
@@ -372,10 +373,10 @@ func makeTemplate(html, name string, tData interface{}) (string, error) {
 			return len(s)
 		},
 		"sum": func(a, b interface{}) float64 {
-			return utils.InterfaceToFloat64(a) + utils.InterfaceToFloat64(b)
+			return converter.InterfaceToFloat64(a) + converter.InterfaceToFloat64(b)
 		},
 		"minus": func(a, b interface{}) float64 {
-			return utils.InterfaceToFloat64(a) - utils.InterfaceToFloat64(b)
+			return converter.InterfaceToFloat64(a) - converter.InterfaceToFloat64(b)
 		},
 		"noescape": func(s string) template.HTML {
 			return template.HTML(s)
@@ -387,34 +388,34 @@ func makeTemplate(html, name string, tData interface{}) (string, error) {
 			return strings.Join(s, sep)
 		},
 		"strToInt64": func(text string) int64 {
-			return utils.StrToInt64(text)
+			return converter.StrToInt64(text)
 		},
 		"strToInt": func(text string) int {
-			return utils.StrToInt(text)
+			return converter.StrToInt(text)
 		},
 		"bin2hex": func(text string) string {
-			return string(utils.BinToHex([]byte(text)))
+			return string(converter.BinToHex([]byte(text)))
 		},
 		"int64ToStr": func(text int64) string {
-			return utils.Int64ToStr(text)
+			return converter.Int64ToStr(text)
 		},
 		"intToStr": func(text int) string {
-			return utils.IntToStr(text)
+			return converter.IntToStr(text)
 		},
 		"intToInt64": func(text int) int64 {
 			return int64(text)
 		},
 		"rand": func() int {
-			return utils.RandInt(0, 99999999)
+			return crypto.RandInt(0, 99999999)
 		},
 		"append": func(args ...interface{}) string {
 			var result string
 			for _, value := range args {
 				switch value.(type) {
 				case int64:
-					result += utils.Int64ToStr(value.(int64))
+					result += converter.Int64ToStr(value.(int64))
 				case float64:
-					result += utils.Float64ToStr(value.(float64))
+					result += converter.Float64ToStr(value.(float64))
 				case string:
 					result += value.(string)
 				}
@@ -468,7 +469,7 @@ func (c *Controller) GetParameters() (map[string]string, error) {
 		}
 		log.Debug("parameters_=", params)
 		for k, v := range params {
-			parameters[k] = utils.InterfaceToStr(v)
+			parameters[k] = converter.InterfaceToStr(v)
 		}
 	}
 	return parameters, nil

@@ -21,9 +21,10 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"fmt"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
-	"github.com/shopspring/decimal"
 	"testing"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/shopspring/decimal"
 )
 
 func TestInterface(t *testing.T) {
@@ -43,18 +44,24 @@ func TestDecryptCFB(t *testing.T) {
 
 func TestEncrypt(t *testing.T) {
 
-	privKey, _, _ := lib.GenHexKeys()
-	password := Md5("111")
+	privKey, _, err := crypto.GenHexKeys(ellipticSize)
+	if err != nil {
+		log.Fatal(err)
+	}
+	password, err := crypto.HashBytes([]byte("111"), hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// encrypt
 
-	iv := []byte(RandSeq(aes.BlockSize))
+	iv := []byte(crypto.RandSeq(aes.BlockSize))
 	c, err := aes.NewCipher(password)
 	if err != nil {
 		t.Error(err)
 	}
 	fmt.Println(iv)
-	plaintext := lib.PKCS7Padding([]byte(privKey), c.BlockSize())
+	plaintext := crypto.PKCS7Padding([]byte(privKey), c.BlockSize())
 	cfbdec := cipher.NewCBCEncrypter(c, iv)
 	EncPrivateKeyBin := make([]byte, len(plaintext))
 	cfbdec.CryptBlocks(EncPrivateKeyBin, plaintext)
@@ -79,6 +86,6 @@ func TestEncrypt(t *testing.T) {
 	mode := cipher.NewCBCDecrypter(c, iv)
 	mode.CryptBlocks(privateKeyBin, privateKeyBin)
 	fmt.Printf("nodelpad %s\n", privateKeyBin)
-	privateKeyBin = lib.PKCS7UnPadding(privateKeyBin)
+	privateKeyBin = crypto.PKCS7UnPadding(privateKeyBin)
 	fmt.Printf("delpad %s\n", privateKeyBin)
 }

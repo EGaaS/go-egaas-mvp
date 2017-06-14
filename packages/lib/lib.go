@@ -295,21 +295,6 @@ func EscapeForJSON(data string) string {
 	return strings.Replace(data, `"`, `\"`, -1)
 }
 
-// NumString insert spaces between each three digits. 7123456 => 7 123 456
-func NumString(in string) string {
-	if strings.IndexByte(in, '.') >= 0 {
-		lr := strings.Split(in, `.`)
-		return NumString(lr[0]) + `.` + lr[1]
-	}
-	buf := []byte(in)
-	out := make([]byte, len(in)+4)
-	for len(buf) > 3 {
-		out = append(append([]byte(` `), buf[len(buf)-3:]...), out...)
-		buf = buf[:len(buf)-3]
-	}
-	return string(append(buf, out...))
-}
-
 // Bytes2Float converts []byte to float64
 func Bytes2Float(bytes []byte) float64 {
 	return math.Float64frombits(binary.LittleEndian.Uint64(bytes))

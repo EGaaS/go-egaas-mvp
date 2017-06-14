@@ -117,12 +117,3 @@ func SignECDSA(privateKey string, forSign string) (ret []byte, err error) {
 	ret = append(FillLeft(r.Bytes()), FillLeft(s.Bytes())...)
 	return
 }
-
-// JSSignToBytes converts hex signature which has got from the browser to []byte
-func JSSignToBytes(in string) ([]byte, error) {
-	r, s, err := parseSign(in)
-	if err != nil {
-		return nil, err
-	}
-	return append(FillLeft(r.Bytes()), FillLeft(s.Bytes())...), nil
-}

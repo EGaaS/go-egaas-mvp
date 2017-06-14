@@ -27,7 +27,6 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
-	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -563,7 +562,6 @@ BEGIN:
 			// проверяем подпись
 			// check the signature
 			if !first {
-				crypto.CheckSign()
 				_, err = utils.CheckSign([][]byte{nodePublicKey}, forSign, blockData.Sign, true)
 			}
 

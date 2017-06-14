@@ -1108,6 +1108,7 @@ func Sha256(v interface{}) []byte {
 	return []byte(fmt.Sprintf("%x", hash))
 }
 
+// TODO подумать над рефакторингом
 // CheckSign checks the signature
 func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin bool) (bool, error) {
 	defer func() {

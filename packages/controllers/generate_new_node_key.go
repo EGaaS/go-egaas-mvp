@@ -18,16 +18,22 @@ package controllers
 
 import (
 	"encoding/json"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"time"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 // GenerateNewNodeKey generates a new node private and public key
 func (c *Controller) GenerateNewNodeKey() (string, error) {
 
-	priv, pub, _ := lib.GenHexKeys()
+	priv, pub, err := crypto.GenHexKeys(ellipticSize)
+	if err != nil {
+		log.Fatal(err)
+	}
 	json, err := json.Marshal(map[string]string{"private_key": priv, "public_key": pub,
-		"time": utils.Int64ToStr(utils.Time())})
+		"time": converter.Int64ToStr(time.Now().Unix())})
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

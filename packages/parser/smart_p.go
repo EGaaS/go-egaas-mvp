@@ -25,9 +25,11 @@ import (
 	"strings"
 
 	"encoding/hex"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/controllers"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -385,7 +387,7 @@ func DBString(tblname string, name string, id int64) (string, error) {
 		return ``, err
 	}
 
-	return utils.DB.Single(`select `+lib.EscapeName(name)+` from `+lib.EscapeName(tblname)+` where id=?`, id).String()
+	return utils.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where id=?`, id).String()
 }
 
 // Sha256 возвращает значение хэша SHA256
@@ -401,7 +403,7 @@ func PubToID(hexkey string) int64 {
 	if err != nil {
 		return 0
 	}
-	return int64(lib.Address(pubkey))
+	return int64(crypto.Address(pubkey))
 }
 
 // HexToBytes преобразует шестнадцатеричное представление в []byte
@@ -417,7 +419,7 @@ func DBInt(tblname string, name string, id int64) (int64, error) {
 		return 0, err
 	}
 
-	return utils.DB.Single(`select `+lib.EscapeName(name)+` from `+lib.EscapeName(tblname)+` where id=?`, id).Int64()
+	return utils.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where id=?`, id).Int64()
 }
 
 func getBytea(table string) map[string]bool {
@@ -454,8 +456,8 @@ func DBStringExt(tblname string, name string, id interface{}, idname string) (st
 	} else if !isIndex {
 		return ``, fmt.Errorf(`there is not index on %s`, idname)
 	}
-	return utils.DB.Single(`select `+lib.EscapeName(name)+` from `+lib.EscapeName(tblname)+` where `+
-		lib.EscapeName(idname)+`=?`, id).String()
+	return utils.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+
+		converter.EscapeName(idname)+`=?`, id).String()
 }
 
 // DBIntExt возвращает числовое значение колонки name у записи с указанным значением поля idname
@@ -508,8 +510,8 @@ func DBStringWhere(tblname string, name string, where string, params ...interfac
 			return ``, fmt.Errorf(`there is not index on %s`, iret[1])
 		}
 	}
-	return utils.DB.Single(`select `+lib.EscapeName(name)+` from `+lib.EscapeName(tblname)+` where `+
-		strings.Replace(lib.Escape(where), `$`, `?`, -1), params...).String()
+	return utils.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+
+		strings.Replace(converter.Escape(where), `$`, `?`, -1), params...).String()
 }
 
 // DBIntWhere возвращет числовое значение колонки исходя из условия where и значений params для этого условия
@@ -605,12 +607,12 @@ func AddressToID(input string) (addr int64) {
 	if input[0] == '-' {
 		addr, _ = strconv.ParseInt(input, 10, 64)
 	} else if strings.Count(input, `-`) == 4 {
-		addr = lib.StringToAddress(input)
+		addr = converter.StringToAddress(input)
 	} else {
 		uaddr, _ := strconv.ParseUint(input, 10, 64)
 		addr = int64(uaddr)
 	}
-	if !lib.IsValidAddress(lib.AddressToString(addr)) {
+	if !converter.IsValidAddress(converter.AddressToString(addr)) {
 		return 0
 	}
 	return
@@ -619,8 +621,8 @@ func AddressToID(input string) (addr int64) {
 // IDToAddress преобразует идентификатор аккаунта в строку вида XXXX-...-XXXX
 // IDToAddress converts the identifier of account to a string of the form XXXX -...- XXXX
 func IDToAddress(id int64) (out string) {
-	out = lib.AddressToString(id)
-	if !lib.IsValidAddress(out) {
+	out = converter.AddressToString(id)
+	if !converter.IsValidAddress(out) {
 		out = `invalid`
 	}
 	return
@@ -633,7 +635,7 @@ func DBAmount(tblname, column string, id int64) decimal.Decimal {
 		return decimal.New(0, 0)
 	}
 
-	balance, err := utils.DB.Single("SELECT amount FROM "+lib.EscapeName(tblname)+" WHERE "+lib.EscapeName(column)+" = ?", id).String()
+	balance, err := utils.DB.Single("SELECT amount FROM "+converter.EscapeName(tblname)+" WHERE "+converter.EscapeName(column)+" = ?", id).String()
 	if err != nil {
 		return decimal.New(0, 0)
 	}
@@ -912,9 +914,9 @@ func checkWhere(tblname string, where string, order string) (string, string, err
 		}
 	}
 	if len(order) > 0 {
-		order = ` order by ` + lib.EscapeName(order)
+		order = ` order by ` + converter.EscapeName(order)
 	}
-	return strings.Replace(lib.Escape(where), `$`, `?`, -1), order, nil
+	return strings.Replace(converter.Escape(where), `$`, `?`, -1), order, nil
 }
 
 // DBGetList возвращает список значений колонки с указанными offset, limit, where
@@ -940,13 +942,13 @@ func DBGetList(tblname string, name string, offset, limit int64, order string,
 		}
 	}
 	if len(order) > 0 {
-		order = ` order by ` + lib.EscapeName(order)
+		order = ` order by ` + converter.EscapeName(order)
 	}
 	if limit <= 0 {
 		limit = -1
 	}
-	list, err := utils.DB.GetAll(`select `+lib.Escape(name)+` from `+lib.EscapeName(tblname)+` where `+
-		strings.Replace(lib.Escape(where), `$`, `?`, -1)+order+fmt.Sprintf(` offset %d `, offset), int(limit), params...)
+	list, err := utils.DB.GetAll(`select `+converter.Escape(name)+` from `+converter.EscapeName(tblname)+` where `+
+		strings.Replace(converter.Escape(where), `$`, `?`, -1)+order+fmt.Sprintf(` offset %d `, offset), int(limit), params...)
 	result := make([]interface{}, len(list))
 	for i := 0; i < len(list); i++ {
 		result[i] = reflect.ValueOf(list[i]).Interface()
@@ -967,8 +969,8 @@ func DBGetTable(tblname string, columns string, offset, limit int64, order strin
 	if limit <= 0 {
 		limit = -1
 	}
-	cols := strings.Split(lib.Escape(columns), `,`)
-	list, err := utils.DB.GetAll(`select `+strings.Join(cols, `,`)+` from `+lib.EscapeName(tblname)+` where `+
+	cols := strings.Split(converter.Escape(columns), `,`)
+	list, err := utils.DB.GetAll(`select `+strings.Join(cols, `,`)+` from `+converter.EscapeName(tblname)+` where `+
 		where+order+fmt.Sprintf(` offset %d `, offset), int(limit), params...)
 	result := make([]interface{}, len(list))
 	for i := 0; i < len(list); i++ {

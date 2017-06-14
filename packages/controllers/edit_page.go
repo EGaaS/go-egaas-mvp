@@ -19,6 +19,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -43,7 +46,7 @@ type editPagePage struct {
 func (c *Controller) EditPage() (string, error) {
 
 	txType := "EditPage"
-	timeNow := utils.Time()
+	timeNow := time.Now().Unix()
 
 	var err error
 
@@ -73,7 +76,7 @@ func (c *Controller) EditPage() (string, error) {
 				dataPage[`conditions`] = "ContractConditions(`MainCondition`)"
 			}
 
-			rbID = utils.StrToInt64(dataPage["rb_id"])
+			rbID = converter.StrToInt64(dataPage["rb_id"])
 			dataPageMain = dataPage
 		} else {
 			data, err := c.OneRow(`SELECT data, block_id FROM "rollback" WHERE rb_id = ?`, rbID).String()
@@ -83,7 +86,7 @@ func (c *Controller) EditPage() (string, error) {
 			var messageMap map[string]string
 			json.Unmarshal([]byte(data["data"]), &messageMap)
 			fmt.Printf("%s", messageMap)
-			rbID = utils.StrToInt64(messageMap["rb_id"])
+			rbID = converter.StrToInt64(messageMap["rb_id"])
 			messageMap["block_id"] = data["block_id"]
 			dataPageHistory = append(dataPageHistory, messageMap)
 		}

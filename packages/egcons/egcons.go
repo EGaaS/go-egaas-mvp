@@ -18,7 +18,6 @@ package main
 
 import (
 	"crypto/aes"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -29,8 +28,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 
 	"github.com/go-yaml/yaml"
 )
@@ -45,9 +44,13 @@ type Settings struct {
 }
 
 var (
-	gSettings Settings
-	gPrivate  []byte // private key
-	gPublic   []byte
+	gSettings    Settings
+	gPrivate     []byte // private key
+	gPublic      []byte
+	ellipticSize = crypto.Elliptic256
+	hashProv     = crypto.SHA256
+	cryptoProv   = crypto.AESCBC
+	signProv     = crypto.ECDSA
 )
 
 func logOut(format string, params ...interface{}) {
@@ -98,9 +101,16 @@ func checkKey() bool {
 			fmt.Println(err)
 			continue
 		}
-		gSettings.Address = lib.Address(lib.PrivateToPublic(privKey))
-		hash := sha256.Sum256(pass)
-		privKey, err = lib.CBCEncrypt(hash[:], privKey, make([]byte, aes.BlockSize))
+		pubKey, err := crypto.PrivateToPublic(privKey, ellipticSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		gSettings.Address = crypto.Address(pubKey)
+		hash, err := crypto.HashBytes(pass, hashProv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		privKey, _, err = crypto.EncryptBytes(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -120,15 +130,21 @@ func checkKey() bool {
 				continue
 			}
 		}
-		hash := sha256.Sum256(pass)
+		hash, err := crypto.HashBytes(pass, hashProv)
+		if err != nil {
+			log.Fatal(err)
+		}
 		pass = pass[:0]
-		gPrivate, err = lib.CBCDecrypt(hash[:], privKey, make([]byte, aes.BlockSize))
+		gPrivate, err = crypto.DecryptBytes(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		gPublic = lib.PrivateToPublic(gPrivate)
-		if gSettings.Address != lib.Address(gPublic) {
+		gPublic, err = crypto.PrivateToPublic(gPrivate, ellipticSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if gSettings.Address != crypto.Address(gPublic) {
 			fmt.Println(`Wrong password`)
 			continue
 		}
@@ -145,12 +161,12 @@ func login() error {
 	if len(ret[`uid`].(string)) == 0 {
 		return fmt.Errorf(`Unknown uid`)
 	}
-	sign, err := lib.SignECDSA(hex.EncodeToString(gPrivate), ret[`uid`].(string))
+	sign, err := crypto.Sign(hex.EncodeToString(gPrivate), ret[`uid`].(string), hashProv, signProv, ellipticSize)
 	if err != nil {
 		return err
 	}
 	form := url.Values{"key": {hex.EncodeToString(gPublic)}, "sign": {hex.EncodeToString(sign)},
-		`state_id`: {`0`}, `citizen_id`: {utils.Int64ToStr(gSettings.Address)}}
+		`state_id`: {`0`}, `citizen_id`: {converter.Int64ToStr(gSettings.Address)}}
 
 	ret, err = sendPost(`ajax_sign_in`, &form)
 	if err != nil {
@@ -203,21 +219,21 @@ func main() {
 	}
 	os.Chdir(dir)
 	/*	tmp := make(map[string]string)
-		tmp[`test`] = `Test string`
-		tmp[`param`] = `Test string
-	edededed
-	edededed
-	1111
-	 222
-	  3333`
-		tmp[`ok`] = `76436734`
-		err = map2yaml(tmp, `test.yaml`)
-		if err != nil {
-			fmt.Println(`YAML`, err)
-		}
-		var tmp2 map[string]string
-		err = yaml2map(`test.yaml`, &tmp2)
-		fmt.Println(`YAML`, tmp2)
+			tmp[`test`] = `Test string`
+			tmp[`param`] = `Test string
+		edededed
+		edededed
+		1111
+		 222
+		  3333`
+			tmp[`ok`] = `76436734`
+			err = map2yaml(tmp, `test.yaml`)
+			if err != nil {
+				fmt.Println(`YAML`, err)
+			}
+			var tmp2 map[string]string
+			err = yaml2map(`test.yaml`, &tmp2)
+			fmt.Println(`YAML`, tmp2)
 	*/
 	if !checkKey() {
 		return

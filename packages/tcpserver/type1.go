@@ -131,7 +131,7 @@ func (t *TCPServer) Type1() {
 		if len(binaryData) == 0 {
 			log.Debug("%v", utils.ErrInfo("len(binaryData) == 0"))
 			log.Debug("%x", converter.Int64ToByte(int64(0)))
-			_, err = t.Conn.Write(utils.DecToBin(0, 4))
+			_, err = t.Conn.Write(converter.DecToBin(0, 4))
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 				return

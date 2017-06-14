@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
@@ -53,7 +53,7 @@ func (p *Parser) NewContractFront() error {
 	if off := strings.IndexByte(name, '#'); off > 0 {
 		p.TxMap["name"] = []byte(name[:off])
 		p.TxMaps.String["name"] = name[:off]
-		address := lib.StringToAddress(name[off+1:])
+		address := converter.StringToAddress(name[off+1:])
 		if address == 0 {
 			return p.ErrInfo(fmt.Errorf(`wrong wallet %s`, name[off+1:]))
 		}

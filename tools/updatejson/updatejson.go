@@ -19,7 +19,6 @@ package main
 import (
 	"archive/zip"
 	"bufio"
-	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -34,6 +33,9 @@ import (
 	"strings"
 	"time"
 
+	"log"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 )
 
@@ -45,7 +47,10 @@ const (
 )
 
 var (
-	options Settings
+	options      Settings
+	hashProv     = crypto.SHA256
+	signProv     = crypto.ECDSA
+	ellipticSize = crypto.Elliptic256
 )
 
 // Settings is a structure for saving in update.json file
@@ -117,8 +122,11 @@ func main() {
 	}
 
 	key, _ := hex.DecodeString(Key)
-	pass := md5.Sum([]byte(psw))
-	privKey, err := Decrypt(pass[:], key)
+	pass, err := crypto.HashBytes([]byte(psw), hashProv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	privKey, err := Decrypt(pass, key)
 	if err != nil {
 		exit(err)
 	}
@@ -151,13 +159,13 @@ func main() {
 			}
 		}
 		infile := filepath.Join(set.InPath, set.File)
-		md5, err := lib.CalculateMd5(infile)
+		hash, err := crypto.HashBytes([]byte(infile), hashProv)
 		if err != nil {
 			exit(err)
 		}
 		upd.Version = set.Version
-		upd.Hash = hex.EncodeToString(md5)
-		sign, err := lib.SignECDSA(string(privateKey), upd.Hash)
+		upd.Hash = hex.EncodeToString(hash)
+		sign, err := crypto.Sign(string(privateKey), upd.Hash, hashProv, signProv, ellipticSize)
 		if err != nil {
 			exit(err)
 		}

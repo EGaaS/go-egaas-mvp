@@ -23,7 +23,9 @@ import (
 	//"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"net"
 	"net/http"
+	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/tcpserver"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	//"os"
@@ -31,6 +33,7 @@ import (
 	//	"time"
 
 	"fmt"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 )
 
@@ -126,7 +129,7 @@ func httpListenerV6() {
 			panic("Error listening ")
 		}
 		if i > 0 {
-			port = "7" + utils.IntToStr(i) + "79"
+			port = "7" + converter.IntToStr(i) + "79"
 		}
 		i++
 		l, err = net.Listen("tcp6", ":"+port)
@@ -160,7 +163,7 @@ func tcpListener() {
 				if db != nil && db.DB != nil {
 					break
 				} else {
-					utils.Sleep(3)
+					time.Sleep(time.Second * 3)
 				}
 			}
 		}
@@ -180,7 +183,7 @@ func tcpListener() {
 					conn, err := l.Accept()
 					if err != nil {
 						log.Error("Error accepting:", err)
-						utils.Sleep(1)
+						time.Sleep(time.Second)
 						//panic(err)
 						//os.Exit(1)
 					} else {

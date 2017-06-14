@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 )
@@ -526,4 +528,176 @@ func EncodeLengthPlusData(idata interface{}) []byte {
 	//log.Debug("data: %x", data)
 	//log.Debug("len data: %d", len(data))
 	return append(EncodeLength(int64(len(data))), data...)
+}
+
+// StringToAddress converts string EGAAS address to int64 address. The input address can be a positive or negative
+// number, or EGAAS address in XXXX-...-XXXX format. Returns 0 when error occurs.
+func StringToAddress(address string) (result int64) {
+	var (
+		err error
+		ret uint64
+	)
+	if len(address) == 0 {
+		return 0
+	}
+	if address[0] == '-' {
+		var id int64
+		id, err = strconv.ParseInt(address, 10, 64)
+		if err != nil {
+			return 0
+		}
+		address = strconv.FormatUint(uint64(id), 10)
+	}
+	if len(address) < 20 {
+		address = strings.Repeat(`0`, 20-len(address)) + address
+	}
+
+	val := []byte(strings.Replace(address, `-`, ``, -1))
+	if len(val) != 20 {
+		return
+	}
+	if ret, err = strconv.ParseUint(string(val), 10, 64); err != nil {
+		return 0
+	}
+	if checkSum(val[:len(val)-1]) != int(val[len(val)-1]-'0') {
+		return 0
+	}
+	result = int64(ret)
+	return
+}
+
+// CheckSum calculates the 0-9 check sum of []byte
+func checkSum(val []byte) int {
+	var one, two int
+	for i, ch := range val {
+		digit := int(ch - '0')
+		if i&1 == 1 {
+			one += digit
+		} else {
+			two += digit
+		}
+	}
+	checksum := (two + 3*one) % 10
+	if checksum > 0 {
+		checksum = 10 - checksum
+	}
+	return checksum
+}
+
+// EGSMoney converts qEGS to EGS. For example, 123455000000000000000 => 123.455
+func EGSMoney(money string) string {
+	digit := consts.EGS_DIGIT
+	if len(money) < digit+1 {
+		money = strings.Repeat(`0`, digit+1-len(money)) + money
+	}
+	money = money[:len(money)-digit] + `.` + money[len(money)-digit:]
+	return strings.TrimRight(strings.TrimRight(money, `0`), `.`)
+}
+
+// EscapeForJSON replaces quote to slash and quote
+func EscapeForJSON(data string) string {
+	return strings.Replace(data, `"`, `\"`, -1)
+}
+
+// TODO перенести в валидаторы
+// ValidateEmail validates email
+func ValidateEmail(email string) bool {
+	Re := regexp.MustCompile(`^(?i)[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	return Re.MatchString(email)
+}
+
+// TODO перенести в валидаторы
+// InSliceString searches the string in the slice of strings
+func InSliceString(search string, slice []string) bool {
+	for _, v := range slice {
+		if v == search {
+			return true
+		}
+	}
+	return false
+}
+
+// StripTags replaces < and > to &lt; and &gt;
+func StripTags(value string) string {
+	return strings.Replace(strings.Replace(value, `<`, `&lt;`, -1), `>`, `&gt;`, -1)
+}
+
+// IsValidAddress checks if the specified address is EGAAS address.
+func IsValidAddress(address string) bool {
+	val := []byte(strings.Replace(address, `-`, ``, -1))
+	if len(val) != 20 {
+		return false
+	}
+	if _, err := strconv.ParseUint(string(val), 10, 64); err != nil {
+		return false
+	}
+	return checkSum(val[:len(val)-1]) == int(val[len(val)-1]-'0')
+}
+
+// Escape deletes unaccessable characters
+func Escape(data string) string {
+	out := make([]byte, 0, len(data)+2)
+	available := `_ ,=!-'()"?*$<>: `
+	for _, ch := range []byte(data) {
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') ||
+			(ch >= 'A' && ch <= 'Z') || strings.IndexByte(available, ch) >= 0 {
+			out = append(out, ch)
+		}
+	}
+	return string(out)
+}
+
+// FieldToBytes returns the value of n-th field of v as []byte
+func FieldToBytes(v interface{}, num int) []byte {
+	t := reflect.ValueOf(v)
+	ret := make([]byte, 0, 2048)
+	if t.Kind() == reflect.Struct && num < t.NumField() {
+		field := t.Field(num)
+		switch field.Kind() {
+		case reflect.Uint8, reflect.Uint32, reflect.Uint64:
+			ret = append(ret, []byte(fmt.Sprintf("%d", field.Uint()))...)
+		case reflect.Int8, reflect.Int32, reflect.Int64:
+			ret = append(ret, []byte(fmt.Sprintf("%d", field.Int()))...)
+		case reflect.Float64:
+			ret = append(ret, []byte(fmt.Sprintf("%f", field.Float()))...)
+		case reflect.String:
+			ret = append(ret, []byte(field.String())...)
+		case reflect.Slice:
+			ret = append(ret, field.Bytes()...)
+			//		case reflect.Ptr:
+			//		case reflect.Struct:
+			//		default:
+		}
+	}
+	return ret
+}
+
+// NumString insert spaces between each three digits. 7123456 => 7 123 456
+func NumString(in string) string {
+	if strings.IndexByte(in, '.') >= 0 {
+		lr := strings.Split(in, `.`)
+		return NumString(lr[0]) + `.` + lr[1]
+	}
+	buf := []byte(in)
+	out := make([]byte, len(in)+4)
+	for len(buf) > 3 {
+		out = append(append([]byte(` `), buf[len(buf)-3:]...), out...)
+		buf = buf[:len(buf)-3]
+	}
+	return string(append(buf, out...))
+}
+
+func round(num float64) int64 {
+	//log.Debug("num", num)
+	//num += ROUND_FIX
+	//	return int(StrToFloat64(Float64ToStr(num)) + math.Copysign(0.5, num))
+	//log.Debug("num", num)
+	return int64(num + math.Copysign(0.5, num))
+}
+
+// Round rounds float64 value
+func Round(num float64, precision int) float64 {
+	num += consts.ROUND_FIX
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
 }
