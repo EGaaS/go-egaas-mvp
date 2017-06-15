@@ -47,10 +47,7 @@ const (
 )
 
 var (
-	options      Settings
-	hashProv     = crypto.SHA256
-	signProv     = crypto.ECDSA
-	ellipticSize = crypto.Elliptic256
+	options Settings
 )
 
 // Settings is a structure for saving in update.json file
@@ -122,7 +119,7 @@ func main() {
 	}
 
 	key, _ := hex.DecodeString(Key)
-	pass, err := crypto.Hash([]byte(psw), hashProv)
+	pass, err := crypto.Hash([]byte(psw))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,13 +156,13 @@ func main() {
 			}
 		}
 		infile := filepath.Join(set.InPath, set.File)
-		hash, err := crypto.Hash([]byte(infile), hashProv)
+		hash, err := crypto.Hash([]byte(infile))
 		if err != nil {
 			exit(err)
 		}
 		upd.Version = set.Version
 		upd.Hash = hex.EncodeToString(hash)
-		sign, err := crypto.Sign(string(privateKey), upd.Hash, hashProv, signProv, ellipticSize)
+		sign, err := crypto.Sign(string(privateKey), upd.Hash)
 		if err != nil {
 			exit(err)
 		}

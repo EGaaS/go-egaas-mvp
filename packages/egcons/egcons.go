@@ -44,13 +44,9 @@ type Settings struct {
 }
 
 var (
-	gSettings    Settings
-	gPrivate     []byte // private key
-	gPublic      []byte
-	ellipticSize = crypto.Elliptic256
-	hashProv     = crypto.SHA256
-	cryptoProv   = crypto.AESCBC
-	signProv     = crypto.ECDSA
+	gSettings Settings
+	gPrivate  []byte // private key
+	gPublic   []byte
 )
 
 func logOut(format string, params ...interface{}) {
@@ -101,16 +97,16 @@ func checkKey() bool {
 			fmt.Println(err)
 			continue
 		}
-		pubKey, err := crypto.PrivateToPublic(privKey, ellipticSize)
+		pubKey, err := crypto.PrivateToPublic(privKey)
 		if err != nil {
 			log.Fatal(err)
 		}
 		gSettings.Address = crypto.Address(pubKey)
-		hash, err := crypto.Hash(pass, hashProv)
+		hash, err := crypto.Hash(pass)
 		if err != nil {
 			log.Fatal(err)
 		}
-		privKey, _, err = crypto.Encrypt(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
+		privKey, _, err = crypto.Encrypt(hash, privKey, make([]byte, aes.BlockSize))
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -130,17 +126,17 @@ func checkKey() bool {
 				continue
 			}
 		}
-		hash, err := crypto.Hash(pass, hashProv)
+		hash, err := crypto.Hash(pass)
 		if err != nil {
 			log.Fatal(err)
 		}
 		pass = pass[:0]
-		gPrivate, err = crypto.Decrypt(hash, privKey, make([]byte, aes.BlockSize), cryptoProv)
+		gPrivate, err = crypto.Decrypt(hash, privKey, make([]byte, aes.BlockSize))
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		gPublic, err = crypto.PrivateToPublic(gPrivate, ellipticSize)
+		gPublic, err = crypto.PrivateToPublic(gPrivate)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -161,7 +157,7 @@ func login() error {
 	if len(ret[`uid`].(string)) == 0 {
 		return fmt.Errorf(`Unknown uid`)
 	}
-	sign, err := crypto.Sign(hex.EncodeToString(gPrivate), ret[`uid`].(string), hashProv, signProv, ellipticSize)
+	sign, err := crypto.Sign(hex.EncodeToString(gPrivate), ret[`uid`].(string))
 	if err != nil {
 		return err
 	}
