@@ -63,12 +63,12 @@ func (c *Controller) AjaxNewState() interface{} {
 	}
 	exist := int64(1)
 	for exist != 0 {
-		spriv, _, err = crypto.GenHexKeys(ellipticSize)
+		spriv, _, err = crypto.GenHexKeys()
 		if err != nil {
 			log.Fatal(err)
 		}
 		priv, _ = hex.DecodeString(spriv)
-		pub, err = crypto.PrivateToPublic(priv, ellipticSize)
+		pub, err = crypto.PrivateToPublic(priv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func (c *Controller) AjaxNewState() interface{} {
 		result.Error = err.Error()
 		return result
 	}
-	pubKey, err := crypto.PrivateToPublic(adminPriv, ellipticSize)
+	pubKey, err := crypto.PrivateToPublic(adminPriv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func (c *Controller) AjaxNewState() interface{} {
 	txTime := time.Now().Unix()
 	forSign := fmt.Sprintf("%d,%d,%d,%s,%s,%s,%s", txType, txTime, adminWallet,
 		walletUser, `2e+21`, `1000000000000000`, `testnet`)
-	signature, err := crypto.Sign(string(adminKey), forSign, hashProv, signProv, ellipticSize)
+	signature, err := crypto.Sign(string(adminKey), forSign)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -138,7 +138,7 @@ func (c *Controller) AjaxNewState() interface{} {
 	txType = utils.TypeInt(`NewState`)
 	txTime = time.Now().Unix()
 	forSign = fmt.Sprintf("%d,%d,%d,%s,%s", txType, txTime, wallet, current[`country`], current[`currency`])
-	signature, err = crypto.Sign(spriv, forSign, hashProv, signProv, ellipticSize)
+	signature, err = crypto.Sign(spriv, forSign)
 	if err != nil {
 		result.Error = err.Error()
 		return result

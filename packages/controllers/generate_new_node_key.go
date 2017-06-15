@@ -28,7 +28,7 @@ import (
 // GenerateNewNodeKey generates a new node private and public key
 func (c *Controller) GenerateNewNodeKey() (string, error) {
 
-	priv, pub, err := crypto.GenHexKeys(ellipticSize)
+	priv, pub, err := crypto.GenHexKeys()
 	if err != nil {
 		log.Fatal(err)
 	}

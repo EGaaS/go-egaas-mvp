@@ -27,9 +27,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var hashProv = crypto.SHA256
-var doubleHashProv = crypto.SHA256
-
 /*
 фронт. проверка + занесение данных из блока в таблицы и info_block
 */
@@ -113,7 +110,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 				return utils.ErrInfo(err)
 			}
 
-			hash, err := crypto.Hash(transactionBinaryDataFull, hashProv)
+			hash, err := crypto.Hash(transactionBinaryDataFull)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -130,7 +127,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 			//log.Debug("transactionBinaryData", transactionBinaryData)
-			hash, err = crypto.Hash(transactionBinaryData, hashProv)
+			hash, err = crypto.Hash(transactionBinaryData)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -252,7 +249,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			// даем юзеру понять, что его тр-ия попала в блок
 			// let user know that his transaction  is added in the block
-			hash, err = crypto.Hash(transactionBinaryData, hashProv)
+			hash, err = crypto.Hash(transactionBinaryData)
 			if err != nil {
 				log.Fatal(err)
 			}

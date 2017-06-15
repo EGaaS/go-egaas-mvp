@@ -394,7 +394,7 @@ func DBString(tblname string, name string, id int64) (string, error) {
 // Sha256 returns SHA256 hash value
 // Attention! Hashing errors ignored!
 func Sha256(text string) string {
-	hash, _ := crypto.Hash([]byte(text), hashProv)
+	hash, _ := crypto.Hash([]byte(text))
 	return string(hash)
 }
 

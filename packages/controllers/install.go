@@ -175,7 +175,7 @@ func (c *Controller) Install() (string, error) {
 		if _, err := os.Stat(*utils.Dir + "/PrivateKey"); os.IsNotExist(err) {
 
 			if len(*utils.FirstBlockPublicKey) == 0 {
-				priv, pub, err := crypto.GenHexKeys(ellipticSize)
+				priv, pub, err := crypto.GenHexKeys()
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -189,7 +189,7 @@ func (c *Controller) Install() (string, error) {
 
 		if _, err := os.Stat(*utils.Dir + "/NodePrivateKey"); os.IsNotExist(err) {
 			if len(*utils.FirstBlockNodePublicKey) == 0 {
-				priv, pub, err := crypto.GenHexKeys(ellipticSize)
+				priv, pub, err := crypto.GenHexKeys()
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -223,7 +223,7 @@ func (c *Controller) Install() (string, error) {
 	if *utils.DltWalletID == 0 {
 		PrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/PrivateKey")
 		PrivateHex, _ := hex.DecodeString(string(PrivateKey))
-		PublicKeyBytes2, err := crypto.PrivateToPublic(PrivateHex, ellipticSize)
+		PublicKeyBytes2, err := crypto.PrivateToPublic(PrivateHex)
 		if err != nil {
 			log.Fatal(err)
 		}

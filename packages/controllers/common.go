@@ -78,11 +78,6 @@ var (
 	// в гоурутинах используется только для чтения
 	// In gourutin is used only for reading
 	globalLangReadOnly map[int]map[string]string
-	hashProv           = crypto.SHA256
-	doubleHashProv     = crypto.DoubleSHA256
-	signProv           = crypto.ECDSA
-	ellipticSize       = crypto.Elliptic256
-	cryptoProv         = crypto.AESCBC
 )
 
 // SessInit initializes sessions

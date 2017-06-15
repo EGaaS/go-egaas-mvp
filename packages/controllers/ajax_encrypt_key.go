@@ -63,7 +63,7 @@ func EncryptNewKey(walletID string) (result EncryptKey) {
 	var private string
 
 	for result.WalletID == 0 {
-		private, result.Public, _ = crypto.GenHexKeys(ellipticSize)
+		private, result.Public, _ = crypto.GenHexKeys()
 
 		pub, _ := hex.DecodeString(result.Public)
 		idnew := int64(crypto.Address(pub))
@@ -78,7 +78,7 @@ func EncryptNewKey(walletID string) (result EncryptKey) {
 		}
 	}
 	priv, _ := hex.DecodeString(private)
-	encrypted, err := crypto.SharedEncrypt([]byte(pubKey), priv, hashProv, signProv, cryptoProv, ellipticSize)
+	encrypted, err := crypto.SharedEncrypt([]byte(pubKey), priv)
 	if err != nil {
 		result.Error = err.Error()
 		return result

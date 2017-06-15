@@ -17,96 +17,108 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type CryptoProvider int
-type EllipticSize int
+// TODO In order to add new crypto provider with another key length it will be neccecary to fix constant blocksizes like
+// crypto func getSharedKey() pub.X = new(big.Int).SetBytes(public[0:32])
+// egcons func checkKey() gSettings.Key = hex.EncodeToString(privKey[aes.BlockSize:])
+
+type cryptoProvider int
+type ellipticSizeProvider int
 
 const (
-	AESCBC CryptoProvider = iota
+	_AESCBC cryptoProvider = iota
 )
 
 const (
-	Elliptic256 EllipticSize = iota
+	elliptic256 ellipticSizeProvider = iota
 )
 
-const (
-	HashingError         = "Hashing error"
-	EncryptingError      = "Encoding error"
-	DecryptingError      = "Decrypting error"
-	UnknownProviderError = "Unknown provider"
-	HashingEmpty         = "Hashing empty value"
-	EncryptingEmpty      = "Encrypting empty value"
-	DecryptingEmpty      = "Decrypting empty value"
-	SigningEmpty         = "Signing empty value"
-	CheckingSignEmpty    = "Cheking sign of empty"
-	IncorrectSign        = "Incorrect sign"
-	UnsupportedCurveSize = "Unsupported curve size"
+var (
+	HashingError         = errors.New("Hashing error")
+	EncryptingError      = errors.New("Encoding error")
+	DecryptingError      = errors.New("Decrypting error")
+	UnknownProviderError = errors.New("Unknown provider")
+	HashingEmpty         = errors.New("Hashing empty value")
+	EncryptingEmpty      = errors.New("Encrypting empty value")
+	DecryptingEmpty      = errors.New("Decrypting empty value")
+	SigningEmpty         = errors.New("Signing empty value")
+	CheckingSignEmpty    = errors.New("Cheking sign of empty")
+	IncorrectSign        = errors.New("Incorrect sign")
+	UnsupportedCurveSize = errors.New("Unsupported curve size")
 )
 
-func Encrypt(msg []byte, key []byte, iv []byte, prov CryptoProvider) ([]byte, []byte, error) {
+var (
+	cryptoProv   = _AESCBC
+	hashProv     = _SHA256
+	ellipticSize = elliptic256
+	signProv     = _ECDSA
+	checksumProv = _CRC64
+)
+
+func Encrypt(msg []byte, key []byte, iv []byte) ([]byte, []byte, error) {
 	if len(msg) == 0 {
 		log.Warn(EncryptingEmpty)
 	}
-	switch prov {
-	case AESCBC:
+	switch cryptoProv {
+	case _AESCBC:
 		res, err := encryptCBC(msg, key, iv)
 		if err != nil {
 			return nil, nil, err
 		}
 		return res, nil, nil
 	default:
-		return nil, nil, errors.New(UnknownProviderError)
+		return nil, nil, UnknownProviderError
 	}
 }
 
-func Decrypt(msg []byte, key []byte, iv []byte, prov CryptoProvider) ([]byte, error) {
+func Decrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
 	if len(msg) == 0 {
 		log.Warn(DecryptingEmpty)
 	}
-	switch prov {
-	case AESCBC:
+	switch cryptoProv {
+	case _AESCBC:
 		return decryptCBC(msg, key, iv)
 	default:
-		return nil, errors.New(UnknownProviderError)
+		return nil, UnknownProviderError
 	}
 }
 
 // SharedEncrypt creates a shared key and encrypts text. The first 32 characters are the created public key.
 // The cipher text can be only decrypted with the original private key.
-func SharedEncrypt(public, text []byte, hashProv HashProvider, signProv SignProvider, cryptoProv CryptoProvider, ellipticSize EllipticSize) ([]byte, error) {
-	priv, pub, err := GenBytesKeys(ellipticSize)
+func SharedEncrypt(public, text []byte) ([]byte, error) {
+	priv, pub, err := GenBytesKeys()
 	if err != nil {
 		return nil, err
 	}
-	shared, err := getSharedKey(priv, public, hashProv, signProv, ellipticSize)
+	shared, err := getSharedKey(priv, public)
 	if err != nil {
 		return nil, err
 	}
-	val, _, err := Encrypt(shared, text, pub, cryptoProv)
+	val, _, err := Encrypt(shared, text, pub)
 	return val, err
 }
 
 // SharedDecrypt decrypts the ciphertext by using private key.
-func SharedDecrypt(private, ciphertext []byte, hashProv HashProvider, signProv SignProvider, cryptoProv CryptoProvider, ellipticSize EllipticSize) ([]byte, error) {
+func SharedDecrypt(private, ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) <= 64 {
 		return nil, fmt.Errorf(`too short cipher %d`, len(ciphertext))
 	}
-	shared, err := getSharedKey(private, ciphertext[:64], hashProv, signProv, ellipticSize)
+	shared, err := getSharedKey(private, ciphertext[:64])
 	if err != nil {
 		return nil, err
 	}
-	val, _, err := Encrypt(shared, ciphertext[64:], ciphertext[:aes.BlockSize], cryptoProv)
+	val, _, err := Encrypt(shared, ciphertext[64:], ciphertext[:aes.BlockSize])
 	return val, err
 }
 
 // GenBytesKeys generates a random pair of ECDSA private and public binary keys.
 // TODO параметризировать fillLeft
-func GenBytesKeys(size EllipticSize) ([]byte, []byte, error) {
+func GenBytesKeys() ([]byte, []byte, error) {
 	var curve elliptic.Curve
-	switch size {
-	case Elliptic256:
+	switch ellipticSize {
+	case elliptic256:
 		curve = elliptic.P256()
 	default:
-		return nil, nil, errors.New(UnsupportedCurveSize)
+		return nil, nil, UnsupportedCurveSize
 	}
 	private, err := ecdsa.GenerateKey(curve, crand.Reader)
 	if err != nil {
@@ -116,8 +128,8 @@ func GenBytesKeys(size EllipticSize) ([]byte, []byte, error) {
 }
 
 // GenHexKeys generates a random pair of ECDSA private and public hex keys.
-func GenHexKeys(size EllipticSize) (string, string, error) {
-	priv, pub, err := GenBytesKeys(size)
+func GenHexKeys() (string, string, error) {
+	priv, pub, err := GenBytesKeys()
 	if err != nil {
 		return ``, ``, err
 	}
@@ -186,17 +198,17 @@ func _PKCS7UnPadding(src []byte) ([]byte, error) {
 
 // GetSharedKey creates and returns the shared key = private * public.
 // public must be the public key from the different private key.
-func getSharedKey(private, public []byte, hashProv HashProvider, signProv SignProvider, ellipticSize EllipticSize) (shared []byte, err error) {
+func getSharedKey(private, public []byte) (shared []byte, err error) {
 	var pubkeyCurve elliptic.Curve
 	switch ellipticSize {
-	case Elliptic256:
+	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
-		return nil, errors.New(UnknownProviderError)
+		return nil, UnknownProviderError
 	}
 
 	switch signProv {
-	case ECDSA:
+	case _ECDSA:
 		private = converter.FillLeft(private)
 		public = converter.FillLeft(public)
 		pub := new(ecdsa.PublicKey)
@@ -212,16 +224,16 @@ func getSharedKey(private, public []byte, hashProv HashProvider, signProv SignPr
 
 		if priv.Curve.IsOnCurve(pub.X, pub.Y) {
 			x, _ := pub.Curve.ScalarMult(pub.X, pub.Y, priv.D.Bytes())
-			key, err := Hash([]byte(hex.EncodeToString(x.Bytes())), hashProv)
+			key, err := Hash([]byte(hex.EncodeToString(x.Bytes())))
 			if err != nil {
-				return nil, errors.New(UnknownProviderError)
+				return nil, UnknownProviderError
 			}
 			shared = key
 		} else {
 			err = fmt.Errorf("Not IsOnCurve")
 		}
 	default:
-		return nil, errors.New(UnknownProviderError)
+		return nil, UnknownProviderError
 	}
 
 	return

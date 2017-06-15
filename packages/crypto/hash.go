@@ -2,29 +2,38 @@ package crypto
 
 import (
 	"crypto/sha256"
-	"errors"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type HashProvider int
+type hashProvider int
 
 const (
-	SHA256 HashProvider = iota
-	DoubleSHA256
+	_SHA256 hashProvider = iota
+	_DoubleSHA256
 )
 
-func Hash(msg []byte, prov HashProvider) ([]byte, error) {
+func Hash(msg []byte) ([]byte, error) {
 	if len(msg) == 0 {
 		log.Warn(HashingEmpty)
 	}
-	switch prov {
-	case SHA256:
+	switch hashProv {
+	case _SHA256:
 		return hashSHA256(msg), nil
-	case DoubleSHA256:
+	default:
+		return nil, UnknownProviderError
+	}
+}
+
+func DoubleHash(msg []byte) ([]byte, error) {
+	if len(msg) == 0 {
+		log.Warn(HashingEmpty)
+	}
+	switch hashProv {
+	case _DoubleSHA256:
 		return hashDoubleSHA256(msg), nil
 	default:
-		return nil, errors.New(UnknownProviderError)
+		return nil, UnknownProviderError
 	}
 }
 

@@ -127,7 +127,7 @@ func (c *Controller) AjaxSendTx() interface{} {
 					}
 				}
 				if err == nil {
-					hash, err := crypto.Hash(data, hashProv)
+					hash, err := crypto.Hash(data)
 					if err != nil {
 						log.Fatal(err)
 					}

@@ -691,7 +691,7 @@ func (c *Controller) SaveQueue() (string, error) {
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
-	hash, err := crypto.Hash(data, hashProv)
+	hash, err := crypto.Hash(data)
 	if err != nil {
 		log.Fatal(err)
 	}

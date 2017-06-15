@@ -27,13 +27,13 @@ func Address(pubKey []byte) int64 {
 }
 
 // PrivateToPublic returns the public key for the specified private key.
-func PrivateToPublic(key []byte, size EllipticSize) ([]byte, error) {
+func PrivateToPublic(key []byte) ([]byte, error) {
 	var pubkeyCurve elliptic.Curve
-	switch size {
-	case Elliptic256:
+	switch ellipticSize {
+	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
-		return nil, errors.New(UnsupportedCurveSize)
+		return nil, UnsupportedCurveSize
 	}
 
 	bi := new(big.Int).SetBytes(key)
@@ -51,7 +51,7 @@ func PrivateToPublicHex(hexkey string) (string, error) {
 	if err != nil {
 		return ``, errors.New("Decode hex error")
 	}
-	pubKey, err := PrivateToPublic(key, Elliptic256)
+	pubKey, err := PrivateToPublic(key)
 	if err != nil {
 		return ``, err
 	}

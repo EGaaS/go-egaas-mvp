@@ -144,7 +144,7 @@ func (p *Parser) limitRequest(vimit interface{}, txType string, vperiod interfac
 }*/
 
 func (p *Parser) dataPre() {
-	hash, err := crypto.Hash(p.BinaryData, doubleHashProv)
+	hash, err := crypto.Hash(p.BinaryData)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func (p *Parser) dataPre() {
 // и она каждый раз успешно проходила бы фронтальную проверку
 // And it would have successfully passed a frontal test
 func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
-	searchedHash, err := crypto.Hash(txBinary, hashProv)
+	searchedHash, err := crypto.Hash(txBinary)
 	if err != nil {
 		log.Fatal(err)
 	}

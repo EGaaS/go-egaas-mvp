@@ -29,8 +29,6 @@ import (
  * от disseminator
  */
 
-var cryptoProv = crypto.SHA256
-
 func (t *TCPServer) Type1() {
 	log.Debug("dataType: 1")
 	// размер данных
@@ -261,7 +259,7 @@ func (t *TCPServer) Type1() {
 					return
 				}
 
-				hash, err := crypto.Hash(txBinData, cryptoProv)
+				hash, err := crypto.Hash(txBinData)
 				if err != nil {
 					log.Fatal(err)
 				}

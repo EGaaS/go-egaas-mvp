@@ -33,14 +33,10 @@ const (
 )
 
 var (
-	boltDB       *bolt.DB
-	bucket       = []byte(`Keys`)
-	settings     = []byte(`Settings`)
-	log          = logging.MustGetLogger("exchangeapi")
-	hashProv     = crypto.SHA256
-	cryptoProv   = crypto.AESCBC
-	ellipticSize = crypto.Elliptic256
-	signProv     = crypto.ECDSA
+	boltDB   *bolt.DB
+	bucket   = []byte(`Keys`)
+	settings = []byte(`Settings`)
+	log      = logging.MustGetLogger("exchangeapi")
 )
 
 // DefaultAPI is the default answer structure
@@ -134,11 +130,11 @@ func InitAPI() {
 }
 
 func Encrypt(input []byte) (output []byte, err error) {
-	pass, err := crypto.Hash([]byte(*utils.BoltPsw), hashProv)
+	pass, err := crypto.Hash([]byte(*utils.BoltPsw))
 	if err != nil {
 		log.Fatal(err)
 	}
-	output, _, err = crypto.Encrypt(input, pass[:], make([]byte, 16), cryptoProv)
+	output, _, err = crypto.Encrypt(input, pass, make([]byte, 16))
 	output = output[16:]
 	if err != nil {
 		return
@@ -147,11 +143,11 @@ func Encrypt(input []byte) (output []byte, err error) {
 }
 
 func decryptBytes(input []byte) (output []byte, err error) {
-	pass, err := crypto.Hash([]byte(*utils.BoltPsw), hashProv)
+	pass, err := crypto.Hash([]byte(*utils.BoltPsw))
 	if err != nil {
 		log.Fatal(err)
 	}
-	output, err = crypto.Decrypt(make([]byte, 16), input, pass, cryptoProv)
+	output, err = crypto.Decrypt(make([]byte, 16), input, pass)
 	return
 }
 
@@ -159,7 +155,7 @@ func genNewKey() ([]byte, error) {
 	if len(*utils.BoltPsw) == 0 {
 		return nil, fmt.Errorf(`-boltPsw password is not defined`)
 	}
-	privKey, pubKey, err := crypto.GenBytesKeys(ellipticSize)
+	privKey, pubKey, err := crypto.GenBytesKeys()
 	if err != nil {
 		return nil, err
 	}

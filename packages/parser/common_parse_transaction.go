@@ -46,7 +46,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 
 		// хэш транзакции
 		// hash of the transaction
-		hash, err := crypto.Hash(*transactionBinaryData, doubleHashProv)
+		hash, err := crypto.DoubleHash(*transactionBinaryData)
 		if err != nil {
 			log.Fatal(err)
 		}

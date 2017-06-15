@@ -63,7 +63,7 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 			// узнаем кол-во байт, которое занимает размер и удалим размер
 			// get know the quantity of bytes, which the size takes and remove it
 			converter.BytesShiftReverse(&binaryData, len(converter.EncodeLength(sizesSlice[i])))
-			hash, err := crypto.Hash(transactionBinaryData, hashProv)
+			hash, err := crypto.Hash(transactionBinaryData)
 			if err != nil {
 				log.Fatal(err)
 			}

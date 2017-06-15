@@ -33,9 +33,6 @@ import (
 )
 
 //var err error
-var hashProvider = crypto.DoubleSHA256
-var signProvider = crypto.ECDSA
-var ellipticSize = crypto.Elliptic256
 
 // BlockGenerator generates blocks
 func BlockGenerator(chBreaker chan bool, chAnswer chan string) {
@@ -345,14 +342,14 @@ BEGIN:
 				transactionType := data[1:2]
 				logger.Debug("%v", transactionType)
 				logger.Debug("%x", transactionType)
-				newhash, err := crypto.Hash(data, hashProvider)
+				newhash, err := crypto.Hash(data)
 				if err != nil {
 					log.Fatal("Hashing error")
 				}
 				mrklArray = append(mrklArray, newhash)
 				logger.Debug("mrklArray %v", mrklArray)
 
-				hash2, err := crypto.Hash(data, hashProvider)
+				hash2, err := crypto.Hash(data)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -384,7 +381,7 @@ BEGIN:
 			//			forSign = fmt.Sprintf("0,%v,%v,%v,%v,%v,%s", newBlockID, prevBlock[`hash`], Time, myWalletID, myStateID, string(mrklRoot))
 			logger.Debug("forSign: %v", forSign)
 			//		bytes, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA1, utils.HashSha1(forSign))
-			bytes, err := crypto.Sign(nodePrivateKey, forSign, hashProvider, signProvider, ellipticSize)
+			bytes, err := crypto.Sign(nodePrivateKey, forSign)
 			if err != nil {
 				if d.dPrintSleep(fmt.Sprintf("err %v %v", err, utils.GetParent()), d.sleepTime) {
 					break BEGIN

@@ -64,7 +64,7 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			return p.ErrInfo(err)
 		}
 
-		hash, err := crypto.Hash(transactionBinaryData, hashProv)
+		hash, err := crypto.Hash(transactionBinaryData)
 		if err != nil {
 			log.Fatal(err)
 		}

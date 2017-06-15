@@ -6,7 +6,6 @@ import (
 	"crypto/elliptic"
 	crand "crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -15,33 +14,33 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 )
 
-type SignProvider int
+type signProvider int
 
 const (
-	ECDSA SignProvider = iota
+	_ECDSA signProvider = iota
 )
 
-func Sign(privateKey string, data string, hashProv HashProvider, signProv SignProvider, size EllipticSize) ([]byte, error) {
+func Sign(privateKey string, data string) ([]byte, error) {
 	if len(data) == 0 {
 		log.Warn(SigningEmpty)
 	}
 	switch signProv {
-	case ECDSA:
-		return signECDSA(privateKey, data, hashProv, size)
+	case _ECDSA:
+		return signECDSA(privateKey, data)
 	default:
-		return nil, errors.New(UnknownProviderError)
+		return nil, UnknownProviderError
 	}
 }
 
-func CheckSign(public []byte, data string, signature []byte, hashProv HashProvider, signProv SignProvider, size EllipticSize) (bool, error) {
+func CheckSign(public []byte, data string, signature []byte) (bool, error) {
 	if len(public) == 0 {
 		log.Warn(CheckingSignEmpty)
 	}
 	switch signProv {
-	case ECDSA:
-		return checkECDSA(public, data, signature, hashProv, size)
+	case _ECDSA:
+		return checkECDSA(public, data, signature)
 	default:
-		return false, errors.New(UnknownProviderError)
+		return false, UnknownProviderError
 	}
 }
 
@@ -54,11 +53,11 @@ func JSSignToBytes(in string) ([]byte, error) {
 	return append(converter.FillLeft(r.Bytes()), converter.FillLeft(s.Bytes())...), nil
 }
 
-func signECDSA(privateKey string, data string, hashProv HashProvider, size EllipticSize) (ret []byte, err error) {
+func signECDSA(privateKey string, data string) (ret []byte, err error) {
 	var pubkeyCurve elliptic.Curve
 
-	switch size {
-	case Elliptic256:
+	switch ellipticSize {
+	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
 		log.Fatal(UnsupportedCurveSize)
@@ -74,7 +73,7 @@ func signECDSA(privateKey string, data string, hashProv HashProvider, size Ellip
 	priv.D = bi
 	priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
 
-	signhash, err := Hash([]byte(data), hashProv)
+	signhash, err := Hash([]byte(data))
 	if err != nil {
 		log.Fatal(HashingError)
 	}
@@ -88,19 +87,19 @@ func signECDSA(privateKey string, data string, hashProv HashProvider, size Ellip
 
 // TODO параметризировать, длина данных в зависимости от длины кривой
 // CheckECDSA checks if forSign has been signed with corresponding to public the private key
-func checkECDSA(public []byte, data string, signature []byte, hashProv HashProvider, size EllipticSize) (bool, error) {
+func checkECDSA(public []byte, data string, signature []byte) (bool, error) {
 	if len(data) == 0 || len(public) != 64 || len(signature) == 0 {
 		return false, fmt.Errorf("invalid parameters")
 	}
 	var pubkeyCurve elliptic.Curve
-	switch size {
-	case Elliptic256:
+	switch ellipticSize {
+	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
 		log.Fatal(UnsupportedCurveSize)
 	}
 
-	hash, err := Hash([]byte(data), hashProv)
+	hash, err := Hash([]byte(data))
 	if err != nil {
 		log.Fatal(HashingError)
 	}
@@ -115,7 +114,7 @@ func checkECDSA(public []byte, data string, signature []byte, hashProv HashProvi
 	}
 	verifystatus := ecdsa.Verify(pubkey, hash, r, s)
 	if !verifystatus {
-		return false, errors.New(IncorrectSign)
+		return false, IncorrectSign
 	}
 	return true, nil
 }

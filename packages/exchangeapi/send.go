@@ -117,7 +117,7 @@ func send(r *http.Request) interface{} {
 	forSign := fmt.Sprintf("%d,%d,%d,%s,%s,%s,%s", txType, txTime, sender,
 		wallet, amount.String(), commission.String(), `api`)
 
-	signature, err := crypto.Sign(hex.EncodeToString(priv), forSign, hashProv, signProv, ellipticSize)
+	signature, err := crypto.Sign(hex.EncodeToString(priv), forSign)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -135,7 +135,7 @@ func send(r *http.Request) interface{} {
 	data = append(data, converter.EncodeLengthPlusData([]byte(amount.String()))...)
 	data = append(data, converter.EncodeLengthPlusData([]byte(commission.String()))...)
 	data = append(data, converter.EncodeLengthPlusData([]byte(`api`))...)
-	pub, err := crypto.PrivateToPublic(priv, ellipticSize)
+	pub, err := crypto.PrivateToPublic(priv)
 	if err != nil {
 		log.Fatal(err)
 	}

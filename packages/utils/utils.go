@@ -791,7 +791,7 @@ func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin
 			return false, fmt.Errorf("sign error %d!=%d", len(publicKeys), len(signsSlice))
 		}
 	}
-	return crypto.CheckSign(publicKeys[0], forSign, signsSlice[0], crypto.SHA256, crypto.ECDSA, crypto.Elliptic256)
+	return crypto.CheckSign(publicKeys[0], forSign, signsSlice[0])
 }
 
 // GetMrklroot returns MerkleTreeRoot
@@ -815,7 +815,7 @@ func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 			// separate one transaction from the list of transactions
 			if txSize > 0 {
 				transactionBinaryData := converter.BytesShift(&binaryData, txSize)
-				dSha256Hash, err := crypto.Hash(transactionBinaryData, crypto.DoubleSHA256)
+				dSha256Hash, err := crypto.DoubleHash(transactionBinaryData)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -860,7 +860,7 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 	log.Debug("dataArray: %s", dataArray)
 	result := make(map[int32][][]byte)
 	for _, v := range dataArray {
-		hash, err := crypto.Hash(v, crypto.DoubleSHA256)
+		hash, err := crypto.DoubleHash(v)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -877,13 +877,13 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 				}
 			} else {
 				if _, ok := result[j+1]; !ok {
-					hash, err := crypto.Hash(append(result[j][i], result[j][i+1]...), crypto.DoubleSHA256)
+					hash, err := crypto.DoubleHash(append(result[j][i], result[j][i+1]...))
 					if err != nil {
 						log.Fatal(err)
 					}
 					result[j+1] = [][]byte{hash}
 				} else {
-					hash, err := crypto.Hash([]byte(append(result[j][i], result[j][i+1]...)), crypto.DoubleSHA256)
+					hash, err := crypto.DoubleHash([]byte(append(result[j][i], result[j][i+1]...)))
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -1388,7 +1388,7 @@ func FirstBlock(exit bool) {
 
 		if len(*FirstBlockPublicKey) == 0 {
 			log.Debug("len(*FirstBlockPublicKey) == 0")
-			priv, pub, _ := crypto.GenHexKeys(crypto.Elliptic256)
+			priv, pub, _ := crypto.GenHexKeys()
 			err := ioutil.WriteFile(*Dir+"/PrivateKey", []byte(priv), 0644)
 			if err != nil {
 				log.Error("%v", ErrInfo(err))
@@ -1397,7 +1397,7 @@ func FirstBlock(exit bool) {
 		}
 		if len(*FirstBlockNodePublicKey) == 0 {
 			log.Debug("len(*FirstBlockNodePublicKey) == 0")
-			priv, pub, _ := crypto.GenHexKeys(crypto.Elliptic256)
+			priv, pub, _ := crypto.GenHexKeys()
 			err := ioutil.WriteFile(*Dir+"/NodePrivateKey", []byte(priv), 0644)
 			if err != nil {
 				log.Error("%v", ErrInfo(err))

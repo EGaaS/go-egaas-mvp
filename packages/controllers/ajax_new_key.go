@@ -78,7 +78,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 		result.Error = `state_id has not been specified`
 		return result
 	}
-	pubkey, err := crypto.PrivateToPublic(bkey, ellipticSize)
+	pubkey, err := crypto.PrivateToPublic(bkey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 	}
 	var priv []byte
 	if len(words) == 0 {
-		spriv, _, err := crypto.GenHexKeys(ellipticSize)
+		spriv, _, err := crypto.GenHexKeys()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -109,7 +109,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 			}
 		}
 		seed = strings.Join(phrase, ` `)
-		hash, err := crypto.Hash([]byte(seed), hashProv)
+		hash, err := crypto.Hash([]byte(seed))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -119,7 +119,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 		result.Error = `wrong private key`
 		return result
 	}
-	pub, err := crypto.PrivateToPublic(priv, ellipticSize)
+	pub, err := crypto.PrivateToPublic(priv)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 	pubhex := hex.EncodeToString(pub)
 	forsign += fmt.Sprintf(",%v,%v", name, pubhex)
 
-	signature, err := crypto.Sign(key, forsign, hashProv, signProv, ellipticSize)
+	signature, err := crypto.Sign(key, forsign)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -176,7 +176,7 @@ func (c *Controller) AjaxNewKey() interface{} {
 		fmt.Printf("NewKey Sign %x %d\r\n", sign, len(sign))
 		fmt.Printf("NewKey Key %x %d\r\n", pubkey, len(pubkey))
 	*/
-	hash, err := crypto.Hash(data, hashProv)
+	hash, err := crypto.Hash(data)
 	err = c.ExecSQL(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), header.Type, int64(idkey), int64(idkey))

@@ -80,10 +80,10 @@ func (c *Controller) AjaxGenKeys() interface{} {
 
 	for i := int64(0); i < count; i++ {
 		var priv []byte
-		spriv, _, _ := crypto.GenHexKeys(ellipticSize)
+		spriv, _, _ := crypto.GenHexKeys()
 		priv, _ = hex.DecodeString(spriv)
 
-		pub, err := crypto.PrivateToPublic(priv, ellipticSize)
+		pub, err := crypto.PrivateToPublic(priv)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -105,7 +105,7 @@ func (c *Controller) AjaxGenKeys() interface{} {
 		forsign := fmt.Sprintf("%d,%d,%d,%d,%d", info.ID, ctime, uint64(c.SessCitizenID), c.SessStateID, flags)
 		pubhex := hex.EncodeToString(pub)
 		forsign += fmt.Sprintf(",%v,%v", ``, pubhex)
-		signature, err := crypto.Sign(privKey, forsign, hashProv, signProv, ellipticSize)
+		signature, err := crypto.Sign(privKey, forsign)
 		if err != nil {
 			result.Error = err.Error()
 			return result

@@ -48,10 +48,6 @@ import (
 // Mutex for locking DB
 var Mutex = &sync.Mutex{}
 var log = logging.MustGetLogger("daemons")
-var hashProv = crypto.SHA256
-var cryptoProv = crypto.AESCBC
-var signProv = crypto.ECDSA
-var ellipticSize = crypto.Elliptic256
 
 // DB is a database variable
 var DB *DCDB
@@ -466,7 +462,7 @@ func (db *DCDB) OneRow(query string, args ...interface{}) *oneRow {
 
 // InsertInLogTx inserts md5 hash and time into log_transaction
 func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
-	txHash, err := crypto.Hash(binaryTx, hashProv)
+	txHash, err := crypto.Hash(binaryTx)
 	if err != nil {
 		log.Fatal("Hashing error")
 	}
@@ -481,7 +477,7 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 
 // DelLogTx deletes a row with the specified md5 hash in log_transaction
 func (db *DCDB) DelLogTx(binaryTx []byte) error {
-	txHash, err := crypto.Hash(binaryTx, hashProv)
+	txHash, err := crypto.Hash(binaryTx)
 	if err != nil {
 		log.Fatal("Hashig error")
 	}
@@ -1272,7 +1268,7 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 	log.Debug("binaryTx %x", *binaryTx)
 	log.Debug("iv %s", iv)
 
-	decrypted, err := crypto.Decrypt(*binaryTx, decKey, iv, cryptoProv)
+	decrypted, err := crypto.Decrypt(*binaryTx, decKey, iv)
 	if err != nil {
 		return nil, nil, nil, ErrInfo(err)
 	}
@@ -1300,12 +1296,12 @@ func (db *DCDB) GetBinSign(forSign string) ([]byte, error) {
 					return nil, ErrInfo(err)
 				}
 				return rsa.SignPKCS1v15(crand.Reader, privateKey, crypto.SHA1, HashSha1(forSign))*/
-	return crypto.Sign(nodePrivateKey, forSign, hashProv, signProv, ellipticSize)
+	return crypto.Sign(nodePrivateKey, forSign)
 }
 
 // InsertReplaceTxInQueue replaces a row in queue_tx
 func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
-	hash, err := crypto.Hash(data, hashProv)
+	hash, err := crypto.Hash(data)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
@@ -1541,7 +1537,7 @@ func (db *DCDB) IsTable(tblname string) bool {
 
 // SendTx writes transaction info to transactions_status & queue_tx
 func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
-	hash, err := crypto.Hash(data, hashProv)
+	hash, err := crypto.Hash(data)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}

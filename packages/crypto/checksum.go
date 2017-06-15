@@ -1,14 +1,11 @@
 package crypto
 
-import (
-	"errors"
-	"hash/crc64"
-)
+import "hash/crc64"
 
-type ChecksumProvider int
+type checksumProvider int
 
 const (
-	CRC64 ChecksumProvider = iota
+	_CRC64 checksumProvider = iota
 )
 
 var (
@@ -19,12 +16,12 @@ func init() {
 	table64 = crc64.MakeTable(crc64.ECMA)
 }
 
-func CalcChecksum(input []byte, checksumProv ChecksumProvider) (uint64, error) {
+func CalcChecksum(input []byte) (uint64, error) {
 	switch checksumProv {
-	case CRC64:
+	case _CRC64:
 		return calcCRC64(input), nil
 	default:
-		return 0, errors.New(UnknownProviderError)
+		return 0, UnknownProviderError
 	}
 }
 

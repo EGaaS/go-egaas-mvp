@@ -156,7 +156,7 @@ func (p *Parser) ParseDataRollback() error {
 			// узнаем кол-во байт, которое занимает размер и удалим размер
 			// we'll get know the quantaty of bytes which the size takes
 			converter.BytesShiftReverse(&p.BinaryData, len(converter.EncodeLength(sizesSlice[i])))
-			hash, err := crypto.Hash(transactionBinaryData, hashProv)
+			hash, err := crypto.Hash(transactionBinaryData)
 			if err != nil {
 				log.Fatal(err)
 			}
