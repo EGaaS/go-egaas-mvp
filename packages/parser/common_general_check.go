@@ -60,7 +60,7 @@ func (p *Parser) generalCheck(name string) error {
 			if walletID == 0 {
 				return utils.ErrInfoFmt("incorrect wallet_id or public_key")
 			}
-			p.PublicKeys = append(p.PublicKeys, converter.HexToBin(p.TxMap["public_key"]))
+			p.PublicKeys = append(p.PublicKeys, p.TxMap["public_key"])
 		} else {
 			p.PublicKeys = append(p.PublicKeys, []byte(data["public_key_0"]))
 			log.Debug("data[public_key_0]", data["public_key_0"])

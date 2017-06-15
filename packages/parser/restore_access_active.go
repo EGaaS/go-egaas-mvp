@@ -31,13 +31,13 @@ func (p *Parser) RestoreAccessActiveInit() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	p.TxMaps.String["secret_hex"] = string(converter.BinToHex(p.TxMaps.Bytes["secret"]))
+	p.TxMaps.String["secret_hex"] = string(p.TxMaps.Bytes["secret"])
 	if p.TxMaps.String["secret_hex"] == "30" {
 		p.TxMaps.Int64["active"] = 0
 	} else {
 		p.TxMaps.Int64["active"] = 1
 	}
-	p.TxMaps.String["secret_hex"] = string(converter.BinToHex(p.TxMaps.Bytes["secret"]))
+	p.TxMaps.String["secret_hex"] = string(p.TxMaps.Bytes["secret"])
 
 	return nil
 }

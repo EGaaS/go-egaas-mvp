@@ -171,7 +171,7 @@ BEGIN:
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = p.TxParser(converter.HexToBin(hash), data, true)
+		err = p.TxParser(hash, data, true)
 		if err != nil {
 			if d.unlockPrintSleep(err, d.sleepTime) {
 				break BEGIN

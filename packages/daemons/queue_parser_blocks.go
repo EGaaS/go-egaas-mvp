@@ -109,8 +109,6 @@ BEGIN:
 			}
 			continue BEGIN
 		}
-		newBlockData["hash_hex"] = string(converter.BinToHex(newBlockData["hash"]))
-		prevBlockData["hash_hex"] = string(converter.BinToHex(prevBlockData["hash"]))
 
 		/*
 		 * Базовая проверка

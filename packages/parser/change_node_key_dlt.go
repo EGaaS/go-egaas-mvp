@@ -31,8 +31,6 @@ func (p *Parser) ChangeNodeKeyDLTInit() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	p.TxMaps.Bytes["new_node_public_key"] = converter.BinToHex(p.TxMaps.Bytes["new_node_public_key"])
-	p.TxMap["new_node_public_key"] = converter.BinToHex(p.TxMap["new_node_public_key"])
 	return nil
 }
 
@@ -70,7 +68,7 @@ func (p *Parser) ChangeNodeKeyDLTFront() error {
 // ChangeNodeKeyDLT proceeds ChangeNodeKeyDLT transaction
 func (p *Parser) ChangeNodeKeyDLT() error {
 
-	_, err := p.selectiveLoggingAndUpd([]string{"node_public_key", "last_forging_data_upd"}, []interface{}{converter.HexToBin(p.TxMaps.Bytes["new_node_public_key"]), p.BlockData.Time}, "dlt_wallets", []string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
+	_, err := p.selectiveLoggingAndUpd([]string{"node_public_key", "last_forging_data_upd"}, []interface{}{p.TxMaps.Bytes["new_node_public_key"], p.BlockData.Time}, "dlt_wallets", []string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

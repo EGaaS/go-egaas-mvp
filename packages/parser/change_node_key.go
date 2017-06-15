@@ -31,8 +31,6 @@ func (p *Parser) ChangeNodeKeyInit() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	p.TxMaps.Bytes["new_node_public_key"] = converter.BinToHex(p.TxMaps.Bytes["new_node_public_key"])
-	p.TxMap["new_node_public_key"] = converter.BinToHex(p.TxMap["new_node_public_key"])
 	return nil
 }
 
@@ -77,7 +75,7 @@ func (p *Parser) ChangeNodeKeyFront() error {
 // ChangeNodeKey proceeds ChangeNodeKey transaction
 func (p *Parser) ChangeNodeKey() error {
 
-	_, err := p.selectiveLoggingAndUpd([]string{"node_public_key"}, []interface{}{converter.HexToBin(p.TxMaps.Bytes["new_node_public_key"])}, "system_recognized_states", []string{"state_id"}, []string{converter.UInt32ToStr(p.TxStateID)}, true)
+	_, err := p.selectiveLoggingAndUpd([]string{"node_public_key"}, []interface{}{p.TxMaps.Bytes["new_node_public_key"]}, "system_recognized_states", []string{"state_id"}, []string{converter.UInt32ToStr(p.TxStateID)}, true)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

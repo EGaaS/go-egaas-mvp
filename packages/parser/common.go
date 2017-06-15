@@ -149,7 +149,7 @@ func (p *Parser) dataPre() {
 		log.Fatal(err)
 	}
 	p.blockHashHex = hash
-	p.blockHex = converter.BinToHex(p.BinaryData)
+	p.blockHex = p.BinaryData
 	// определим тип данных
 	// define the data type
 	p.dataType = int(converter.BinToDec(converter.BytesShift(&p.BinaryData, 1)))

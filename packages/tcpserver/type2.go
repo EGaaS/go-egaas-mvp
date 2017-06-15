@@ -81,8 +81,8 @@ func (t *TCPServer) Type2() {
 			log.Error("%v", utils.ErrInfo(err))
 			return
 		}
-		log.Debug("INSERT INTO queue_tx (hash, data) (%s, %s)", hash, converter.BinToHex(decryptedBinDataFull))
-		err = t.ExecSQL(`INSERT INTO queue_tx (hash, data) VALUES ([hex], ?, [hex])`, hash, converter.BinToHex(decryptedBinDataFull))
+		log.Debug("INSERT INTO queue_tx (hash, data) (%s, %s)", hash, decryptedBinDataFull)
+		err = t.ExecSQL(`INSERT INTO queue_tx (hash, data) VALUES ([hex], ?, [hex])`, hash, decryptedBinDataFull)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			return

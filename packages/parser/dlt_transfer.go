@@ -34,9 +34,6 @@ func (p *Parser) DLTTransferInit() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	p.TxMaps.Bytes["public_key"] = converter.BinToHex(p.TxMaps.Bytes["public_key"])
-	p.TxMap["public_key"] = converter.BinToHex(p.TxMap["public_key"])
-	p.TxMaps.Bytes["sign"] = converter.BinToHex(p.TxMaps.Bytes["sign"])
 	return nil
 }
 
@@ -150,7 +147,7 @@ func (p *Parser) DLTTransfer() error {
 	log.Debug("amountAndCommission %s", amountAndCommission)
 	log.Debug("amountAndCommission %s", amountAndCommission.String())
 	if len(p.TxMaps.Bytes["public_key"]) > 30 && len(pkey) == 0 {
-		_, err = p.selectiveLoggingAndUpd([]string{"-amount", "public_key_0"}, []interface{}{amountAndCommission.String(), converter.HexToBin(p.TxMaps.Bytes["public_key"])}, "dlt_wallets", []string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
+		_, err = p.selectiveLoggingAndUpd([]string{"-amount", "public_key_0"}, []interface{}{amountAndCommission.String(), p.TxMaps.Bytes["public_key"]}, "dlt_wallets", []string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
 	} else {
 		_, err = p.selectiveLoggingAndUpd([]string{"-amount"}, []interface{}{amountAndCommission.String()}, "dlt_wallets", []string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
 	}

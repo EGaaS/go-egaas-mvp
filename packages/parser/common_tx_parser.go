@@ -30,7 +30,7 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 
 	var err error
 	var fatalError string
-	hashHex := converter.BinToHex(hash)
+	hashHex := hash
 	txType, walletID, citizenID := utils.GetTxTypeAndUserID(binaryTx)
 	if walletID == 0 && citizenID == 0 {
 		fatalError = "undefined walletID and citizenID"
@@ -84,11 +84,11 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 		}
 		utils.WriteSelectiveLog("affect: " + converter.Int64ToStr(affect))
 
-		log.Debug("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES (%s, %s, %v, %v, %v, %v, %v, %v)", hashHex, converter.BinToHex(binaryTx), 0, txType, walletID, citizenID, 0, counter)
+		log.Debug("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES (%s, %s, %v, %v, %v, %v, %v, %v)", hashHex, binaryTx, 0, txType, walletID, citizenID, 0, counter)
 		utils.WriteSelectiveLog("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?)")
 		// вставляем с verified=1
 		// put with verified=1
-		err = p.ExecSQL(`INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter, verified) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?, 1)`, hashHex, converter.BinToHex(binaryTx), 0, txType, walletID, citizenID, 0, counter)
+		err = p.ExecSQL(`INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter, verified) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?, 1)`, hashHex, binaryTx, 0, txType, walletID, citizenID, 0, counter)
 		if err != nil {
 			utils.WriteSelectiveLog(err)
 			return utils.ErrInfo(err)
@@ -151,7 +151,7 @@ func (p *Parser) AllTxParser() error {
 
 		err = p.TxParser([]byte(data["hash"]), []byte(data["data"]), false)
 		if err != nil {
-			err0 := p.ExecSQL(`INSERT INTO incorrect_tx (time, hash, err) VALUES (?, [hex], ?)`, time.Now().Unix(), converter.BinToHex(data["hash"]), fmt.Sprintf("%s", err))
+			err0 := p.ExecSQL(`INSERT INTO incorrect_tx (time, hash, err) VALUES (?, [hex], ?)`, time.Now().Unix(), data["hash"], fmt.Sprintf("%s", err))
 			if err0 != nil {
 				log.Error("%v", utils.ErrInfo(err0))
 			}

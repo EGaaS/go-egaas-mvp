@@ -110,7 +110,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 				continue
 			}
 			if (isBytea[k] || converter.InSliceString(k, []string{"hash", "tx_hash", "public_key_0", "node_public_key"})) && v != "" {
-				jsonMap[k] = string(converter.BinToHex([]byte(v)))
+				jsonMap[k] = string([]byte(v))
 			} else {
 				jsonMap[k] = v
 			}

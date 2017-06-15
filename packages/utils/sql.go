@@ -466,7 +466,6 @@ func (db *DCDB) InsertInLogTx(binaryTx []byte, time int64) error {
 	if err != nil {
 		log.Fatal("Hashing error")
 	}
-	txHash = converter.BinToHex(txHash)
 	err = db.ExecSQL("INSERT INTO log_transactions (hash, time) VALUES ([hex], ?)", txHash, time)
 	log.Debug("INSERT INTO log_transactions (hash, time) VALUES ([hex], %s)", txHash)
 	if err != nil {
@@ -481,7 +480,6 @@ func (db *DCDB) DelLogTx(binaryTx []byte) error {
 	if err != nil {
 		log.Fatal("Hashig error")
 	}
-	txHash = converter.BinToHex(txHash)
 	affected, err := db.ExecSQLGetAffect("DELETE FROM log_transactions WHERE hex(hash) = ?", txHash)
 	log.Debug("DELETE FROM log_transactions WHERE hex(hash) = %s / affected = %d", txHash, affected)
 	if err != nil {
@@ -546,7 +544,7 @@ func FormatQueryArgs(q, dbType string, args ...interface{}) (string, []interface
 
 	newQ := q
 	if ok, _ := regexp.MatchString(`CREATE TABLE`, newQ); !ok {
-		newQ = strings.Replace(newQ, "[hex]", "decode(?,'HEX')", -1)
+		newQ = strings.Replace(newQ, "[hex]", "?", -1)
 		newQ = strings.Replace(newQ, " authorization", ` "authorization"`, -1)
 		newQ = strings.Replace(newQ, "user,", `"user",`, -1)
 		newQ = ReplQ(newQ)
@@ -1169,7 +1167,7 @@ func (db *DCDB) GetBlockDataFromBlockChain(blockID int64) (*BlockData, error) {
 		binaryData := []byte(data["data"])
 		converter.BytesShift(&binaryData, 1) // не нужно. 0 - блок, >0 - тр-ии
 		BlockData = ParseBlockHeader(&binaryData)
-		BlockData.Hash = converter.BinToHex([]byte(data["hash"]))
+		BlockData.Hash = []byte(data["hash"])
 	}
 	return BlockData, nil
 }
@@ -1305,14 +1303,13 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
-	hash = converter.BinToHex(hash)
 	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", hash)
 	err = db.ExecSQL("DELETE FROM queue_tx WHERE hex(hash) = ?", hash)
 	if err != nil {
 		return ErrInfo(err)
 	}
-	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, converter.BinToHex(data))
-	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, converter.BinToHex(data))
+	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, data)
+	err = db.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, data)
 	if err != nil {
 		return ErrInfo(err)
 	}
@@ -1541,7 +1538,6 @@ func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error)
 	if err != nil {
 		log.Fatal("Ошибка хеширования")
 	}
-	hash = converter.BinToHex(hash)
 	err = db.ExecSQL(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), txType, adminWallet, adminWallet)

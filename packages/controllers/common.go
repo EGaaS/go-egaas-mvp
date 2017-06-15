@@ -388,9 +388,9 @@ func makeTemplate(html, name string, tData interface{}) (string, error) {
 		"strToInt": func(text string) int {
 			return converter.StrToInt(text)
 		},
-		"bin2hex": func(text string) string {
+		/*"bin2hex": func(text string) string {
 			return string(converter.BinToHex([]byte(text)))
-		},
+		},*/
 		"int64ToStr": func(text int64) string {
 			return converter.Int64ToStr(text)
 		},

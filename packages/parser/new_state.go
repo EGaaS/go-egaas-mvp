@@ -357,7 +357,7 @@ MenuBack(Welcome)`, sid)
 		return
 	}
 
-	err = p.ExecSQL(`INSERT INTO "`+id+`_citizens" (id,public_key_0) VALUES (?, [hex])`, p.TxWalletID, converter.BinToHex(pKey))
+	err = p.ExecSQL(`INSERT INTO "`+id+`_citizens" (id,public_key_0) VALUES (?, [hex])`, p.TxWalletID, pKey)
 	if err != nil {
 		return
 	}
@@ -450,7 +450,7 @@ func (p *Parser) NewState() error {
 	if pkey, err = p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String(); err != nil {
 		return p.ErrInfo(err)
 	} else if len(p.TxMaps.Bytes["public_key"]) > 30 && len(pkey) == 0 {
-		_, err = p.selectiveLoggingAndUpd([]string{"public_key_0"}, []interface{}{converter.HexToBin(p.TxMaps.Bytes["public_key"])}, "dlt_wallets",
+		_, err = p.selectiveLoggingAndUpd([]string{"public_key_0"}, []interface{}{p.TxMaps.Bytes["public_key"]}, "dlt_wallets",
 			[]string{"wallet_id"}, []string{converter.Int64ToStr(p.TxWalletID)}, true)
 	}
 	return err

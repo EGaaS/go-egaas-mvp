@@ -183,7 +183,7 @@ func (p *Parser) ParseDataRollback() error {
 			}
 			// пишем тр-ию в очередь на проверку, авось пригодится
 			// put the transaction in the turn for checking suddenly we will need it
-			dataHex := converter.BinToHex(transactionBinaryData)
+			dataHex := transactionBinaryData
 			log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", p.TxHash)
 			err = p.ExecSQL("DELETE FROM queue_tx  WHERE hex(hash) = ?", p.TxHash)
 			if err != nil {

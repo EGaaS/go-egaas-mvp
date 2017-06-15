@@ -118,7 +118,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				return utils.ErrInfo(err)
 			}
 		}
-		if badBlocks[blockData.BlockId] == string(converter.BinToHex(blockData.Sign)) {
+		if badBlocks[blockData.BlockId] == string(blockData.Sign) {
 			ClearTmp(blocks)
 			return utils.ErrInfo(errors.New("bad block"))
 		}
@@ -377,7 +377,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 							block_id = ?,
 							time = ?,
 							sent = 0
-					`, converter.BinToHex(lastMyBlock["hash"]), lastMyBlockData.BlockId, lastMyBlockData.Time)
+					`, lastMyBlock["hash"], lastMyBlockData.BlockId, lastMyBlockData.Time)
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
@@ -422,7 +422,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
-			blockHex := converter.BinToHex(block)
+			blockHex := block
 
 			// пишем в цепочку блоков
 			// record in the chain of blocks

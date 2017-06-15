@@ -2,7 +2,6 @@ package converter
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"reflect"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/shopspring/decimal"
-	log "github.com/sirupsen/logrus"
 )
 
 //TODO параметризировать
@@ -307,10 +305,14 @@ func DecToBin(v interface{}, sizeBytes int64) []byte {
 	case string:
 		dec = StrToInt64(v.(string))
 	}
-	Hex := fmt.Sprintf("%0"+Int64ToStr(sizeBytes*2)+"x", dec)
-	return HexToBin([]byte(Hex))
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(dec))
+	return buf
+	//Hex := fmt.Sprintf("%0"+Int64ToStr(sizeBytes*2)+"x", dec)
+	//return HexToBin([]byte(Hex))
 }
 
+/*
 // BinToHex converts interface to hex []byte
 func BinToHex(v interface{}) []byte {
 	var bin []byte
@@ -343,7 +345,7 @@ func HexToBin(ihexdata interface{}) []byte {
 	}
 	return str
 }
-
+*/
 // BinToDec converts input binary []byte to int64
 func BinToDec(bin []byte) int64 {
 	var a uint64

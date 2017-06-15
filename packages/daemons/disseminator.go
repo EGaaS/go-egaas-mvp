@@ -196,7 +196,7 @@ BEGIN:
 				continue BEGIN
 			}
 			for _, data := range transactions {
-				hexHash := converter.BinToHex([]byte(data["hash"]))
+				hexHash := []byte(data["hash"])
 				toBeSent = append(toBeSent, []byte(data["hash"])...)
 				logger.Debug("hash %x", data["hash"])
 				utils.WriteSelectiveLog("UPDATE transactions SET sent = 1 WHERE hex(hash) = " + string(hexHash))
@@ -251,7 +251,7 @@ BEGIN:
 					continue BEGIN
 				}
 				logger.Debug("hash %x", hash)
-				hashHex := converter.BinToHex(hash)
+				hashHex := hash
 				utils.WriteSelectiveLog("UPDATE transactions SET sent = 1 WHERE hex(hash) = " + string(hashHex))
 				affect, err := d.ExecSQLGetAffect("UPDATE transactions SET sent = 1 WHERE hex(hash) = ?", hashHex)
 				if err != nil {
@@ -386,7 +386,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 			if len(binaryTxHashes) >= 16 {
 				txHash = converter.BytesShift(&binaryTxHashes, 16)
 			}
-			txHash = converter.BinToHex(txHash)
 			logger.Debug("txHash %s (host : %v)", txHash, host)
 			utils.WriteSelectiveLog("SELECT data FROM transactions WHERE hex(hash) = " + string(txHash))
 			tx, err := d.Single("SELECT data FROM transactions WHERE hex(hash) = ?", txHash).Bytes()
@@ -396,7 +395,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 				logger.Error("%v", utils.ErrInfo(err))
 				return
 			}
-			utils.WriteSelectiveLog("tx: " + string(converter.BinToHex(tx)))
+			utils.WriteSelectiveLog("tx: " + string(tx))
 			if len(tx) > 0 {
 				binaryTx = append(binaryTx, converter.EncodeLengthPlusData(tx)...)
 			}

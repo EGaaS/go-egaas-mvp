@@ -517,7 +517,7 @@ BEGIN:
 					}
 					continue BEGIN
 				}
-				prevBlockHash = string(converter.BinToHex([]byte(prevBlockHash)))
+				prevBlockHash = string([]byte(prevBlockHash))
 			} else {
 				prevBlockHash = "0"
 			}

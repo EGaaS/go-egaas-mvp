@@ -100,7 +100,7 @@ func (t *TCPServer) Type1() {
 			// нет смысла принимать старые блоки
 			// there is no reason to accept the old blocks
 			if newDataBlockID >= blockID {
-				newDataHash := converter.BinToHex(converter.BytesShift(&binaryData, 32))
+				newDataHash := converter.BytesShift(&binaryData, 32)
 				err = t.ExecSQL(`
 						INSERT INTO queue_blocks (
 							hash,
@@ -119,7 +119,7 @@ func (t *TCPServer) Type1() {
 			} else {
 				// просто удалим хэш блока, что бы далее проверить тр-ии
 				// just delete the hash of the block to check transactions further
-				converter.BinToHex(converter.BytesShift(&binaryData, 32))
+				converter.BytesShift(&binaryData, 32)
 			}
 		}
 		log.Debug("binaryData: %x", binaryData)
@@ -141,7 +141,7 @@ func (t *TCPServer) Type1() {
 				// if we came here from 'continue', then binaryData could already be empty
 				break
 			}
-			newDataTxHash := converter.BinToHex(converter.BytesShift(&binaryData, 16))
+			newDataTxHash := converter.BytesShift(&binaryData, 16)
 			if len(newDataTxHash) == 0 {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -182,7 +182,7 @@ func (t *TCPServer) Type1() {
 				log.Debug("exists")
 				continue
 			}
-			needTx = append(needTx, converter.HexToBin(newDataTxHash)...)
+			needTx = append(needTx, newDataTxHash...)
 			if len(binaryData) == 0 {
 				break
 			}
@@ -251,7 +251,7 @@ func (t *TCPServer) Type1() {
 					log.Error("%v", utils.ErrInfo(err))
 					return
 				}
-				txHex := converter.BinToHex(txBinData)
+				txHex := txBinData
 				// проверим размер
 				// check the size
 				if int64(len(txBinData)) > consts.MAX_TX_SIZE {

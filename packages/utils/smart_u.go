@@ -156,7 +156,7 @@ func init() {
 		`Form`: Form, `FormEnd`: FormEnd, `Label`: Label, `Legend`: Legend, `Select`: Select, `Param`: Param, `Mult`: Mult,
 		`Money`: Money, `Source`: Source, `Val`: Val, `Lang`: LangRes, `LangJS`: LangJS, `InputDate`: InputDate,
 		`MenuGroup`: MenuGroup, `MenuEnd`: MenuEnd, `MenuItem`: MenuItem, `MenuPage`: MenuPage, `MenuBack`: MenuBack,
-		`WhiteMobileBg`: WhiteMobileBg, `Bin2Hex`: Bin2Hex, `MessageBoard`: MessageBoard, `AutoUpdate`: AutoUpdate,
+		`WhiteMobileBg`: WhiteMobileBg, `MessageBoard`: MessageBoard, `AutoUpdate`: AutoUpdate,
 		`AutoUpdateEnd`: AutoUpdateEnd, `Include`: Include,
 	})
 }
@@ -597,6 +597,7 @@ func WhiteMobileBg(vars *map[string]string, pars ...string) string {
 </script>`, wide)
 }
 
+/*
 // Bin2Hex converts interface to hex string
 func Bin2Hex(vars *map[string]string, pars ...string) string {
 	if len(pars) == 0 {
@@ -604,6 +605,7 @@ func Bin2Hex(vars *map[string]string, pars ...string) string {
 	}
 	return string(converter.BinToHex(pars[0]))
 }
+*/
 
 // WhiteBg switches flatPageMobile class
 func WhiteBg(vars *map[string]string, pars ...string) string {

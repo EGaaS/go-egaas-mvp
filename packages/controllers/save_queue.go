@@ -594,7 +594,7 @@ func (c *Controller) SaveQueue() (string, error) {
 		data = append(data, converter.DecToBin(txTime, 4)...)
 		data = append(data, converter.EncodeLengthPlusData(userID)...)
 		data = append(data, converter.EncodeLengthPlusData(stateID)...)
-		data = append(data, converter.EncodeLengthPlusData(converter.HexToBin(publicKey))...)
+		data = append(data, converter.EncodeLengthPlusData(publicKey)...)
 		data = append(data, binSignatures...)
 
 	case "EditLang", "NewLang":
@@ -684,7 +684,7 @@ func (c *Controller) SaveQueue() (string, error) {
 		data = append(data, converter.DecToBin(txTime, 4)...)
 		data = append(data, converter.EncodeLengthPlusData(walletID)...)
 		data = append(data, converter.EncodeLengthPlusData(citizenID)...)
-		data = append(data, converter.EncodeLengthPlusData(converter.HexToBin(publicKey))...)
+		data = append(data, converter.EncodeLengthPlusData(publicKey)...)
 		data = append(data, binSignatures...)
 	}
 
@@ -714,8 +714,8 @@ func (c *Controller) SaveQueue() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, converter.BinToHex(data))
-	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, converter.BinToHex(data))
+	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, data)
+	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, data)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
