@@ -10,7 +10,6 @@ type hashProvider int
 
 const (
 	_SHA256 hashProvider = iota
-	_DoubleSHA256
 )
 
 func Hash(msg []byte) ([]byte, error) {
@@ -30,7 +29,7 @@ func DoubleHash(msg []byte) ([]byte, error) {
 		log.Warn(HashingEmpty)
 	}
 	switch hashProv {
-	case _DoubleSHA256:
+	case _SHA256:
 		return hashDoubleSHA256(msg), nil
 	default:
 		return nil, UnknownProviderError
