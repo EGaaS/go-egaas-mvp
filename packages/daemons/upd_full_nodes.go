@@ -55,7 +55,6 @@ BEGIN:
 		logger.Info(GoroutineName)
 		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
 
-		// проверим, не нужно ли нам выйти из цикла
 		// check if we have to break the cycle
 		if CheckDaemonsRestart(chBreaker, chAnswer, GoroutineName) {
 			break BEGIN
@@ -97,8 +96,7 @@ BEGIN:
 			continue
 		}
 
-		// Есть ли мы в списке тех, кто может генерить блоки
-		// If we are in the list of those who are able to generate the blocks
+		// If we are in the list of those who can generate the blocks
 		fullNodeID, err := d.FindInFullNodes(myStateID, myWalletID)
 		if err != nil {
 			d.dbUnlock()
@@ -121,7 +119,6 @@ BEGIN:
 
 		curTime := utils.Time()
 
-		// проверим, прошло ли время с момента последнего обновления
 		// check if the time of the last updating passed
 		updFullNodes, err := d.Single("SELECT time FROM upd_full_nodes").Int64()
 		if err != nil {
