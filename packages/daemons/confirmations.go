@@ -24,10 +24,8 @@ import (
 )
 
 /*
-Getting amount of nodes, which has the same hash as we do
+Getting amount of nodes, which has the same hash as we have
 Using it for watching for forks
-Получаем кол-во нодов, у которых такой же хэш последнего блока как и у нас
-Нужно чтобы следить за вилками
 */
 
 // Confirmations gets and checks blocks from nodes
@@ -60,7 +58,6 @@ func Confirmations(chBreaker chan bool, chAnswer chan string) {
 
 BEGIN:
 	for {
-		// первые 2 минуты спим по 10 сек, чтобы блоки успели собраться
 		// the first 2 minutes we sleep for 10 sec for blocks to be collected
 		s++
 
@@ -73,16 +70,14 @@ BEGIN:
 		logger.Info(GoroutineName)
 		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
 
-		// проверим, не нужно ли нам выйти из цикла
 		// check if we have to break the cycle
 		if CheckDaemonsRestart(chBreaker, chAnswer, GoroutineName) {
 			break BEGIN
 		}
 
 		var startBlockID int64
-		// если последний проверенный был давно (пропасть более 5 блоков),
-		// то начинаем проверку последних 5 блоков
 		// if the last one checked was long ago (interval is more than 5 blocks)
+		// so start to check the 5 last blocks
 		ConfirmedBlockID, err := d.GetConfirmedBlockID()
 		if err != nil {
 			logger.Error("%v", err)
@@ -94,8 +89,8 @@ BEGIN:
 		if LastBlockID-ConfirmedBlockID > 5 {
 			startBlockID = ConfirmedBlockID + 1
 			d.sleepTime = 10
-			s = 0 // 2 минуты отчитываем с начала
-			// count 2 minutes from the beginning
+			s = 0 // count 2 minutes from the beginning
+	
 		}
 		if startBlockID == 0 {
 			startBlockID = LastBlockID - 1
@@ -104,7 +99,6 @@ BEGIN:
 
 		for blockID := LastBlockID; blockID > startBlockID; blockID-- {
 
-			// проверим, не нужно ли нам выйти из цикла
 			// check if we have to break the cycle
 			if CheckDaemonsRestart(chBreaker, chAnswer, GoroutineName) {
 				break BEGIN
@@ -199,7 +193,6 @@ func checkConf(host string, blockID int64) string {
 	conn.SetReadDeadline(time.Now().Add(consts.READ_TIMEOUT * time.Second))
 	conn.SetWriteDeadline(time.Now().Add(consts.WRITE_TIMEOUT * time.Second))
 
-	// вначале шлем тип данных, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
 	// firstly send a data type for the receiving party could understand how exacetly to process the data sent
 	_, err = conn.Write(utils.DecToBin(4, 2))
 	if err != nil {
@@ -207,7 +200,6 @@ func checkConf(host string, blockID int64) string {
 		return "0"
 	}
 
-	// в 4-х байтах пишем ID блока, хэш которого хотим получить
 	// record the block ID that we want to recive in 4 bytes
 	size := utils.DecToBin(blockID, 4)
 	_, err = conn.Write(size)
@@ -216,7 +208,6 @@ func checkConf(host string, blockID int64) string {
 		return "0"
 	}
 
-	// ответ всегда 32 байта
 	// the response is always 32 bytes
 	hash := make([]byte, 32)
 	_, err = conn.Read(hash)
