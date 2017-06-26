@@ -22,7 +22,7 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
-// NewColumn show the form for creating new column
+// NewColumn shows the form for creating new column
 func (c *Controller) NewColumn() (string, error) {
 
 	var err error
