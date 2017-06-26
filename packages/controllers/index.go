@@ -87,7 +87,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	//	var key string
 
 	showIOSMenu := true
-	// Когда меню не выдаем
 	// When we don't give the menu
 	if utils.DB == nil || utils.DB.DB == nil {
 		showIOSMenu = false
@@ -105,8 +104,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		wTime := int64(12)
 		wTimeReady := int64(2)
 		log.Debug("wTime: %v / utils.Time(): %v / blockData[time]: %v", wTime, utils.Time(), utils.StrToInt64(blockData["time"]))
-		// если время менее 12 часов от текущего, то выдаем не подвержденные, а просто те, что есть в блокчейне
-		// if time differs less than for 12 hours from current time, give not affected but those which are in blockchain
+		// if time differs less than for 12 hours from current time, give not confirmed but those which are in blockchain
 		if utils.Time()-utils.StrToInt64(blockData["time"]) < 3600*wTime {
 			lastBlockData, err := utils.DB.GetLastBlockData()
 			if err != nil {
