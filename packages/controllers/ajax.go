@@ -138,7 +138,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	if ok, _ := regexp.MatchString(`^(?i)`+pages+`|GetServerTime|TxStatus|AnonymHistory|RewritePrimaryKeySave|SendPromisedAmountToPool|SaveEmailAndSendTestMess|sendMobile|rewritePrimaryKey|EImportData|EDataBaseDump|Update|exchangeAdmin|exchangeSupport|exchangeUser|ETicket|newPhoto|NodeConfigControl|SaveDecryptComment|EncryptChatMessage|GetChatMessages|SendToTheChat|SaveToken|SendToPool|ClearDbLite|ClearDb|UploadVideo|daylightKey|PoolAddUsers|SaveQueue|AlertMessage|SaveHost|PoolDataBaseDump|GenerateNewPrimaryKey|GenerateNewNodeKey|SaveNotifications|ProgressBar|MinersMap|EncryptComment|Logout|SaveVideo|SaveShopData|SaveRaceCountry|MyNoticeData|HolidaysList|ClearVideo|CheckCfCurrency|WalletsListCfProject|SendTestEmail|SendSms|SaveUserCoords|SaveGeolocation|SaveEmailSms|Profile|DeleteVideo|CropPhoto$`, controllerName); !ok {
 		html = "Access denied 0"
 	} else {
-		if utils.Mobile() { // На IOS можно сгенерить ключ без сессии // It's possible to generate the key on IOS without session
+		if utils.Mobile() { // It's possible to generate the key on IOS without session
 			pages += "|daylightKey"
 		}
 		if ok, _ := regexp.MatchString(`^(?i)`+pages+`$`, controllerName); !ok && c.SessWalletID <= 0 && c.SessCitizenID <= 0 && len(c.SessAddress) == 0 {
@@ -148,7 +148,6 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 			if ok, _ := regexp.MatchString(`^(?i)GetChatMessages$`, controllerName); ok && !dbInit {
 				html = "Please wait. nill dbInit"
 			} else {
-				// вызываем контроллер в зависимости от шаблона
 				// call the controller depending on template
 				html, err = CallController(c, controllerName)
 				if err != nil {
