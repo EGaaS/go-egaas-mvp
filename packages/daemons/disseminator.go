@@ -23,15 +23,12 @@ import (
 )
 
 /*
- * просто шлем всем, кто есть в nodes_connection хэши блока и тр-ий
- * если мы не майнер, то шлем всю тр-ию целиком, блоки слать не можем
- * если майнер - то шлем только хэши, т.к. у нас есть хост, откуда всё можно скачать
+ * just send to all who have hashes of block and transaction in nodes_connection
+ * if we are not a miner, then send transaction totally, we are not able not send blocks
+ * if we are a miner then send only hashes because we have the host where we can upload everything
  * */
-// just send to all who have hashes of block and transaction in nodes_connection
-// if we are not a miner, then send transaction totally, we are not able not send blocks
-// if we are a miner then send only hashes because we have the host where we can upload everything
 
-// Disseminator send hashes of block and transactions
+// Disseminator sends hashes of block and transactions
 func Disseminator(chBreaker chan bool, chAnswer chan string) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -64,7 +61,6 @@ BEGIN:
 		logger.Info(GoroutineName)
 		MonitorDaemonCh <- []string{GoroutineName, utils.Int64ToStr(utils.Time())}
 
-		// проверим, не нужно ли нам выйти из цикла
 		// check if we have to break the cycle
 		if CheckDaemonsRestart(chBreaker, chAnswer, GoroutineName) {
 			break BEGIN
@@ -95,15 +91,13 @@ BEGIN:
 				}
 				continue
 			}
-			// Если мы - государство и у нас указан delegate, т.е. мы делегировали полномочия по поддержанию ноды другому юзеру или государству, то выходим.
-			// if we are a state we have a delegate, that means we delegat our authority of the node maintenance to another user or state, then we exit.
+			// if we are a state we have a delegate, that means we delegated our authority of the node maintenance to another user or state, then we exit.
 			if delegate {
 				fullNode = false
 			}
 		}
 
-		// Есть ли мы в списке тех, кто может генерить блоки
-		// if we are in the cycle of those who are able to generate blocks
+		// whether we are in the list of those who are able to generate blocks
 		fullNodeID, err := d.Single("SELECT id FROM full_nodes WHERE final_delegate_state_id = ? OR final_delegate_wallet_id = ? OR state_id = ? OR wallet_id = ?", myStateID, myWalletID, myStateID, myWalletID).Int64()
 		if err != nil {
 			logger.Error("%v", err)
@@ -116,10 +110,8 @@ BEGIN:
 			fullNode = false
 		}
 
-		var dataType int64 // это тип для того, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
-		// this type is needed to let the host understand how exactly it has to process the sent data
+		var dataType int64 // this type is needed to let the host understand how exactly it has to process the sent data
 
-		// если мы - fullNode, то должны слать хэши, блоки сами стянут
 		// if we are fullNode we have to send hashes, blocks will take themselves
 		if fullNode {
 
@@ -127,9 +119,7 @@ BEGIN:
 
 			dataType = 1
 
-			// возьмем хэш текущего блока и номер блока
 			// take the hash of current block and number of a block
-			// для теста ролбеков отключим на время
 			// disconnect for some time to test rollbacks
 			data, err := d.OneRow("SELECT block_id, hash FROM info_block WHERE sent  =  0").Bytes()
 			if err != nil {
@@ -147,14 +137,12 @@ BEGIN:
 			}
 
 			/*
-			 * Составляем данные на отправку
+			 * We compose the data for sending
 			 * */
-			// We compose the data for sending
 			toBeSent := []byte{}
 			toBeSent = append(toBeSent, utils.DecToBin(fullNodeID, 2)...)
 			if len(data) > 0 { // блок // block
-				// если 0, то на приемнике будем читать блок, если = 1 , то сразу хэши тр-ий
-				// if 0, we will read the block on the receiver, if = 1, then immediately will read the hashes of transactions
+				// if 0, we will read the block on the receiver, if = 1, then immediately we will read the hashes of transactions
 				toBeSent = append(toBeSent, utils.DecToBin(0, 1)...)
 				toBeSent = append(toBeSent, utils.DecToBin(utils.BytesToInt64(data["block_id"]), 3)...)
 				toBeSent = append(toBeSent, data["hash"]...)
@@ -165,12 +153,11 @@ BEGIN:
 					}
 					continue BEGIN
 				}
-			} else { // тр-ии без блока // transactions without block
+			} else { // transactions without block
 				toBeSent = append(toBeSent, utils.DecToBin(1, 1)...)
 			}
 			logger.Debug("toBeSent block %x", toBeSent)
 
-			// возьмем хэши тр-ий
 			// take the hashes of transactions
 			//utils.WriteSelectiveLog("SELECT hash, high_rate FROM transactions WHERE sent = 0 AND for_self_use = 0")
 			transactions, err := d.GetAll("SELECT hash, high_rate FROM transactions WHERE sent = 0 AND for_self_use = 0", -1)
@@ -181,8 +168,7 @@ BEGIN:
 				}
 				continue BEGIN
 			}
-			// нет ни транзакций, ни блока для отправки...
-			// transaction and block for sending are absent
+			// transaction and block for sending are absent...
 			if len(transactions) == 0 && len(toBeSent) < 10 {
 				//utils.WriteSelectiveLog("len(transactions) == 0")
 				//log.Debug("len(transactions) == 0")
@@ -209,8 +195,7 @@ BEGIN:
 			}
 
 			logger.Debug("toBeSent %x", toBeSent)
-			// отправляем блок и хэши тр-ий, если есть что отправлять
-			// send the block and hashes of transactions if there is something to send
+			// send the block and hashes of transactions if there is anything to send
 			if len(toBeSent) > 0 {
 				for _, host := range hosts {
 					go d.DisseminatorType1(host+":"+consts.TCP_PORT, toBeSent, dataType)
@@ -224,9 +209,7 @@ BEGIN:
 
 			logger.Debug("dataType: %d", dataType)
 
-			var toBeSent []byte // сюда пишем все тр-ии, которые будем слать другим нодам
-			// here we record all the transactions which we will send to other nodes
-			// возьмем хэши и сами тр-ии
+			var toBeSent []byte // here we record all transactions which we will send to other nodes
 			// take hashes and transactions themselve
 			utils.WriteSelectiveLog("SELECT hash, data FROM transactions WHERE sent  =  0")
 			rows, err := d.Query("SELECT hash, data FROM transactions WHERE sent  =  0")
@@ -264,7 +247,6 @@ BEGIN:
 			}
 			rows.Close()
 
-			// шлем тр-ии
 			// send the transactions
 			if len(toBeSent) > 0 {
 				for _, host := range hosts {
@@ -280,7 +262,6 @@ BEGIN:
 						}
 						defer conn.Close()
 
-						// вначале шлем тип данных, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
 						// at first we send the data type to let the host understand how exactly it has to process the sent data
 						_, err = conn.Write(utils.DecToBin(dataType, 2))
 						if err != nil {
@@ -288,7 +269,6 @@ BEGIN:
 							return
 						}
 
-						// в 4-х байтах пишем размер данных, которые пошлем далее
 						// we record the data size in 4 bytes which we will send further
 						size := utils.DecToBin(len(toBeSent), 4)
 						_, err = conn.Write(size)
@@ -296,7 +276,6 @@ BEGIN:
 							logger.Error("%v", utils.ErrInfo(err))
 							return
 						}
-						// далее шлем сами данные
 						// further we send data itself
 						_, err = conn.Write(toBeSent)
 						if err != nil {
@@ -320,7 +299,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 
 	logger.Debug("host %v", host)
 
-	// шлем данные указанному хосту
 	// send data itself to the specified host
 	conn, err := utils.TCPConn(host)
 	if err != nil {
@@ -329,7 +307,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 	}
 	defer conn.Close()
 
-	// вначале шлем тип данных, чтобы принимающая сторона могла понять, как именно надо обрабатывать присланные данные
 	// at first we send the data type to let the host understand how exactly it has to process the sent data
 	n, err := conn.Write(utils.DecToBin(dataType, 2))
 	if err != nil {
@@ -338,7 +315,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 	}
 	logger.Debug("n: %x (host : %v)", n, host)
 
-	// в 4-х байтах пишем размер данных, которые пошлем далее
 	// we record the data size in 4 bytes which we will send further
 	size := utils.DecToBin(len(toBeSent), 4)
 	n, err = conn.Write(size)
@@ -353,9 +329,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 		return
 	}
 	logger.Debug("n: %d / size: %v / len: %d  (host : %v)", n, utils.BinToDec(size), len(toBeSent), host)
-
-	// в ответ получаем размер данных, которые нам хочет передать сервер
-	// as a response we recieve the data size which the server wants to transfer
+	// as a response we recieve the data size which the server wants to transfer to us
 	buf := make([]byte, 4)
 	n, err = conn.Read(buf)
 	if err != nil {
@@ -365,8 +339,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 	logger.Debug("n: %x (host : %v)", n, host)
 	dataSize := utils.BinToDec(buf)
 	logger.Debug("dataSize %d (host : %v)", dataSize, host)
-	// и если данных менее MAX_TX_SIZE, то получаем их
-	// if data is less than MAX_TX_SIZE, so get them
+	// if data is less than MAX_TX_SIZE, so get it
 	if dataSize < consts.MAX_TX_SIZE && dataSize > 0 {
 		binaryTxHashes := make([]byte, dataSize)
 		_, err = io.ReadFull(conn, binaryTxHashes)
@@ -377,7 +350,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 		logger.Debug("binaryTxHashes %x (host : %v)", binaryTxHashes, host)
 		var binaryTx []byte
 		for {
-			// Разбираем список транзакций
 			// Parse the list of transactions
 			txHash := make([]byte, 16)
 			if len(binaryTxHashes) >= 16 {
@@ -404,9 +376,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 
 		logger.Debug("binaryTx %x (host : %v)", binaryTx, host)
 
-		// шлем серверу
 		// send to the server
-		// в первых 4-х байтах пишем размер данных, которые пошлем далее
 		// we record the data size in 4 bytes which we will send further
 		size := utils.DecToBin(len(binaryTx), 4)
 		_, err = conn.Write(size)
@@ -414,7 +384,6 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 			logger.Error("%v", utils.ErrInfo(err))
 			return
 		}
-		// далее шлем сами данные
 		// further send data itself
 		_, err = conn.Write(binaryTx)
 		if err != nil {
