@@ -130,11 +130,8 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	html := ""
 
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	// Общие контролы для двух проверок
 	// The common controls for two checks
 	pages := "Install|AjaxGetMenuHtml|AjaxStatesList|SignIn|Updatedaylight|AlertFromAdmin|FreecoinProcess|RestartDb|ReloadDb|DebugInfo|CheckSetupPassword|AcceptNewKeyStatus|availableKeys|CfCatalog|CfPagePreview|CfStart|CheckNode|GetBlock|GetMinerData|GetMinerDataMap|GetSellerData|Index|IndexCf|InstallStep0|InstallStep1|InstallStep2|Login|SynchronizationBlockchain|UpdatingBlockchain|Menu|SignUpInPool|SignLogin"
-	// Почему CfCatalog,CfPagePreview,CfStart,Index,IndexCf,InstallStep0,InstallStep1,
-	// InstallStep2,Login,UpdatingBlockchain были только во втором случае? Похоже не нужны больше.
 	// Why CfCatalog,CfPagePreview,CfStart,Index,IndexCf,InstallStep0,InstallStep1,
 	// InstallStep2,Login,UpdatingBlockchain were in the second case only? They seem not need anymore.
 	
@@ -147,7 +144,6 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 		if ok, _ := regexp.MatchString(`^(?i)`+pages+`$`, controllerName); !ok && c.SessWalletID <= 0 && c.SessCitizenID <= 0 && len(c.SessAddress) == 0 {
 			html = "Access denied 1"
 		} else {
-			// без БД будет выдавать панику
 			// without the DB it will give a panic
 			if ok, _ := regexp.MatchString(`^(?i)GetChatMessages$`, controllerName); ok && !dbInit {
 				html = "Please wait. nill dbInit"
