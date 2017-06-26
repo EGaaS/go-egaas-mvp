@@ -79,7 +79,6 @@ BEGIN:
 		}
 		logger.Debug("1")
 
-		// удалим то, что мешает
 		// remove that disturbs
 		if *utils.StartBlockID > 0 {
 			del := []string{"queue_tx", "my_notifications", "main_lock"}
@@ -443,7 +442,6 @@ BEGIN:
 			binaryBlock, err := utils.GetBlockBody(maxBlockIDHost, blockID, consts.DATA_TYPE_BLOCK_BODY)
 
 			if len(binaryBlock) == 0 {
-				// баним на 1 час хост, который дал нам пустой блок, хотя должен был дать все до максимального
 				// ban host which gave us an empty block (but had to give all to the maximum one) for 1 hour
 				// remove for the tests then paste
 				//nodes_ban ($db, $max_block_id_user_id, substr($binary_block, 0, 512)."\n".__FILE__.', '.__LINE__.', '. __FUNCTION__.', '.__CLASS__.', '. __METHOD__);
