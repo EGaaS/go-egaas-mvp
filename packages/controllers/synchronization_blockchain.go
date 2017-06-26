@@ -26,10 +26,9 @@ import (
 )
 
 var (
-	// при запуске данные могут еще не успеть обновиться
 	// data may not be updated yet at the first running
-	timeSynchro int64 // Когда первый запуск // When the first running
-	lastSBlock  int64 // последний блок // last block
+	timeSynchro int64 // When the first running
+	lastSBlock  int64 // last block
 	lastSTime   int64
 )
 
@@ -63,7 +62,7 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 		fileSize = resp.ContentLength
 		resp.Body.Close()
 
-		// качается блок // block is downloading
+		// block is downloading
 		file, err := os.Open(downloadFile)
 		if err != nil {
 			return "", err
@@ -95,8 +94,7 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 		wTimeReady = 2 * 365 * 86400
 	}
 	log.Debug("wTime: %v / utils.Time(): %v / blockData[time]: %v", wTime, utils.Time(), utils.StrToInt64(blockData["time"]))
-	// если время менее 12 часов от текущего, то выдаем не подвержденные, а просто те, что есть в блокчейне
-	// if time differs less than for 12 hours from current time, give not affected but those which are in blockchain
+	// if time differs less than for 12 hours from current time, give not confirmed but those which are in blockchain
 	if utils.Time()-utils.StrToInt64(blockData["time"]) < 3600*wTime {
 		lastBlockData, err := c.DCDB.GetLastBlockData()
 		if err != nil {
@@ -104,7 +102,6 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 		}
 		log.Debug("lastBlockData[lastBlockTime]: %v", lastBlockData["lastBlockTime"])
 		log.Debug("time.Now().Unix(): %v", time.Now().Unix())
-		// если уже почти собрали все блоки
 		// if almost all blocks are collected
 		if time.Now().Unix()-lastBlockData["lastBlockTime"] < 600*wTimeReady {
 			blockID = "-1"
@@ -127,12 +124,12 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 		timeSynchro = utils.Time()
 		lastSBlock = iBlock
 		lastSTime = utils.Time()
-	} else if utils.Time()-timeSynchro > 300 { // Тут можно поставить минут 20 или меньше // Here is possible to set 20 minutes or less
+	} else if utils.Time()-timeSynchro > 300 { // Here is possible to set 20 minutes or less
 		if lastSBlock != iBlock {
 			lastSBlock = iBlock
 			lastSTime = utils.Time()
-		} else if utils.Time()-lastSTime > 60 { // Ставим timeout на очередной блок в 60 секунд // Set the timeout in 60 seconds on the next block
-			// Имеет смысл проверять последний блок // There is a sence to check the last block
+		} else if utils.Time()-lastSTime > 60 { // Set the timeout in 60 seconds on the next block
+			// There is a sence to check the last block
 			if utils.Time()-utils.StrToInt64(blockTime) > 3600 {
 				needReload = `1`
 			}
