@@ -59,7 +59,7 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 
 		p.TxHash = string(utils.Md5(transactionBinaryData))
 
-		// transforming binary data of the transaction to an array
+		// Transforming binary data of the transaction to an array
 		log.Debug("transactionBinaryData: %x", transactionBinaryData)
 		p.TxSlice, err = p.ParseTransaction(&transactionBinaryData)
 		if err != nil {
@@ -83,7 +83,7 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			if utils.BytesToInt64(p.TxSlice[2])-consts.MAX_TX_FORW > curTime || utils.BytesToInt64(p.TxSlice[2]) < curTime-consts.MAX_TX_BACK {
 				return p.ErrInfo(errors.New("incorrect tx time"))
 			}
-			// $this->transaction_array[3] могут подсунуть пустой
+			// $this->transaction_array[3] could be given the empty
 			if !utils.CheckInputData(p.TxSlice[3], "bigint") {
 				return p.ErrInfo(errors.New("incorrect user id"))
 			}
