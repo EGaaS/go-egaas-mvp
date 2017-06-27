@@ -21,7 +21,6 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
-// общая проверка для всех _front
 // general check for all _front
 func (p *Parser) generalCheck(name string) error {
 	log.Debug("%s", p.TxMap)
@@ -35,7 +34,6 @@ func (p *Parser) generalCheck(name string) error {
 		return utils.ErrInfoFmt("incorrect time")
 	}
 
-	// проверим, есть ли такой юзер и заодно получим public_key
 	// check if such a user exists and at the same time we will get the public_key
 	if p.TxMaps.Int64["type"] == utils.TypeInt("DLTTransfer") || p.TxMaps.Int64["type"] == utils.TypeInt("NewState") || p.TxMaps.Int64["type"] == utils.TypeInt("DLTChangeHostVote") || p.TxMaps.Int64["type"] == utils.TypeInt("ChangeNodeKeyDLT") || p.TxMaps.Int64["type"] == utils.TypeInt("CitizenRequest") || p.TxMaps.Int64["type"] == utils.TypeInt("UpdFullNodes") {
 		data, err := p.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", utils.BytesToInt64(p.TxMap["wallet_id"])).String()
@@ -47,7 +45,6 @@ func (p *Parser) generalCheck(name string) error {
 			if len(p.TxMap["public_key"]) == 0 {
 				return utils.ErrInfoFmt("incorrect public_key")
 			}
-			// возможно юзер послал ключ с тр-ией
 			// probably user sent the key with transaction
 			log.Debug("pubkey %s", p.TxMap["public_key"])
 			log.Debug("pubkey %x", p.TxMap["public_key"])
@@ -76,9 +73,7 @@ func (p *Parser) generalCheck(name string) error {
 		}
 		p.PublicKeys = append(p.PublicKeys, []byte(data["public_key_0"]))
 	}
-	// чтобы не записали слишком длинную подпись
 	// for not to record too long signature 
-	// 128 - это нод-ключ
 	// 128 is the node-key
 	if len(p.TxMap["sign"]) < 64 || len(p.TxMap["sign"]) > 5120 {
 		return utils.ErrInfoFmt("incorrect sign size %d", len(p.TxMap["sign"]))
