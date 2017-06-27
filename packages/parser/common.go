@@ -144,7 +144,6 @@ func (p *Parser) limitRequest(vimit interface{}, txType string, vperiod interfac
 func (p *Parser) dataPre() {
 	p.blockHashHex = utils.DSha256(p.BinaryData)
 	p.blockHex = utils.BinToHex(p.BinaryData)
-	// определим тип данных
 	// define the data type
 	p.dataType = int(utils.BinToDec(utils.BytesShift(&p.BinaryData, 1)))
 	log.Debug("dataType", p.dataType)
