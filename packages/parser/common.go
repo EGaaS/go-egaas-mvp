@@ -151,10 +151,8 @@ func (p *Parser) dataPre() {
 }
 
 // CheckLogTx checks if this transaction exists
-// Это защита от dos, когда одну транзакцию можно было бы послать миллион раз,
 // This is protection against dos, when one transaction could be sent a million times
-// и она каждый раз успешно проходила бы фронтальную проверку
-// And it would have successfully passed a frontal test
+// and it would have successfully passed a frontal test
 func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	hash, err := p.Single(`SELECT hash FROM log_transactions WHERE hex(hash) = ?`, utils.Md5(txBinary)).String()
 	log.Debug("SELECT hash FROM log_transactions WHERE hex(hash) = %s", utils.Md5(txBinary))
@@ -168,7 +166,6 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	}
 
 	if transactions {
-		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
 		exists, err := p.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ? and verified = 1", utils.Md5(txBinary)).Int64()
 		if err != nil {
@@ -181,7 +178,6 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	}
 
 	if txQueue {
-		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
 		exists, err := p.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", utils.Md5(txBinary)).Int64()
 		if err != nil {
@@ -199,7 +195,6 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 // GetInfoBlock returns the latest block
 func (p *Parser) GetInfoBlock() error {
 
-	// последний успешно записанный блок
 	// the last successfully recorded block
 	p.PrevBlock = new(utils.BlockData)
 	var q string
@@ -219,7 +214,6 @@ func (p *Parser) GetInfoBlock() error {
 // InsertIntoBlockchain inserts a block into the blockchain
 func (p *Parser) InsertIntoBlockchain() error {
 	//var mutex = &sync.Mutex{}
-	// для локальных тестов
 	// for local tests
 	if p.BlockData.BlockId == 1 {
 		if *utils.StartBlockID != 0 {
@@ -227,7 +221,6 @@ func (p *Parser) InsertIntoBlockchain() error {
 		}
 	}
 	//mutex.Lock()
-	// пишем в цепочку блоков
 	// record into the block chain
 	err := p.ExecSQL("DELETE FROM block_chain WHERE id = ?", p.BlockData.BlockId)
 	if err != nil {
@@ -243,7 +236,6 @@ func (p *Parser) InsertIntoBlockchain() error {
 	return nil
 }
 
-// старое
 // the old
 /*func (p *Parser) GetTxMap(fields []string) (map[string][]byte, error) {
 	if len(p.TxSlice) != len(fields)+4 {
@@ -369,7 +361,6 @@ func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
 	if wallet == 0 {
 		wallet = p.TxCitizenID
 	}
-	// получим сумму на кошельке юзера
 	// recieve the amount on the user's wallet
 	strAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
 	if err != nil {
@@ -476,8 +467,7 @@ func (p *Parser) AccessTable(table, action string) error {
 	}
 
 	if isCustom, err := p.IsCustomTable(table); err != nil {
-		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать
-		// table != ... is left for compatibility temporarily. Remove new_state after rebuilding.
+		return err // table != ... is left for compatibility temporarily. Remove new_state after rebuilding.
 	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
 		return fmt.Errorf(table + ` is not a custom table`)
 	}
@@ -509,7 +499,7 @@ func (p *Parser) AccessColumns(table string, columns []string) error {
 	//prefix := utils.Int64ToStr(int64(p.TxStateID))
 
 	if isCustom, err := p.IsCustomTable(table); err != nil {
-		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать // table != ... is left for compatibility temporarily. Remove new_state after rebuilding
+		return err // table != ... is left for compatibility temporarily. Remove new_state after rebuilding
 	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
 		return fmt.Errorf(table + ` is not a custom table`)
 	}
@@ -680,7 +670,6 @@ func (p *Parser) payFPrice() error {
 			//fromID = p.TxContract.TxGovAccount
 			fromID = utils.StrToInt64(StateVal(p, `gov_account`))
 		} else {
-			// списываем напрямую с dlt_wallets у юзера
 			// write directly from dlt_wallets of user
 			fromID = p.TxWalletID
 		}
@@ -726,7 +715,6 @@ func (p *Parser) payFPrice() error {
 	fmt.Printf(" Paid commission %v\r\n", commission)
 	return nil
 	/*	if p.TxStateID > 0 && p.TxCitizenID != 0 && p.TxContract != nil {
-			// Это все уберется, гос-во будет снимать деньги с граждан внутри контрактов
 			// All these will be removed, state will withdraw money from citizens within contracts
 			table := fmt.Sprintf(`"%d_%s"`, p.TxStateID, p.TxContract.TableAccounts)
 			amount, err := p.Single(`select amount from `+table+` where citizen_id=?`, p.TxCitizenID).Int64()
