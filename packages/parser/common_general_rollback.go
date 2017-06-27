@@ -40,13 +40,11 @@ func (p *Parser) generalRollback(table string, whereUserID interface{}, addWhere
 	if UserID > 0 {
 		where = fmt.Sprintf(" WHERE user_id = %d ", UserID)
 	}
-	// получим rb_id, по которому можно найти данные, которые были до этого
-	// will get rb_id with help of which it is possible to find data that was before
+	// we will get rb_id with help of which it is possible to find data that was before
 	logID, err := p.Single("SELECT rb_id FROM " + table + " " + where + addWhere).Int64()
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
-	// если $rb_id = 0, значит восстанавливать нечего и нужно просто удалить запись
 	// if $rb_id = 0, then there is nothing to restore and you just need to delete the record
 	if logID == 0 {
 		err = p.ExecSQL("DELETE FROM " + table + " " + where + addWhere)
@@ -54,7 +52,6 @@ func (p *Parser) generalRollback(table string, whereUserID interface{}, addWhere
 			return utils.ErrInfo(err)
 		}
 	} else {
-		// данные, которые восстановим
 		// data that will be restored
 		data, err := p.OneRow("SELECT * FROM rb_"+table+" WHERE rb_id = ?", logID).String()
 		if err != nil {
@@ -62,8 +59,7 @@ func (p *Parser) generalRollback(table string, whereUserID interface{}, addWhere
 		}
 		addSQL := ""
 		for k, v := range data {
-			// block_id т.к. в rb_ он нужен для удаления старых данных, а в обычной табле не нужен
-			// block_id (because it is needed for removement of old data in rb_ but in usual table there is no need in it)
+			// block_id, because it is needed for removement of old data in rb_ but in usual table there is no need in it
 			if k == "rb_id" || k == "prev_rb_id" || k == "block_id" {
 				continue
 			}
@@ -80,7 +76,6 @@ func (p *Parser) generalRollback(table string, whereUserID interface{}, addWhere
 				addSQL += fmt.Sprintf("%v = '%v',", k, v)
 			}
 		}
-		// всегда пишем предыдущий rb_id
 		// always write the previous rb_id
 		addSQL += fmt.Sprintf("rb_id = %v,", data["prev_rb_id"])
 		addSQL = addSQL[0 : len(addSQL)-1]
@@ -88,7 +83,6 @@ func (p *Parser) generalRollback(table string, whereUserID interface{}, addWhere
 		if err != nil {
 			return utils.ErrInfo(err)
 		}
-		// подчищаем log
 		// Clean up log
 		err = p.ExecSQL("DELETE FROM rb_"+table+" WHERE rb_id= ?", logID)
 		if err != nil {
