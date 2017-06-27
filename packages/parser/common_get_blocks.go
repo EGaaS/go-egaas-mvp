@@ -334,7 +334,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 					return utils.ErrInfo(err)
 				}
 				binary := []byte(lastMyBlock["data"])
-				utils.BytesShift(&binary, 1) // уберем 1-й байт - тип (блок/тр-я) // remove the first byte which is the type (block/territory)
+				utils.BytesShift(&binary, 1) // remove the first byte which is the type (block/territory)
 				lastMyBlockData := utils.ParseBlockHeader(&binary)
 				err = p.ExecSQL(`
 					UPDATE info_block
@@ -351,8 +351,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 					return utils.ErrInfo(err)
 				}
 				ClearTmp(blocks)
-				return utils.ErrInfo(err0) // переходим к следующему блоку в queue_blocks
-				// go to the next block in queue_blocks
+				return utils.ErrInfo(err0) // go to the next block in queue_blocks
 			}
 		}
 	}
