@@ -26,7 +26,6 @@ import (
 )
 
 /*
-Обработка данных (блоков или транзакций), пришедших с гейта. Только проверка.
 Data processing (blocks or transactions) gotten from a gate. Just checking.
 */
 
@@ -40,12 +39,10 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 	var transactionBinaryDataFull []byte
 
 	log.Debug("p.dataType: %d", p.dataType)
-	// если это транзакции (type>0), а не блок (type==0)
-	// if it's transactions (type>0), but block (type==0)
+	// if it's transactions (type>0), but not a block (type==0)
 	if p.dataType > 0 {
 
-		// проверим, есть ли такой тип тр-ий
-		// check if the transaction type exist
+		// check if this transaction type exists
 		if p.dataType < 128 && len(consts.TxTypes[p.dataType]) == 0 {
 			return p.ErrInfo("Incorrect tx type " + utils.IntToStr(p.dataType))
 		}
@@ -54,8 +51,7 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 		transactionBinaryData = append(utils.DecToBin(int64(p.dataType), 1), transactionBinaryData...)
 		transactionBinaryDataFull = transactionBinaryData
 
-		// нет ли хэша этой тр-ии у нас в БД?
-		// Does the transaction hash exist?
+		// Does the transaction hash exist in DB?
 		err = p.CheckLogTx(transactionBinaryDataFull, true, false)
 		if err != nil {
 			return p.ErrInfo(err)
@@ -63,7 +59,6 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 
 		p.TxHash = string(utils.Md5(transactionBinaryData))
 
-		// преобразуем бинарные данные транзакции в массив
 		// transforming binary data of the transaction to an array
 		log.Debug("transactionBinaryData: %x", transactionBinaryData)
 		p.TxSlice, err = p.ParseTransaction(&transactionBinaryData)
@@ -75,14 +70,10 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			return p.ErrInfo(errors.New("len(p.TxSlice) < 3"))
 		}
 
-		// время транзакции может быть немного больше, чем время на ноде.
-		// у нода может быть просто не настроено время.
-		// время транзакции используется только для борьбы с атаками вчерашними транзакциями.
-		// А т.к. мы храним хэши в rb_transaction за 36 часов, то боятся нечего.
-
 		// Time of transaction can be slightly longer than time of a node.
-		// A node can use wrong time
-		// Time of a transaction used only for fighting off attacks of yesterday transactions
+		// A node can use wrong time.
+		// Time of a transaction is used only for fighting off attacks of yesterday transactions.
+		// There is nothing to afraid, because we store hashes of 36 hours in rb_transaction.
 		curTime := utils.Time()
 		if p.TxContract != nil {
 			if int64(p.TxPtr.(*consts.TXHeader).Time)-consts.MAX_TX_FORW > curTime || int64(p.TxPtr.(*consts.TXHeader).Time) < curTime-consts.MAX_TX_BACK {
@@ -98,7 +89,6 @@ func (p *Parser) ParseDataGate(onlyTx bool) error {
 			}
 		}
 	}
-	// Оперативные транзакции
 	// Operative transactions
 	MethodName := consts.TxTypes[p.dataType]
 	if p.TxContract != nil {
