@@ -82,8 +82,7 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 
 		log.Debug("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES (%s, %s, %v, %v, %v, %v, %v, %v)", hashHex, utils.BinToHex(binaryTx), 0, txType, walletID, citizenID, 0, counter)
 		utils.WriteSelectiveLog("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?)")
-		// вставляем с verified=1
-		// put with verified=1
+		// Put with verified=1
 		err = p.ExecSQL(`INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter, verified) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?, 1)`, hashHex, utils.BinToHex(binaryTx), 0, txType, walletID, citizenID, 0, counter)
 		if err != nil {
 			utils.WriteSelectiveLog(err)
