@@ -26,13 +26,11 @@ import (
 )
 
 // RollbackTo rollbacks proceeded transactions
-//  если в ходе проверки тр-ий возникает ошибка, то вызываем откатчик всех занесенных тр-ий
-// if the error appears during the checking of transactions, call the rollback of transactions
+// If the error appears during the checking of transactions, call the rollback of all transactions
 func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 	var err error
 	if len(binaryData) > 0 {
-		// вначале нужно получить размеры всех тр-ий, чтобы пройтись по ним в обратном порядке
-		// in the beggining it's neccessary to obtain the sizes of all transactions in order to go through them in reverse order
+		// In the beggining it's neccessary to obtain the sizes of all transactions in order to go through them in reverse order
 		binForSize := binaryData
 		var sizesSlice []int64
 		for {
@@ -41,8 +39,7 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 				break
 			}
 			sizesSlice = append(sizesSlice, txSize)
-			// удалим тр-ию
-			// remove the transaction
+			// Remove the transaction
 			log.Debug("txSize", txSize)
 			//log.Debug("binForSize", binForSize)
 			utils.BytesShift(&binForSize, txSize)
@@ -52,15 +49,12 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 		}
 		sizesSlice = utils.SliceReverse(sizesSlice)
 		for i := 0; i < len(sizesSlice); i++ {
-			// обработка тр-ий может занять много времени, нужно отметиться
-			// processing of transaction may take a lot off time, we have to be marked
+			// Processing of transaction may take a lot off time, we have to be marked
 			p.UpdDaemonTime(p.GoroutineName)
-			// отделим одну транзакцию
-			// separate one transaction
+			// Separate one transaction
 			transactionBinaryData := utils.BytesShiftReverse(&binaryData, sizesSlice[i])
 			binaryData := transactionBinaryData
-			// узнаем кол-во байт, которое занимает размер и удалим размер
-			// get know the quantity of bytes, which the size takes and remove it
+			// Get know the quantity of bytes, which the size takes and remove it
 			utils.BytesShiftReverse(&binaryData, len(lib.EncodeLength(sizesSlice[i])))
 			p.TxHash = string(utils.Md5(transactionBinaryData))
 			p.TxSlice, err = p.ParseTransaction(&transactionBinaryData)
@@ -79,18 +73,14 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 					return utils.ErrInfo(verr.(error))
 				}
 			}
-			// если дошли до тр-ии, которая вызвала ошибку, то откатываем только фронтальную проверку
 			// if we get to the transaction, which caused the error, then we roll back only the frontal check
 			/*if i == 0 {
-						/*if skipCurrent { // тр-ия, которая вызвала ошибку закончилась еще до фронт. проверки, т.е. откатывать по ней вообще нечего
-			// transaction that caused the error was finished before frontal check, then there is nothing to rall back
+						/*if skipCurrent { // Transaction that caused the error was finished before frontal check, then there is nothing to rall back
 							continue
 						}*/
-			/*// если успели дойти только до половины фронтальной функции
-			// If we reached only half of the frontal function
+			/*// If we reached only half of the frontal function
 						MethodNameRollbackFront := MethodName + "RollbackFront"
-						// откатываем только фронтальную проверку
-			// roll back only frontal check
+						// roll back only frontal check
 						verr = utils.CallMethod(p, MethodNameRollbackFront)
 						if _, ok := verr.(error); ok {
 							return utils.ErrInfo(verr.(error))
