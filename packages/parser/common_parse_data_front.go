@@ -24,11 +24,9 @@ import (
 )
 
 /**
- * Занесение данных из блока в БД
- * используется только в candidateBlock_is_ready
+ * Putting data from the block into the database
+ * Is used only in candidateBlock_is_ready
  */
-// Putting data from the block into the database
-// Is used only in candidateBlock_is_ready
 
 /*
 func (p *Parser) ParseDataFront() error {
@@ -36,8 +34,7 @@ func (p *Parser) ParseDataFront() error {
 	p.TxIds = []string{}
 	p.dataPre()
 	if p.dataType == 0 {
-		// инфа о предыдущем блоке (т.е. последнем занесенном)
-// information about previous block (the last  added)
+		// Information about previous block (the last  added)
 		err := p.GetInfoBlock()
 		if err != nil {
 			return p.ErrInfo(err)
@@ -51,15 +48,13 @@ func (p *Parser) ParseDataFront() error {
 		}
 		utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
 
-		// разбор блока
-// parse of block
+		// Parse of block
 		err = p.ParseBlock()
 		if err != nil {
 			return utils.ErrInfo(err)
 		}
 
-		//меркель рут нужен для updblockinfo()
-// MrklRoot here is needed for updblockinfo()
+		// MrklRoot here is needed for updblockinfo()
 		p.MrklRoot, err = utils.GetMrklroot(p.BinaryData, false)
 		if err != nil {
 			return utils.ErrInfo(err)
@@ -76,8 +71,7 @@ func (p *Parser) ParseDataFront() error {
 
 				log.Debug("transactionSize", transactionSize)
 
-				// отчекрыжим одну транзакцию от списка транзакций
-// separate one transaction from the list of transactions
+				// Separate one transaction from the list of transactions
 				transactionBinaryData := utils.BytesShift(&p.BinaryData, transactionSize)
 
 				transactionBinaryDataFull := transactionBinaryData
@@ -90,8 +84,7 @@ func (p *Parser) ParseDataFront() error {
 					return utils.ErrInfo(err)
 				}
 				if p.TxContract == nil {
-					// txSlice[4] могут подсунуть пустой
-// txSlice[4] could slip the empty one
+					// txSlice[4] could be sliped the empty one
 					if len(p.TxSlice) > 4 {
 						if !utils.CheckInputData(p.TxSlice[3], "int64") || !utils.CheckInputData(p.TxSlice[4], "int64") {
 							return utils.ErrInfo(fmt.Errorf("empty wallet_id or citizen_id"))
@@ -100,8 +93,7 @@ func (p *Parser) ParseDataFront() error {
 						return utils.ErrInfo(fmt.Errorf("empty user_id"))
 					}
 
-					// проверим, есть ли такой тип тр-ий
-// check if such a type of transaction exists
+					// Check if such a type of transaction exists
 					_, ok := consts.TxTypes[utils.BytesToInt(p.TxSlice[1])]
 					if !ok {
 						return utils.ErrInfo(fmt.Errorf("nonexistent type"))
@@ -109,8 +101,7 @@ func (p *Parser) ParseDataFront() error {
 				}
 				p.TxMap = map[string][]byte{}
 
-				// для статы
-// for statistics
+				// For statistics
 				p.TxIds = append(p.TxIds, string(p.TxSlice[1]))
 
 				MethodName := consts.TxTypes[utils.BytesToInt(p.TxSlice[1])]
@@ -142,8 +133,7 @@ func (p *Parser) ParseDataFront() error {
 				}
 				utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
 
-				// даем юзеру понять, что его тр-ия попала в блок
-// let user know that his transaction got in the block
+				// Let user know that his transaction got in the block
 				err = p.ExecSQL("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockId, utils.Md5(transactionBinaryDataFull))
 				if err != nil {
 					return utils.ErrInfo(err)
