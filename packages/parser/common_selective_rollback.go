@@ -24,22 +24,19 @@ import (
 )
 
 // selectiveRollback rollbacks the specified fields
-// откат не всех полей, а только указанных, либо 1 строку, если нет where
-// roll back not all the fields but the specified ones or only 1 line if there is not 'where'
+// Roll back not all the fields but the specified ones or only 1 line if there is not 'where'
 func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) error {
 	if len(where) > 0 {
 		where = " WHERE " + where
 	}
 	tblname := lib.EscapeName(table)
-	// получим rb_id, по которому можно найти данные, которые были до этого
-	// we obtain rb_id with help of that it is possible to find the data which was before
+	// We obtain rb_id with help of that it is possible to find the data which was before
 	rbID, err := p.Single("SELECT rb_id FROM " + tblname + " " + where + " order by rb_id desc").Int64()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	if rbID > 0 {
-		// данные, которые восстановим
-		// data that we will be restored
+		// Data that we will be restored
 		rbData, err := p.OneRow("SELECT * FROM rollback WHERE rb_id  =  ?", rbID).String()
 		if err != nil {
 			return p.ErrInfo(err)
@@ -67,7 +64,6 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		if err != nil {
 			return p.ErrInfo(err)
 		}
-		// подчищаем _log
 		// clean up the _log
 		err = p.ExecSQL("DELETE FROM rollback WHERE rb_id = ?", rbID)
 		if err != nil {
