@@ -25,14 +25,12 @@ import (
 )
 
 /**
- * Откат таблиц rb_time_, которые были изменены транзакциями
-//Rollback of rb_time_ tables that have been modified by transactions
+ * Rollback of rb_time_ tables that have been modified by transactions
 */
 /*
 func (p *Parser) ParseDataRollbackFront(txcandidateBlock bool) error {
 
-	// вначале нужно получить размеры всех тр-ий, чтобы пройтись по ним в обратном порядке
-// in the beginning it is necessary to obtain the sizes of all the transactions in order to go through them in reverse order
+// In the beginning it is necessary to obtain the sizes of all the transactions in order to go through them in reverse order
 	binForSize := p.BinaryData
 	var sizesSlice []int64
 	for {
@@ -41,8 +39,7 @@ func (p *Parser) ParseDataRollbackFront(txcandidateBlock bool) error {
 			break
 		}
 		sizesSlice = append(sizesSlice, txSize)
-		// удалим тр-ию
-// remove the transaction
+		// remove the transaction
 		utils.BytesShift(&binForSize, txSize)
 		if len(binForSize) == 0 {
 			break
@@ -50,22 +47,17 @@ func (p *Parser) ParseDataRollbackFront(txcandidateBlock bool) error {
 	}
 	sizesSlice = utils.SliceReverse(sizesSlice)
 	for i := 0; i < len(sizesSlice); i++ {
-		// обработка тр-ий может занять много времени, нужно отметиться
-// processing of the transactions may take a lot of time, you need to be marked
+		// Processing of the transactions may take a lot of time, you need to be marked
 		p.UpdDaemonTime(p.GoroutineName)
-		// отделим одну транзакцию
-// separate one transaction
+		// Separate one transaction
 		transactionBinaryData := utils.BytesShiftReverse(&p.BinaryData, sizesSlice[i])
-		// узнаем кол-во байт, которое занимает размер
-// we'll get know the quantity of bytes, which the size takes
+		// We'll get know the quantity of bytes, which the size takes
 		size_ := len(utils.EncodeLength(sizesSlice[i]))
-		// удалим размер
-// remove the size
+		// remove the size
 		utils.BytesShiftReverse(&p.BinaryData, size_)
 		p.TxHash = string(utils.Md5(transactionBinaryData))
 
-		// инфа о предыдущем блоке (т.е. последнем занесенном)
-// the information about previous block (the last added)
+		// the information about previous block (the last added)
 		err := p.GetInfoBlock()
 		if err != nil {
 			return p.ErrInfo(err)
@@ -107,16 +99,14 @@ func (p *Parser) ParseDataRollbackFront(txcandidateBlock bool) error {
 */
 
 /* 
-Откат БД по блокам
-rollback of DB
+Rollback of DB
 */
 
 // ParseDataRollback rollbacks blocks
 func (p *Parser) ParseDataRollback() error {
 
 	p.dataPre()
-	if p.dataType != 0 { // парсим только блоки
-		// parse only blocks
+	if p.dataType != 0 { // parse only blocks
 		return utils.ErrInfo(fmt.Errorf("incorrect dataType"))
 	}
 	var err error
@@ -126,8 +116,7 @@ func (p *Parser) ParseDataRollback() error {
 		return utils.ErrInfo(err)
 	}
 	if len(p.BinaryData) > 0 {
-		// вначале нужно получить размеры всех тр-ий, чтобы пройтись по ним в обратном порядке
-		// in the beginning it is necessary to obtain the sizes of all the transactions in order to go through them in reverse order
+		// In the beginning it is necessary to obtain the sizes of all the transactions in order to go through them in reverse order
 		binForSize := p.BinaryData
 		var sizesSlice []int64
 		for {
@@ -136,7 +125,6 @@ func (p *Parser) ParseDataRollback() error {
 				break
 			}
 			sizesSlice = append(sizesSlice, txSize)
-			// удалим тр-ию
 			// remove the transaction
 			utils.BytesShift(&binForSize, txSize)
 			if len(binForSize) == 0 {
@@ -145,13 +133,10 @@ func (p *Parser) ParseDataRollback() error {
 		}
 		sizesSlice = utils.SliceReverse(sizesSlice)
 		for i := 0; i < len(sizesSlice); i++ {
-			// обработка тр-ий может занять много времени, нужно отметиться
 			// processing of the transaction may take a lot of time, we need to be marked
 			p.UpdDaemonTime(p.GoroutineName)
-			// отделим одну транзакцию
 			// separate one transaction
 			transactionBinaryData := utils.BytesShiftReverse(&p.BinaryData, sizesSlice[i])
-			// узнаем кол-во байт, которое занимает размер и удалим размер
 			// we'll get know the quantaty of bytes which the size takes
 			utils.BytesShiftReverse(&p.BinaryData, len(lib.EncodeLength(sizesSlice[i])))
 			p.TxHash = string(utils.Md5(transactionBinaryData))
@@ -168,15 +153,13 @@ func (p *Parser) ParseDataRollback() error {
 			if err != nil {
 				return p.ErrInfo(err)
 			}
-			// даем юзеру понять, что его тр-ия не в блоке
-			// let user know that his territory isn't in the block
+			// let the user know that his transaction isn't in the block
 			err = p.ExecSQL("UPDATE transactions_status SET block_id = 0 WHERE hex(hash) = ?", p.TxHash)
 			log.Debug("UPDATE transactions_status SET block_id = 0 WHERE hex(hash) = %s", p.TxHash)
 			if err != nil {
 				return p.ErrInfo(err)
 			}
-			// пишем тр-ию в очередь на проверку, авось пригодится
-			// put the transaction in the turn for checking suddenly we will need it
+			// put the transaction in the turn for checking, suddenly we will need it
 			dataHex := utils.BinToHex(transactionBinaryData)
 			log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", p.TxHash)
 			err = p.ExecSQL("DELETE FROM queue_tx  WHERE hex(hash) = ?", p.TxHash)
