@@ -78,8 +78,7 @@ func (p *Parser) UpdFullNodes() error {
 		return p.ErrInfo(err)
 	}
 
-	// выбирем ноды, где wallet_id
-	// choose nodes where wallet_id is
+	// Choose nodes where wallet_id is
 	data, err := p.GetAll(`SELECT * FROM full_nodes WHERE wallet_id != 0`, -1)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -92,15 +91,13 @@ func (p *Parser) UpdFullNodes() error {
 	log.Debug("data %v", data)
 	log.Debug("data %v", data[0])
 	log.Debug("data %v", data[0]["rb_id"])
-	// логируем их в одну запись JSON
-	// log them into the one record JSON
+	// Log them into the one record JSON
 	rbID, err := p.ExecSQLGetLastInsertID(`INSERT INTO rb_full_nodes (full_nodes_wallet_json, block_id, prev_rb_id) VALUES (?, ?, ?)`, "rb_full_nodes", string(jsonData), p.BlockData.BlockId, data[0]["rb_id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// удаляем где wallet_id
-	// delete where the wallet_id is
+	// Delete where the wallet_id is
 	err = p.ExecSQL(`DELETE FROM full_nodes WHERE wallet_id != 0`)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -110,15 +107,13 @@ func (p *Parser) UpdFullNodes() error {
 		return p.ErrInfo(err)
 	}
 
-	// обновляем AI
-	// update the AI
+	// Update the AI
 	err = p.SetAI("full_nodes", maxID+1)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// получаем новые данные по wallet-нодам
-	// obtain new data on wallet-nodes
+	// Obtain new data on wallet-nodes
 	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' AND amount > 10000000000000000000000 GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 100`).String()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -128,8 +123,7 @@ func (p *Parser) UpdFullNodes() error {
 		if err != nil {
 			return p.ErrInfo(err)
 		}
-		// вставляем новые данные по wallet-нодам с указанием общего rb_id
-		// insert new data on wallet-nodes with the indication of the common rb_id
+		// Insert new data on wallet-nodes with the indication of the common rb_id
 		err = p.ExecSQL(`INSERT INTO full_nodes (wallet_id, host, rb_id) VALUES (?, ?, ?)`, dltWallets["wallet_id"], dltWallets["host"], rbID)
 		if err != nil {
 			return p.ErrInfo(err)
@@ -157,8 +151,7 @@ func (p *Parser) UpdFullNodesRollback() error {
 		return p.ErrInfo(err)
 	}
 
-	// получим rb_id чтобы восстановить оттуда данные
-	// get rb_id to restore the data from there
+	// Get rb_id to restore the data from there
 	rbID, err := p.Single(`SELECT rb_id FROM full_nodes WHERE wallet_id != 0`).Int64()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -174,8 +167,7 @@ func (p *Parser) UpdFullNodesRollback() error {
 		return p.ErrInfo(err)
 	}
 
-	// удаляем новые данные
-	// delete new data
+	// Delete new data
 	err = p.ExecSQL(`DELETE FROM full_nodes WHERE wallet_id != 0`)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -186,8 +178,7 @@ func (p *Parser) UpdFullNodesRollback() error {
 		return p.ErrInfo(err)
 	}
 
-	// обновляем AI
-	// update the AI
+	// Update the AI
 	if p.ConfigIni["db_type"] == "sqlite" {
 		err = p.SetAI("full_nodes", maxID)
 	} else {
@@ -197,8 +188,7 @@ func (p *Parser) UpdFullNodesRollback() error {
 		return p.ErrInfo(err)
 	}
 
-	// удаляем новые данные
-	// delete new data
+	// Delete new data
 	err = p.ExecSQL(`DELETE FROM rb_full_nodes WHERE rb_id = ?`, rbID)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -206,8 +196,7 @@ func (p *Parser) UpdFullNodesRollback() error {
 	p.rollbackAI("rb_full_nodes", 1)
 
 	for _, data := range fullNodesWallet {
-		// вставляем новые данные по wallet-нодам с указанием общего rb_id
-		// insert new data on wallet-nodes with the indication of the common rb_id
+		// Insert new data on wallet-nodes with the indication of the common rb_id
 		err = p.ExecSQL(`INSERT INTO full_nodes (id, host, wallet_id, state_id, final_delegate_wallet_id, final_delegate_state_id, rb_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 			data["id"], data["host"], data["wallet_id"], data["state_id"], data["final_delegate_wallet_id"], data["final_delegate_state_id"], data["rb_id"])
 		if err != nil {
