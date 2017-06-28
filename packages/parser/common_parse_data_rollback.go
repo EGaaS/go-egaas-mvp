@@ -25,7 +25,7 @@ import (
 )
 
 /**
- * Rollback of rb_time_ tables that have been modified by transactions
+ * Rollback of rb_time_ tables that has been modified by transactions
 */
 /*
 func (p *Parser) ParseDataRollbackFront(txcandidateBlock bool) error {
