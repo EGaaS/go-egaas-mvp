@@ -56,8 +56,7 @@ func (p *Parser) RollbackTransactions() error {
 		utils.WriteSelectiveLog("affect: " + utils.Int64ToStr(affect))
 	}*/
 
-	// нужно откатить наши транзакции
-	// we have to roll our transactions back
+	// We have to roll our transactions back
 	/*if len(blockBody) > 0 {
 		parser := new(Parser)
 		parser.DCDB = p.DCDB
