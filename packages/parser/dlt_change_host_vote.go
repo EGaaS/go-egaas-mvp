@@ -52,7 +52,7 @@ func (p *Parser) DLTChangeHostVoteFront() error {
 		return p.ErrInfo(err)
 	}
 
-	// public key need only when we don't have public_key in the dlt_wallets table
+	// public key is needed only when we don't have public_key in the dlt_wallets table
 	publicKey, err := p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
 	if err != nil {
 		return p.ErrInfo(err)
