@@ -51,7 +51,7 @@ func (p *Parser) DLTTransferFront() error {
 		return p.ErrInfo(err)
 	}
 
-	// public key need only when we don't have public_key in the dlt_wallets table
+	// Public key is needed only when we don't have public_key in the dlt_wallets table
 	PublicKey, err := p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -89,8 +89,7 @@ func (p *Parser) DLTTransferFront() error {
 	}
 	commission := fPriceDecemal.Mul(fuelRate)
 
-	// проверим, удовлетворяет ли нас комиссия, которую предлагает юзер
-	// check if commission proposed by the user satisfies us
+	// Check if commission proposed by the user satisfies us
 	if p.TxMaps.Decimal["commission"].Cmp(commission) < 0 {
 		return p.ErrInfo(fmt.Sprintf("commission %s < dltPrice %d", p.TxMaps.Decimal["commission"].String(), commission))
 	}
@@ -132,7 +131,7 @@ func (p *Parser) DLTTransfer() error {
 		return p.ErrInfo(err)
 	}
 	log.Debug("walletID %d", walletID)
-	//if walletID > 0 {
+	// If walletID > 0 {
 	pkey, err := p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -170,14 +169,13 @@ func (p *Parser) DLTTransfer() error {
 		return p.ErrInfo(err)
 	}
 
-	// node commission
+	// Node commission
 	_, err = p.selectiveLoggingAndUpd([]string{"+amount"}, []interface{}{p.TxMaps.Decimal["commission"].String()}, "dlt_wallets", []string{"wallet_id"}, []string{utils.Int64ToStr(p.BlockData.WalletId)}, true)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// пишем в общую историю тр-ий
-	// record into the general transaction history
+	// Record into the general transaction history
 	dltTransactionsID, err := p.ExecSQLGetLastInsertID(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
 		p.TxWalletID, walletID, lib.AddressToString(int64(utils.StrToUint64(p.TxMaps.String["walletAddress"]))), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
