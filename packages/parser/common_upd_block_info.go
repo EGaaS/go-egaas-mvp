@@ -25,8 +25,7 @@ import (
 func (p *Parser) UpdBlockInfo() {
 
 	blockID := p.BlockData.BlockId
-	// для локальных тестов
-	// for the local tests
+	// For the local tests
 	if p.BlockData.BlockId == 1 {
 		if *utils.StartBlockID != 0 {
 			blockID = *utils.StartBlockID
