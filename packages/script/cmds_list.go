@@ -18,8 +18,7 @@ package script
 
 const (
 	//	cmdUnknown = iota // error
-	// Здесь описаны команды байт-кода
-	// here are described the commands of bytecode 
+	// Here are described the commands of bytecode 
 	cmdPush       = iota + 1 // Push value to stack
 	cmdVar                   // Push variable to stack
 	cmdExtend                // Push extend variable to stack
@@ -41,8 +40,7 @@ const (
 	cmdError                 // error command
 )
 
-// Ниже перечислены команды для операций в выражениях
-// the commands for operations in expressions are listed below
+// The commands for operations in expressions are listed below
 const (
 	cmdNot = iota | 0x0100
 	cmdSign
