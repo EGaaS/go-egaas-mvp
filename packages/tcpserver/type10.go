@@ -20,10 +20,8 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
-/* Выдаем номер макс. блока
-// Give the number of max. block
- * запрос шлет демон blocksCollection
-// blocksCollection daemon sends the request
+/* Give the number of max. block
+ * blocksCollection daemon sends the request
 */
 
 // Type10 writes the number of the maximum block
