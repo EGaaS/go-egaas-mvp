@@ -1,15 +1,14 @@
-package db
+package postgres
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	_ "github.com/lib/pq"
 )
 
-type dbWorker struct {
+type pgWorker struct {
 	*sql.DB
 	config map[string]string
 }
@@ -19,9 +18,13 @@ var (
 	CONNECTION_ERROR        = errors.New("Can't connect to database")
 )
 
+func NewDbWorker(user string, pass string, dbName string) *dbWorker {
+
+}
+
 func Connect(config map[string]string) (*dbWorker, error) {
 	if len(config["db_user"]) == 0 || len(config["db_password"]) == 0 || len(config["db_name"]) == 0 {
-		return &dbWorker{}, CONNECTION_STRING_ERROR
+		return &pgWorker{}, CONNECTION_STRING_ERROR
 	}
 
 	db, err := sql.Open("postgres",
@@ -72,4 +75,50 @@ func (db *dbWorker) Run(m *model.Model) {
 			return
 		}
 	}
+}
+
+func (m *Model) Create(fields ...types.DALType) *Model {
+	query := "insert into " + m.TableName
+	columns := " ("
+	values := "values ("
+	for _, field := range fields {
+		columns += field.ColName() + ", "
+		values += field.String() + ", "
+	}
+	query += columns[:len(columns)-2] + ") " + values[:len(values)-2] + ")"
+	m.query = query
+	return m
+}
+
+func Read(m *Model, fields ...types.DALType) *Model {
+	query := "select "
+	for _, field := range fields {
+		m.ReturnValue = append(m.ReturnValue, field)
+		query += field.ColName() + ", "
+	}
+	query = query[:len(query)-2] + " from " + m.TableName
+	m.query = query
+	return m
+}
+
+func (m *Model) Delete(conditions ...Condition) *Model {
+	query := "delete from " + m.TableName + " where "
+	for _, condition := range conditions {
+		query += condition.Field.ColName()
+		switch condition.Comparator {
+		case Less:
+			query += " < "
+		case LessOrEqual:
+			query += " > "
+		case Equal:
+			query += " = "
+		case GreaterOrEqual:
+			query += " >= "
+		case Greater:
+			query += " > "
+		}
+		query += condition.Value + " and "
+	}
+	m.query += query[:len(query)-5]
+	return m
 }
