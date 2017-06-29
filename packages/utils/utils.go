@@ -187,16 +187,16 @@ func Sleep(sec time.Duration) {
 // ParseBlockHeader parses the header of the block
 func ParseBlockHeader(binaryBlock *[]byte) *BlockData {
 	result := new(BlockData)
-	// распарсим заголовок блока // parse the heading of a block
+	// Parse the heading of a block
 	/*
-			Заголовок // the heading
-			TYPE (0-блок, 1-тр-я)        1 // TYPE(0-block, 1-transaction)
+			The heading
+			TYPE(0-block, 1-transaction)
 			BLOCK_ID   				       4
 			TIME       					       4
 			WALLET_ID                         1-8
 			state_id                              1
-			SIGN                               от 128 до 512 байт. Подпись от TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT // from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
-	Далее - тело блока (Тр-ии) // further is body block (transaction)
+			SIGN                               from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
+	Further is body block (transaction)
 	*/
 	result.BlockId = BinToDecBytesShift(binaryBlock, 4)
 	result.Time = BinToDecBytesShift(binaryBlock, 4)
@@ -685,7 +685,6 @@ func GetEndBlockID() (int64, error) {
 		return 0, nil
 	}
 
-	// размер блока, записанный в 5-и последних байтах файла blockchain
 	// size of a block recorded into the last 5 bytes of blockchain file
 	fname := *Dir + "/public/blockchain"
 	file, err := os.Open(fname)
@@ -702,7 +701,6 @@ func GetEndBlockID() (int64, error) {
 		return 0, ErrInfo("/public/blockchain size=0")
 	}
 
-	// размер блока, записанный в 5-и последних байтах файла blockchain
 	// size of a block recorded into the last 5 bytes of blockchain file
 	_, err = file.Seek(-5, 2)
 	if err != nil {
@@ -717,7 +715,6 @@ func GetEndBlockID() (int64, error) {
 	if size > consts.MAX_BLOCK_SIZE {
 		return 0, ErrInfo("size > conts.MAX_BLOCK_SIZE")
 	}
-	// сам блок
 	// block itself
 	_, err = file.Seek(-(size + 5), 2)
 	if err != nil {
@@ -728,7 +725,6 @@ func GetEndBlockID() (int64, error) {
 	if err != nil {
 		return 0, ErrInfo(err)
 	}
-	// размер (id блока + тело блока)
 	// size (block id + body of a block)
 	BinToDecBytesShift(&dataBinary, 5)
 	return BinToDecBytesShift(&dataBinary, 5), nil
@@ -1093,8 +1089,7 @@ func CheckSign(publicKeys [][]byte, forSign string, signs []byte, nodeKeyOrLogin
 	if len(signs) == 0 {
 		return false, ErrInfoFmt("len(signs) == 0")
 	}
-	// у нода всегда 1 подпись
-	// node always has olny one signature
+	// Node always has olny one signature
 	if nodeKeyOrLogin {
 		signsSlice = append(signsSlice, signs)
 	} else {
@@ -1158,11 +1153,9 @@ func Sha256(v interface{}) []byte {
 func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 	var mrklSlice [][]byte
 	var txSize int64
-	// [error] парсим после вызова функции
 	// parse [error] after the calling of a function
 	if len(binaryData) > 0 {
 		for {
-			// чтобы исключить атаку на переполнение памяти
 			// to exclude an attack on memory overflow
 			if !first {
 				if txSize > consts.MAX_TX_SIZE {
@@ -1171,7 +1164,6 @@ func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 			}
 			txSize = DecodeLength(&binaryData)
 
-			// отчекрыжим одну транзакцию от списка транзакций
 			// separate one transaction from the list of transactions
 			if txSize > 0 {
 				transactionBinaryData := BytesShift(&binaryData, txSize)
@@ -1182,7 +1174,6 @@ func GetMrklroot(binaryData []byte, first bool) ([]byte, error) {
 				//}
 			}
 
-			// чтобы исключить атаку на переполнение памяти
 			// to exclude an attack on memory overflow
 			if !first {
 				if len(mrklSlice) > consts.MAX_TX_COUNT {
@@ -1395,7 +1386,6 @@ func RSortMap(m map[int64]string) []map[int64]string {
 
 // TCPConn connects to the address
 func TCPConn(Addr string) (net.Conn, error) {
-	// шлем данные указанному хосту
 	// send data to the specified host
 	/*tcpAddr, err := net.ResolveTCPAddr("tcp", Addr)
 	if err != nil {
@@ -1413,7 +1403,6 @@ func TCPConn(Addr string) (net.Conn, error) {
 
 // WriteSizeAndData writes []byte to the connection
 func WriteSizeAndData(binaryData []byte, conn net.Conn) error {
-	// в 4-х байтах пишем размер данных, которые пошлем далее
 	// record the data size in 4 bytes, which will send further
 	size := DecToBin(len(binaryData), 4)
 	fmt.Println("len(binaryData)", len(binaryData))
@@ -1421,7 +1410,6 @@ func WriteSizeAndData(binaryData []byte, conn net.Conn) error {
 	if err != nil {
 		return ErrInfo(err)
 	}
-	// далее шлем сами данные
 	// further send data itself
 	if len(binaryData) > 0 {
 		/*if len(binaryData) > 500000 {
@@ -1453,7 +1441,6 @@ func GetBlockBody(host string, blockID int64, dataTypeBlockBody int64) ([]byte, 
 	defer conn.Close()
 
 	log.Debug("dataTypeBlockBody: %v", dataTypeBlockBody)
-	// шлем тип данных
 	// send the type of data
 	_, err = conn.Write(DecToBin(dataTypeBlockBody, 2))
 	if err != nil {
@@ -1462,7 +1449,6 @@ func GetBlockBody(host string, blockID int64, dataTypeBlockBody int64) ([]byte, 
 
 	log.Debug("blockID: %v", blockID)
 
-	// шлем номер блока
 	// send the number of a block
 	_, err = conn.Write(DecToBin(blockID, 4))
 	if err != nil {
@@ -1470,7 +1456,7 @@ func GetBlockBody(host string, blockID int64, dataTypeBlockBody int64) ([]byte, 
 	}
 
 	// в ответ получаем размер данных, которые нам хочет передать сервер
-	// recieve the data size as a response that server wants to transfer
+	// as a response we recieve the data size, that server wants to transfer
 	buf := make([]byte, 4)
 	n, err := conn.Read(buf)
 	if err != nil {
@@ -1478,7 +1464,6 @@ func GetBlockBody(host string, blockID int64, dataTypeBlockBody int64) ([]byte, 
 	}
 	log.Debug("dataSize buf: %x / get: %v", buf, n)
 
-	// и если данных менее 10мб, то получаем их
 	// if the data size is less than 10mb, we will receive them
 	dataSize := BinToDec(buf)
 	var binaryBlock []byte
@@ -1902,9 +1887,7 @@ func Out(pars ...interface{}) {
 	OutFile.WriteString(fmt.Sprint(pars...) + "\r\n")
 }*/
 
-// GetPrefix возвращает префикс у таблицы. При этом идет проверка, чтобы префикс был global или совпадал
 // GetPrefix returns the prefix of the table. In this case it is checked that the prefix was global or matched
-// с идентифкатором государства
 // with the identifier of the state
 func GetPrefix(tableName, stateID string) (string, error) {
 	s := strings.Split(tableName, "_")
