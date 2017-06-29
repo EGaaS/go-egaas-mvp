@@ -64,7 +64,6 @@ func getArray() []interface{} {
 				} else { // 02 Commment
 				eeee
 
-3232 Комментарий
 // 3232 Comments
 				}
 			} else {
