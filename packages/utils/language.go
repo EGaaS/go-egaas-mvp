@@ -54,7 +54,6 @@ func DefLang() string {
 	return LangList[0]
 }
 
-// UpdateLang обновляет языковые ресурсы для указанного государства
 // UpdateLang updates language sources for the specified state
 func UpdateLang(state int, name, value string) {
 	if _, ok := lang[state]; !ok {
@@ -66,9 +65,7 @@ func UpdateLang(state int, name, value string) {
 		(*lang[state]).res[name] = &ires
 	}
 }
-
-// loadLang загружает языковые ресурсы из БД для данного государства
-// loadLang download the language sources from database for the state
+// loadLang downloads the language sources from database for this state
 func loadLang(state int) error {
 	list, err := DB.GetAll(fmt.Sprintf(`select * from "%d_languages"`, state), -1)
 	if err != nil {
@@ -85,8 +82,6 @@ func loadLang(state int) error {
 	return nil
 }
 
-// LangText ищет указанное слово среди языковых ресурсов и возвращает значение  ресурса,
-// если оно найдено. Поиск идет по указанным в accept языкам.
 // LangText looks for the specified word through language sources and returns the meaning of the source
 // if it is found. Search goes according to the languages specified in 'accept'
 func LangText(in string, state int, accept string) (string, bool) {
@@ -118,8 +113,6 @@ func LangText(in string, state int, accept string) (string, bool) {
 	return in, false
 }
 
-// LangMacro заменяет во входящем тексте все включения $resname$ на соответствующие языковые ресурсы,
-// если они существуют
 // LangMacro replaces all inclusions of $resname$ in the incoming text with the corresponding language resources,
 // if they exist
 func LangMacro(input string, state int, accept string) string {
