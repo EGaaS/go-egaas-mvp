@@ -50,8 +50,7 @@ func genKeys() (string, string) {
 	return string(PrivBytes0), fmt.Sprintf("%x", sDec)
 }
 
-// для юнит-тестов. снимок всех данных в БД
-// for unit tests. Snapshot of all data in the database
+// For unit tests. Snapshot of all data in the database
 func AllHashes(db *utils.DCDB) (map[string]string, error) {
 	//var orderBy string
 	result := make(map[string]string)
@@ -82,8 +81,7 @@ func AllHashes(db *utils.DCDB) (map[string]string, error) {
 	*/
 	for _, table := range tables {
 		orderByFns := func(table string) string {
-			// ошибки не проверяются т.к. некритичны
-			// errors are not checking, because they are not important
+			// Errors are not checking, because they are not important
 			match, _ := regexp.MatchString("^(rb_forex_orders|rb_forex_orders_main|cf_comments|cf_currency|cf_funding|cf_lang|cf_projects|cf_projects_data)$", table)
 			if match {
 				return "id"
@@ -249,8 +247,7 @@ func MakeTest(txSlice [][]byte, blockData *utils.BlockData, txType string, testT
 	parser.TxHash = "111111111111111"
 	parser.Variables, _ = db.GetAllVariables()
 
-	// делаем снимок БД в виде хэшей до начала тестов
-	// make a snapshot of database in a shape of hashes before tests begin
+	// Make a snapshot of database in a shape of hashes before tests begin
 	hashesStart, err := AllHashes(db)
 	if err != nil {
 		return err
@@ -272,8 +269,7 @@ func MakeTest(txSlice [][]byte, blockData *utils.BlockData, txType string, testT
 		}
 
 		//fmt.Println("-------------------")
-		// узнаем, какие таблицы были затронуты в результате выполнения основного метода
-		// get know which tables were affected by the execution of the main method
+		// Get know which tables were affected by the execution of the main method
 		hashesMiddle, err := AllHashes(db)
 		if err != nil {
 			return utils.ErrInfo(err)
@@ -295,7 +291,6 @@ func MakeTest(txSlice [][]byte, blockData *utils.BlockData, txType string, testT
 			return err0.(error)
 		}
 
-		// сраdниим хэши, которые были до начала и те, что получились после роллбэка
 		// compare the hashes, which were before the beginning with those which were created after the rollback
 		hashesEnd, err := AllHashes(db)
 		if err != nil {
