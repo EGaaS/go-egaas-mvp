@@ -23,12 +23,10 @@ import (
 )
 
 /*
- * от disseminator
-// from disseminator
+ * from disseminator
  */
 
 func (t *TCPServer) Type2() {
-	// размер данных
 	// data size
 	buf := make([]byte, 4)
 	_, err := t.Conn.Read(buf)
@@ -39,8 +37,7 @@ func (t *TCPServer) Type2() {
 	size := utils.BinToDec(buf)
 	log.Debug("size: %d", size)
 	if size < consts.MAX_TX_SIZE {
-		// сами данные
-		// data size
+		// data itself
 		binaryData := make([]byte, size)
 		//binaryData, err = ioutil.ReadAll(t.Conn)
 		_, err = io.ReadFull(t.Conn, binaryData)
@@ -49,8 +46,7 @@ func (t *TCPServer) Type2() {
 			return
 		}
 		/*
-		 * Прием тр-ий от простых юзеров, а не нодов. Вызывается демоном disseminator
-// take the transactions from usual users but not nodes. It's called by 'disseminator' daemon 
+		 * take the transactions from usual users but not nodes. It's called by 'disseminator' daemon
 		 * */
 		_, _, decryptedBinData, err := t.DecryptData(&binaryData)
 		if err != nil {
@@ -58,7 +54,6 @@ func (t *TCPServer) Type2() {
 			return
 		}
 		log.Debug("decryptedBinData: %x", decryptedBinData)
-		// проверим размер
 		// check the size
 		if int64(len(binaryData)) > consts.MAX_TX_SIZE {
 			log.Debug("%v", utils.ErrInfo("len(txBinData) > max_tx_size"))
