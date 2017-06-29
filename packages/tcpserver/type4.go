@@ -21,8 +21,7 @@ import (
 )
 
 /*
- * данные присылает демон confirmations
-// the data is sent by 'confirmations' daemon
+ * Data is sent by 'confirmations' daemon
 */
 
 // Type4 writes the hash of the specified block
@@ -36,8 +35,7 @@ func (t *TCPServer) Type4() {
 	}
 	blockID := utils.BinToDec(buf)
 	log.Debug("blockID %d", blockID)
-	// используется для учета кол-ва подвержденных блоков, т.е. тех, которые есть у большинства нодов
-	// it is used to account the number of affected blocks, those which belong to majority of nodes
+	// It is used to account the number of confirmed blocks, those which belong to majority of nodes
 	hash, err := t.Single("SELECT hash FROM block_chain WHERE id = ?", blockID).String()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
