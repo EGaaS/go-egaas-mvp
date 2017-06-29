@@ -334,7 +334,6 @@ func (db *DCDB) GetList(query string, args ...interface{}) *ListResult {
 	return &ListResult{result, nil}
 }
 
-// GetParent возвращает информацию откуда произошел вызов функции
 // GetParent returns the information where the call of function happened
 func GetParent() string {
 	parent := ""
@@ -560,8 +559,7 @@ func FormatQueryArgs(q, dbType string, args ...interface{}) (string, []interface
 
 // CheckInstall waits for the end of the installation
 func (db *DCDB) CheckInstall(DaemonCh chan bool, AnswerDaemonCh chan string, GoroutineName string) bool {
-	// Возможна ситуация, когда инсталяция еще не завершена. База данных может быть создана, а таблицы еще не занесены
-	// there could be the situation when installation is not over yet. Database could be created but tables are not inserted yet
+	// There could be the situation when installation is not over yet. Database could be created but tables are not inserted yet
 	for {
 		select {
 		case <-DaemonCh:
@@ -572,8 +570,7 @@ func (db *DCDB) CheckInstall(DaemonCh chan bool, AnswerDaemonCh chan string, Gor
 		}
 		progress, err := db.Single("SELECT progress FROM install").String()
 		if err != nil || progress != "complete" {
-			// возможно попасть на тот момент, когда БД закрыта и идет скачивание готовой БД с сервера
-			// the moment could happen when the database is closed and there is a download of the completed database from the server
+			// The moment could happen when the database is closed and there is a download of the completed database from the server
 			if ok, _ := regexp.MatchString(`database is closed`, fmt.Sprintf("%s", err)); ok {
 				if DB != nil {
 					db = DB
@@ -647,8 +644,7 @@ func (db *DCDB) ExecSQLGetAffect(query string, args ...interface{}) (int64, erro
 	return affect, nil
 }
 
-/* для юнит-тестов. снимок всех данных в БД
-// for unit tests. snapshot of all data in database
+/* for unit tests. snapshot of all data in database
 func (db *DCDB) HashTableData(table, where, orderBy string) (string, error) {
 	/var columns string;
 	rows, err := db.Query("select column_name from information_schema.columns where table_name= $1", table)
@@ -675,8 +671,7 @@ func (db *DCDB) HashTableData(table, where, orderBy string) (string, error) {
 		orderBy = " ORDER BY " + orderBy
 	}
 
-	// это у всех разное, а значит и хэши будут разные, а это будет вызывать путаницу
-	// this is different for every one and it means hashes will be different as well and this will cause confusion
+	// this is different for every one and it means hashes will be different and this will cause confusion
 	var logOff bool
 	if db.ConfigIni["sql_log"] == "1" {
 		db.ConfigIni["sql_log"] = "0"
@@ -744,16 +739,14 @@ func (db *DCDB) GetLastBlockData() (map[string]int64, error) {
 		confirmedBlockID = 1
 	}
 	log.Debug("%v", "confirmedBlockId", confirmedBlockID)
-	// получим время из последнего подвержденного блока
-	// obtain the time of the last affected block
+	// Obtain the time of the last confirmed block
 	lastBlockBin, err := db.Single("SELECT data FROM block_chain WHERE id = ?", confirmedBlockID).Bytes()
 	if err != nil || len(lastBlockBin) == 0 {
 		return result, ErrInfo(err)
 	}
-	// ID блока
+	// Block ID 
 	result["blockId"] = int64(BinToDec(lastBlockBin[1:5]))
-	// Время последнего блока
-	// the time of the last block
+	// The time of the last block
 	result["lastBlockTime"] = int64(BinToDec(lastBlockBin[5:9]))
 	return result, nil
 }
@@ -868,8 +861,7 @@ func (db *DCDB) CheckDelegateCB(myStateID int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// Если мы - государство и у нас указан delegate, т.е. мы делегировали полномочия по поддержанию ноды другому юзеру или государству, то выходим.
-	// If we are the state and we have the delegate specified (we delegated the authority to maintain the node to another user or state, then we leave).
+	// If we are the state and we have the delegate specified (we delegated the authority to maintain the node to another user or state) then we leave.
 	if delegate["delegate_wallet_id"] > 0 || delegate["delegate_state_id"] > 0 {
 		return true, nil
 	}
@@ -1184,7 +1176,7 @@ func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citiz
 			}
 		}
 	} else {
-		BytesShift(&binaryBlock, 4) // уберем время
+		BytesShift(&binaryBlock, 4) // remove the time
 		walletID = BytesToInt64(BytesShift(&binaryBlock, DecodeLength(&binaryBlock)))
 		citizenID = BytesToInt64(BytesShift(&binaryBlock, DecodeLength(&binaryBlock)))
 	}
@@ -1197,19 +1189,15 @@ func (db *DCDB) DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 	if len(*binaryTx) == 0 {
 		return nil, nil, nil, ErrInfo("len(binaryTx) == 0")
 	}
-
-	// вначале пишется user_id, чтобы в режиме пула можно было понять, кому шлется и чей ключ использовать
-	// at the beginning the user ID is written to know in the pool mode to whom it is sent and what key to use
+	// At the beginning user_id is written for to know in the pool mode to whom it is sent and what key to use
 	myUserID := BinToDecBytesShift(&*binaryTx, 5)
 	log.Debug("myUserId: %d", myUserID)
 
-	// изымем зашифрванный ключ, а всё, что останется в $binary_tx - сами зашифрованные хэши тр-ий/блоков
-	// remove the encrypted key, and all that stay in $binary_tx will be encrypted keys of the transactions/blocks
+	// Remove the encrypted key, and all, that stay in $binary_tx, is encrypted keys of the transactions/blocks
 	encryptedKey := BytesShift(&*binaryTx, DecodeLength(&*binaryTx))
 	log.Debug("encryptedKey: %x", encryptedKey)
 	log.Debug("encryptedKey: %s", encryptedKey)
 
-	// далее идет 16 байт IV
 	// 16 bytes IV go further
 	iv := BytesShift(&*binaryTx, 16)
 	log.Debug("iv: %s", iv)
@@ -1270,8 +1258,7 @@ func (db *DCDB) GetBinSign(forSign string) ([]byte, error) {
 		return nil, ErrInfo(err)
 	}
 	/*	log.Debug("nodePrivateKey = %s", nodePrivateKey)
-				// подписываем нашим нод-ключем данные транзакции
-		// sign the data of transaction by our node-key
+				// sign the data of transaction by our node-key
 				privateKey, err := MakePrivateKey(nodePrivateKey)
 				if err != nil {
 					return nil, ErrInfo(err)
@@ -1298,7 +1285,6 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 
 // GetSleepTime returns the waiting time for wallet id and state id
 func (db *DCDB) GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockWalletID int64) (int64, error) {
-	// возьмем список всех full_nodes
 	// take the list of all full_nodes
 	fullNodesList, err := db.GetAll("SELECT id, wallet_id, state_id as state_id FROM full_nodes", -1)
 	if err != nil {
@@ -1306,7 +1292,6 @@ func (db *DCDB) GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockW
 	}
 	log.Debug("fullNodesList %s", fullNodesList)
 
-	// определим full_node_id того, кто должен был генерить блок (но мог это делегировать)
 	// determine full_node_id of the one, who had to generate a block (but could delegate this)
 	prevBlockFullNodeID, err := db.Single("SELECT id FROM full_nodes WHERE state_id = ? OR wallet_id = ?", prevBlockStateID, prevBlockWalletID).Int64()
 	if err != nil {
@@ -1326,7 +1311,6 @@ func (db *DCDB) GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockW
 	}(fullNodesList, prevBlockFullNodeID)
 	log.Debug("prevBlockFullNodePosition %d", prevBlockFullNodePosition)
 
-	// определим свое место (в том числе в delegate)
 	// define our place (Including in the 'delegate')
 	myPosition := func(fullNodesList []map[string]string, myWalletID, myStateID int64) int {
 		log.Debug("%v %v", fullNodesList, myWalletID)
