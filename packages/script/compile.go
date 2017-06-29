@@ -40,17 +40,12 @@ type compileStates []stateLine
 
 type compileFunc func(*[]*Block, int, *Lexem) error
 
-// Компилятор преобразует последовательность лексем в байт-код с помощью конечного автомата, подобно тому как
-// это было реализовано при лексическом анализе. Отличие заключается в том, что мы не конвертируем список
-// состояний и переходов в промежуточный массив.
 // The compiler converts the sequence of lexemes into the bytecodes using a finite state machine the same as
 // it was implemented in lexical analysis. The difference lays in that we do not convert the list of
 // states and transitions to the intermediate array.
 
-/* Байт-код из себя представляет дерево - на самом верхнем уровне функции контракты, и далее идет вложенность
- в соответствии с вложенностью фигурных скобок. Узлами дерева являются структуры типа Block.
- Например,
-// Byte code could be described as a tree where functions and contracts are on the top level and nesting goes further according to nesting of bracketed brackets. Tree nodes are structures of 'Block' type. For instance,
+/* Byte code could be described as a tree where functions and contracts are on the top level and nesting goes further according to nesting of bracketed brackets. Tree nodes are structures of 'Block' type. For instance,
+
  func a {
 	 if b {
 		 while d {
@@ -60,14 +55,11 @@ type compileFunc func(*[]*Block, int, *Lexem) error
 	 if c {
 	 }
  }
-будет скомпилировано в Block(a) у которого будут два дочерних блока Block(b) и Block(c), которые
-      отвечают за выполнение байт-кода внутри if, а Block(b) в свою очередь будет иметь дочерний
-	  блок Block(d) с циклом.
-// will be compiled into Block(a) which will have two child blocks Block (b) and Block (c) that are responsible for executing bytecode inside if. Block (b) will have a child Block (d) with a cycle.
+will be compiled into Block(a) which will have two child blocks Block (b) and Block (c) that are responsible for executing bytecode inside 'if'. Block (b) will have a child Block (d) with a cycle.
 */
 
 const (
-	// The list of state types Список состояний
+	// The list of state types 
 	stateRoot = iota
 	stateBody
 	stateBlock
@@ -85,7 +77,7 @@ const (
 	stateFields
 	stateEval
 
-	// The list of state flags Список флагов
+	// The list of state flags 
 	statePush     = 0x0100
 	statePop      = 0x0200
 	stateStay     = 0x0400
@@ -98,7 +90,6 @@ const (
 )
 
 const (
-	// Ошибки компиляции
 	// Errors of compilation
 	//	errNoError    = iota
 	errUnknownCmd = iota + 1 // unknown command
@@ -112,7 +103,6 @@ const (
 )
 
 const (
-	// Это список идентификаторов для функций, которые будут генерировать байт-код для соответствующих случаев
 	// This is a list of identifiers for functions that will generate a bytecode for the corresponding cases
 	// Indexes of handle functions funcs = CompileFunc[]
 	//	cfNothing = iota
@@ -139,7 +129,6 @@ const (
 )
 
 var (
-	// Массив операций и их приоритет
 	// Array of operations and their priority
 	opers = map[uint32]operPrior{
 		isOr: {cmdOr, 10}, isAnd: {cmdAnd, 15}, isEqEq: {cmdEqual, 20}, isNotEq: {cmdNotEq, 20},
@@ -147,7 +136,6 @@ var (
 		isPlus: {cmdAdd, 25}, isMinus: {cmdSub, 25}, isAsterisk: {cmdMul, 30},
 		isSolidus: {cmdDiv, 30}, isSign: {cmdSign, cmdUnary}, isNot: {cmdNot, cmdUnary}, isLPar: {cmdSys, 0xff}, isRPar: {cmdSys, 0},
 	}
-	// Массив функций, соответствующий константам cf...
 	// The array of functions corresponding to the constants cf...
 	funcs = []compileFunc{nil,
 		fError,
@@ -169,7 +157,6 @@ var (
 		fBreak,
 		fCmdError,
 	}
-	// states описывает конечный автомат с состояниями, на основе которого будет генерироваться байт-код
 	// 'states' describes a finite machine with states on the base of which a bytecode will be generated
 	states = compileStates{
 		{ // stateRoot
@@ -659,7 +646,6 @@ func (vm *VM) findObj(name string, block *[]*Block) (ret *ObjInfo, owner *Block)
 	return
 }
 
-// Данная функиця отвечает за компиляцию выражений
 // This function is responsible for the compilation of expressions
 func (vm *VM) compileEval(lexems *Lexems, ind *int, block *[]*Block) error {
 	i := *ind
