@@ -112,7 +112,7 @@ func ExtendCost(ext func(string) int64) {
 	smartVM.ExtCost = ext
 }
 
-// Extend set extended variable and functions in smartVM
+// Extend set extendeds variable and functions in smartVM
 func Extend(ext *script.ExtendData) {
 	smartVM.Extend(ext)
 }
