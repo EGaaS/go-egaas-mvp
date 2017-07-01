@@ -66,7 +66,7 @@ func (a AppsList) Less(i, j int) bool {
 	return a[i].Done < a[j].Done
 }
 
-// AppCatalog is a controller of teh application list template page
+// AppCatalog is a controller of the application list template page
 func (c *Controller) AppCatalog() (string, error) {
 
 	files, err := static.AssetDir(`static`)
