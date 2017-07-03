@@ -1,136 +1,177 @@
 package builder
 
 import (
-	"reflect"
-
-	"github.com/EGaaS/go-egaas-mvp/packages/dal/model"
 	"strings"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/dal/types"
 )
 
 type PgBuilder struct {
-	query []string
+	Querys []string
 }
 
-func (pg *PgBuilder) Create(m model.Model) error {
-	q := "insert into " + m.TableName
-	columns := " ("
-	values := "values ("
+func (pg *PgBuilder) splitTables(fields []types.DALType) map[string][]types.DALType {
+	tables := make(map[string][]types.DALType, 0)
+
 	for _, field := range fields {
-		columns += field.ColName() + ", "
-		values += field.String() + ", "
-	}
-	q += columns[:len(columns)-2] + ") " + values[:len(values)-2] + ")"
-	pg.query = query
-	return nil
-}
-
-func (pg *PgBuilder) collectModels(m model.Model) []model.Model {
-	v := reflect.ValueOf(m)
-
-	for i := 0; i < v.NumField(); i++ {
-		if strings.Contains(v.Field(i).Type(), "model") {
-			
+		inner_tables := strings.Split(field.DataSource().ResName, "|")
+		for _, inner_table := range inner_tables {
+			if tables[inner_table] == nil {
+				tables[inner_table] = []types.DALType{field}
+			} else {
+				tables[inner_table] = append(tables[field.DataSource().ResName], field)
+			}
 		}
 	}
+	return tables
 }
 
-func (pg *PgBuilder) Read(m model.Model) *PgBuilder {
-	q := "select "
-	for _, field := range fields {
-		m.ReturnValue = append(m.ReturnValue, field)
-		q += field.ColName() + ", "
+func (pg *PgBuilder) Create(fields ...types.DALType) *PgBuilder {
+	tables := pg.splitTables(fields)
+
+	for table, values := range tables {
+		query := "insert into " + table
+		columns := " ("
+		vals := "values ("
+		for _, value := range values {
+			columns += value.DataSource().ParamName + ", "
+			vals += value.String() + ", "
+		}
+		query += columns[:len(columns)-2] + ") " + vals[:len(vals)-2] + ")"
+		pg.Querys = append(pg.Querys, query)
 	}
-	q = q[:len(query)-2] + " from " + m.TableName
-	pg.query = query
 	return pg
 }
 
-func (pg *PgBuilder) Update(m model.Model) PgBuilder {
+func (pg *PgBuilder) Read(fields ...types.DALType) *PgBuilder {
+	tables := pg.splitTables(fields)
 
-}
-
-func (pg *PgBuilder) Delete(m model.Model) PgBuilder {
-	query := "delete from " + m.TableName + " where "
-	for _, condition := range conditions {
-		query += condition.Field.ColName()
-		switch condition.Comparator {
-		case Less:
-			query += " < "
-		case LessOrEqual:
-			query += " > "
-		case Equal:
-			query += " = "
-		case GreaterOrEqual:
-			query += " >= "
-		case Greater:
-			query += " > "
+	for table, values := range tables {
+		query := "select "
+		for _, value := range values {
+			resources := strings.Split(value.DataSource().ResName, "|")
+			if len(resources) == 1 {
+				query += value.DataSource().ParamName + ", "
+			}
+			if len(resources) > 1 && resources[0] == table {
+				query += value.DataSource().ParamName + ", "
+			}
 		}
-		query += condition.Value + " and "
+		query = query[:len(query)-2] + " from " + table
+		pg.Querys = append(pg.Querys, query)
 	}
-	m.query += query[:len(query)-5]
-	return m
+	return pg
 }
 
-func (pg *PgBuilder) Where(condition Condition) PgBuilder {
-	query := " where "
-	switch condition.Comparator {
-	case Less:
-		query += condition.Field.ColName() + " < " + condition.Value
-	case LessOrEqual:
-		query += condition.Field.ColName() + " <= " + condition.Value
-	case Equal:
-		query += condition.Field.ColName() + " = " + condition.Value
-	case NotEqual:
-		query += condition.Field.ColName() + " != " + condition.Value
-	case GreaterOrEqual:
-		query += condition.Field.ColName() + " >= " + condition.Value
-	case Greater:
-		query += condition.Field.ColName() + " > " + condition.Value
+func (pg *PgBuilder) Update(fields ...types.DALType) *PgBuilder {
+	tables := pg.splitTables(fields)
+
+	for table, values := range tables {
+		query := "update " + table + " set "
+		for _, value := range values {
+			resources := strings.Split(value.DataSource().ResName, "|")
+			if len(resources) == 1 {
+				query += value.DataSource().ParamName + " = " + value.String() + ", "
+			}
+			if len(resources) > 1 && resources[0] == table {
+				query += value.DataSource().ParamName + " = " + value.String() + ", "
+			}
+		}
+		query = query[:len(query)-2]
+		pg.Querys = append(pg.Querys, query)
 	}
-	m.query += query
-	return m
+	return pg
+}
+
+func (pg *PgBuilder) Delete(fields ...types.DALType) *PgBuilder {
+	tables := pg.splitTables(fields)
+	for table := range tables {
+		query := "delete from " + table
+		pg.Querys = append(pg.Querys, query)
+	}
+	return pg
+}
+
+func (pg *PgBuilder) Where(condition Condition) *PgBuilder {
+	for i := 0; i < len(pg.Querys); i++ {
+		if strings.Contains(pg.Querys[i], " "+condition.Field.DataSource().ParamName) {
+			pg.Querys[i] += ";"
+		} else {
+			pg.Querys[i] += " where "
+			switch condition.Comparator {
+			case Less:
+				pg.Querys[i] += condition.Field.DataSource().ParamName + " < " + condition.Value
+			case LessOrEqual:
+				pg.Querys[i] += condition.Field.DataSource().ParamName + " <= " + condition.Value
+			case Equal:
+				pg.Querys[i] += condition.Field.DataSource().ParamName + " = " + condition.Value
+			case NotEqual:
+				pg.Querys[i] += condition.Field.DataSource().ParamName + " != " + condition.Value
+			case GreaterOrEqual:
+				pg.Querys[i] += condition.Field.DataSource().ParamName + " >= " + condition.Value
+			case Greater:
+				pg.Querys[i] += condition.Field.DataSource().ResName + " > " + condition.Value
+			}
+		}
+	}
+	return pg
 }
 
 func (pg *PgBuilder) And(condition Condition) *PgBuilder {
-	query := " and "
-	switch condition.Comparator {
-	case Less:
-		query += condition.Field.ColName() + " < " + condition.Value
-	case LessOrEqual:
-		query += condition.Field.ColName() + " <= " + condition.Value
-	case Equal:
-		query += condition.Field.ColName() + " - " + condition.Value
-	case NotEqual:
-		query += condition.Field.ColName() + " != " + condition.Value
-	case GreaterOrEqual:
-		query += condition.Field.ColName() + " >= " + condition.Value
-	case Greater:
-		query += condition.Field.ColName() + " > " + condition.Value
+	for i := 0; i < len(pg.Querys); i++ {
+		if pg.Querys[i][len(pg.Querys[i])-1:] == ";" {
+			continue
+		}
+
+		pg.Querys[i] += " and "
+		switch condition.Comparator {
+		case Less:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " < " + condition.Value
+		case LessOrEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " <= " + condition.Value
+		case Equal:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " - " + condition.Value
+		case NotEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " != " + condition.Value
+		case GreaterOrEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " >= " + condition.Value
+		case Greater:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " > " + condition.Value
+		}
 	}
-	m.query += query
-	return m
+	return pg
 }
 
 func (pg *PgBuilder) Or(condition Condition) *PgBuilder {
-	query := " or "
-	switch condition.Comparator {
-	case Less:
-		query += condition.Field.ColName() + " < " + condition.Value
-	case LessOrEqual:
-		query += condition.Field.ColName() + " <= " + condition.Value
-	case Equal:
-		query += condition.Field.ColName() + " - " + condition.Value
-	case NotEqual:
-		query += condition.Field.ColName() + " != " + condition.Value
-	case GreaterOrEqual:
-		query += condition.Field.ColName() + " >= " + condition.Value
-	case Greater:
-		query += condition.Field.ColName() + " > " + condition.Value
+	for i := 0; i < len(pg.Querys); i++ {
+		if pg.Querys[i][len(pg.Querys[i])-1:] == ";" {
+			continue
+		}
+
+		pg.Querys[i] += " or "
+		switch condition.Comparator {
+		case Less:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " < " + condition.Value
+		case LessOrEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " <= " + condition.Value
+		case Equal:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " - " + condition.Value
+		case NotEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " != " + condition.Value
+		case GreaterOrEqual:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " >= " + condition.Value
+		case Greater:
+			pg.Querys[i] += condition.Field.DataSource().ParamName + " > " + condition.Value
+		}
 	}
-	m.query += query
-	return m
+	return pg
 }
 
-func (pg *PgWorker) Compile() []string {
-
+func (pg *PgBuilder) Compile() *PgBuilder {
+	for i := 0; i < len(pg.Querys); i++ {
+		if pg.Querys[i][len(pg.Querys[i])-1:] != ";" {
+			pg.Querys[i] += ";"
+		}
+	}
+	return pg
 }

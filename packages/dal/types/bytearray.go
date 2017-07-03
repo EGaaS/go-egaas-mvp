@@ -6,49 +6,44 @@ type DALByteArray struct {
 	value      []byte
 }
 
-func (t DALByteArray) Set(data []byte) DALByteArray {
+func (t DALByteArray) Set(data []byte) {
 	if data == nil || len(data) == 0 {
 		t.isNull = true
 	} else {
 		t.isNull = false
 		t.value = data
 	}
-
-	return t
 }
 
-func (t DALByteArray) SetDatasource(ds DataSource) DALByteArray {
+func (t *DALByteArray) SetDatasource(ds DataSource) {
 	t.dataSource = ds
-	return t
 }
 
-func (t DALByteArray) SetNull(null bool) DALByteArray {
+func (t *DALByteArray) SetNull(null bool) {
 	t.isNull = null
-	return t
 }
 
-func (t DALByteArray) FromBytes(data []byte) DALByteArray {
+func (t *DALByteArray) FromBytes(data []byte) {
 	if data == nil || len(data) == 0 {
 		t.isNull = true
 	} else {
 		t.isNull = false
 		t.value = data
 	}
-	return t
 }
 
-func (t DALByteArray) IsNull() bool {
+func (t *DALByteArray) IsNull() bool {
 	return t.isNull
 }
 
-func (t DALByteArray) Value() []byte {
+func (t *DALByteArray) Value() []byte {
 	return t.value
 }
 
-func (t DALByteArray) String() string {
+func (t *DALByteArray) String() string {
 	return string(t.value)
 }
 
-func (t DALByteArray) DataSource() DataSource {
+func (t *DALByteArray) DataSource() DataSource {
 	return t.dataSource
 }

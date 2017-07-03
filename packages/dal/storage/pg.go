@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/dal/model"
 	_ "github.com/lib/pq"
 )
 
@@ -33,6 +32,7 @@ func PgConnect(login, pass, dbName string, dbPort int, config map[string]string)
 	return &pgWorker{db, config}, nil
 }
 
+/*
 func (db *pgWorker) Run(m *model.Model) {
 	// in this case the query is SELECT
 	if m.ReturnValue != nil && len(m.ReturnValue) > 0 {
@@ -73,3 +73,4 @@ func (db *pgWorker) Run(m *model.Model) {
 		}
 	}
 }
+*/

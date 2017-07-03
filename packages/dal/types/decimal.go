@@ -8,43 +8,39 @@ type DALDecimal struct {
 	value      decimal.Decimal
 }
 
-func (t DALDecimal) SetDatasource(ds DataSource) DALDecimal {
+func (t *DALDecimal) SetDatasource(ds DataSource) {
 	t.dataSource = ds
-	return t
 }
 
-func (t DALDecimal) SetNull(null bool) DALDecimal {
+func (t *DALDecimal) SetNull(null bool) {
 	t.isNull = null
-	return t
 }
 
 //TODO доделать конвертацию
-func (t DALDecimal) FromBytes(data []byte) DALDecimal {
+func (t *DALDecimal) FromBytes(data []byte) {
 	if data == nil || len(data) == 0 {
 		t.isNull = true
 	} else {
 		t.isNull = false
 	}
-	return t
 }
 
-func (t DALDecimal) Set(val decimal.Decimal) DALDecimal {
+func (t *DALDecimal) Set(val decimal.Decimal) {
 	t.value = val
-	return t
 }
 
-func (t DALDecimal) DataSource() DataSource {
+func (t *DALDecimal) DataSource() DataSource {
 	return t.dataSource
 }
 
-func (t DALDecimal) IsNull() bool {
+func (t *DALDecimal) IsNull() bool {
 	return t.isNull
 }
 
-func (t DALDecimal) Value() decimal.Decimal {
+func (t *DALDecimal) Value() decimal.Decimal {
 	return t.value
 }
 
-func (t DALDecimal) String() string {
+func (t *DALDecimal) String() string {
 	return t.value.String()
 }

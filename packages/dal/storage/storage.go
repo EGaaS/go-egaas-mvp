@@ -1,9 +1,6 @@
 package storage
 
-import (
-	"github.com/EGaaS/go-egaas-mvp/packages/dal/model"
-	"github.com/EGaaS/go-egaas-mvp/packages/dal/types"
-)
+import "github.com/EGaaS/go-egaas-mvp/packages/dal/model"
 
 type DataProvider byte
 
@@ -11,23 +8,7 @@ const (
 	POSTGRES DataProvider = iota
 )
 
-type Comparator byte
-
-const (
-	Less Comparator = iota
-	LessOrEqual
-	Equal
-	NotEqual
-	GreaterOrEqual
-	Greater
-)
-
-type Condition struct {
-	Field      types.DALType
-	Comparator Comparator
-	Value      string
-}
-
+/*
 func NewStorage(prov DataProvider) *Storage {
 	switch prov {
 	case POSTGRES:
@@ -38,7 +19,7 @@ func NewStorage(prov DataProvider) *Storage {
 	}
 	return nil
 }
-
+*/
 type Storage interface {
 	Connect()
 	Create(model *model.Model) error
