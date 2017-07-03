@@ -1,16 +1,16 @@
 package model
 
-import "github.com/EGaaS/go-egaas-mvp/packages/dal/types"
+import (
+	"errors"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/dal/types"
+)
+
+var (
+	UnknownDatasorceField = errors.New("Unknown field in selected database")
+)
 
 type Model struct {
-	TableName    string
-	query        string
-	ReturnValue  []types.DALType
-	Error        error
-	LastInsertID int64
-}
-
-func (m *Model) Query() string {
-	m.query += ";"
-	return m.query
+	ID           types.DALString
+	LastInsertID types.DALString
 }

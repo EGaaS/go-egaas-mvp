@@ -1,6 +1,9 @@
 package storage
 
-import "github.com/EGaaS/go-egaas-mvp/packages/dal/types"
+import (
+	"github.com/EGaaS/go-egaas-mvp/packages/dal/model"
+	"github.com/EGaaS/go-egaas-mvp/packages/dal/types"
+)
 
 type DataProvider byte
 
@@ -28,14 +31,17 @@ type Condition struct {
 func NewStorage(prov DataProvider) *Storage {
 	switch prov {
 	case POSTGRES:
-		return &dbWorker{}
-		return
+		if result, err := PgConnect("login", "pass", "test", 5432); err != nil {
+			return nil
+		}
+		return result
 	}
+	return nil
 }
 
 type Storage interface {
 	Connect()
-	Create(model *Model)
+	Create(model *model.Model) error
 	Read()
 	Update()
 	Delete()

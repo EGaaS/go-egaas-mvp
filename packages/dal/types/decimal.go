@@ -3,40 +3,48 @@ package types
 import "github.com/shopspring/decimal"
 
 type DALDecimal struct {
-	value      decimal.Decimal
 	dataSource DataSource
 	isNull     bool
+	value      decimal.Decimal
+}
+
+func (t DALDecimal) SetDatasource(ds DataSource) DALDecimal {
+	t.dataSource = ds
+	return t
+}
+
+func (t DALDecimal) SetNull(null bool) DALDecimal {
+	t.isNull = null
+	return t
+}
+
+//TODO доделать конвертацию
+func (t DALDecimal) FromBytes(data []byte) DALDecimal {
+	if data == nil || len(data) == 0 {
+		t.isNull = true
+	} else {
+		t.isNull = false
+	}
+	return t
+}
+
+func (t DALDecimal) Set(val decimal.Decimal) DALDecimal {
+	t.value = val
+	return t
 }
 
 func (t DALDecimal) DataSource() DataSource {
 	return t.dataSource
 }
 
-func (t DALDecimal) Value() decimal.Decimal {
-	return t.value
-}
-
-func (t DALDecimal) Set(val decimal.Decimal) {
-	t.value = val
-}
-
-func (t DALDecimal) String() string {
-	return t.value.String()
-}
-
 func (t DALDecimal) IsNull() bool {
 	return t.isNull
 }
 
-func (t DALDecimal) SetNull(null bool) {
-	t.isNull = null
+func (t DALDecimal) Value() decimal.Decimal {
+	return t.value
 }
 
-//TODO доделать конвертацию
-func (t DALDecimal) FromBytes(data []byte) {
-	if data == nil || len(data) == 0 {
-		t.isNull = true
-	} else {
-		t.isNull = false
-	}
+func (t DALDecimal) String() string {
+	return t.value.String()
 }

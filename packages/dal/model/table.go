@@ -1,6 +1,9 @@
 package model
 
-import "github.com/shopspring/decimal"
+import (
+	"github.com/EGaaS/go-egaas-mvp/packages/dal/types"
+	"github.com/shopspring/decimal"
+)
 
 type KeyStatus string
 
@@ -11,30 +14,15 @@ const (
 
 type dltTransaction struct {
 	Model
-	SenderWalletID         dbInt64
-	RecipientWalletID      dbInt64
-	RecipientWalletAddress dbString
-	Amount                 dbDecimal
-	Comission              dbDecimal
-	Time                   dbInt32
-	Comment                dbString
-	BlockID                dbInt32
-	RbID                   dbInt32
-}
-
-func DltTransaction() *dltTransaction {
-	return &dltTransaction{
-		Model:                  Model{TableName: "dlt_transactions"},
-		SenderWalletID:         dbInt64{colName: "sender_wallet_id"},
-		RecipientWalletID:      dbInt64{colName: "recepient_wallet_id"},
-		RecipientWalletAddress: dbString{colName: "recipient_wallet_address"},
-		Amount:                 dbDecimal{colName: "amount"},
-		Comission:              dbDecimal{colName: "comission"},
-		Time:                   dbInt32{colName: "time"},
-		Comment:                dbString{colName: "comment"},
-		BlockID:                dbInt32{colName: "block_id"},
-		RbID:                   dbInt32{colName: "rb_id"},
-	}
+	SenderWalletID         types.DALInt64
+	RecipientWalletID      types.DALInt64
+	RecipientWalletAddress types.DALString
+	Amount                 types.DALDecimal
+	Comission              types.DALDecimal
+	Time                   types.DALInt32
+	Comment                types.DALString
+	BlockID                types.DALInt32
+	RbID                   types.DALInt32
 }
 
 type MyKeys struct {

@@ -1,6 +1,7 @@
 package types
 
 type DALType interface {
+	SetDatasource()
 	DataSource() DataSource
 	IsNull() bool
 	SetNull(bool)
