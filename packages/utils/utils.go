@@ -189,14 +189,14 @@ func ParseBlockHeader(binaryBlock *[]byte) *BlockData {
 	result := new(BlockData)
 	// Parse the heading of a block
 	/*
-			The heading
-			TYPE(0-block, 1-transaction)
-			BLOCK_ID   				       4
-			TIME       					       4
-			WALLET_ID                         1-8
-			state_id                              1
-			SIGN                               from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
-	Further is body block (transaction)
+				The heading
+				TYPE(0-block, 1-transaction)
+				BLOCK_ID   				       4
+				TIME       					       4
+				WALLET_ID                         1-8
+				state_id                              1
+				SIGN                               from 128 to 512 байт. Signature from TYPE, BLOCK_ID, PREV_BLOCK_HASH, TIME, WALLET_ID, state_id, MRKL_ROOT
+		Further is body block (transaction)
 	*/
 	result.BlockId = BinToDecBytesShift(binaryBlock, 4)
 	result.Time = BinToDecBytesShift(binaryBlock, 4)
@@ -1658,6 +1658,10 @@ func CreateHTMLFromTemplate(page string, citizenID, stateID int64, params *map[s
 		if (*params)[`wimap`] == `1` {
 			templ += fmt.Sprintf(`<script language="JavaScript" type="text/javascript">
 			miniMap("wimap", "100%%", "%dpx");</script>`, getHeight())
+		}
+		if (*params)[`inmappoint`] == `1` {
+			templ += fmt.Sprintf(`<script language="JavaScript" type="text/javascript">
+			userLocation("inmap", "100%%", "%dpx");</script>`, getHeight())
 		}
 		if (*params)[`wicitizen`] == `1` {
 			templ += fmt.Sprintf(`<script language="JavaScript" type="text/javascript">(function($, window, document){
