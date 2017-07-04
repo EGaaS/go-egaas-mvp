@@ -70,7 +70,7 @@ func (c *Controller) EditWallet() (string, error) {
 		id = c.SessWalletID
 	}
 	if id != 0 {
-		data, err = c.OneRow(`SELECT * FROM "dlt_wallets" WHERE wallet_id = ?`, id).String()
+		data, err = c.GetWallet(id)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

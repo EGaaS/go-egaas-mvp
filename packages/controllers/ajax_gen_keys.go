@@ -62,7 +62,8 @@ func (c *Controller) AjaxGenKeys() interface{} {
 		result.Error = `Access denied`
 		return result
 	}
-	privKey, err := c.Single(`select private from testnet_emails where wallet=?`, c.SessCitizenID).String()
+	privKey, err := c.GetPrivateKeyFromTestNet(c.SessCitizenID)
+
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -91,7 +92,7 @@ func (c *Controller) AjaxGenKeys() interface{} {
 		}
 		idnew := int64(crypto.Address(pub))
 
-		exist, err := c.Single(`select wallet_id from dlt_wallets where wallet_id=?`, idnew).Int64()
+		exist, err := c.IsWalletExist(converter.Int64ToStr(idnew))
 		if err != nil {
 			result.Error = err.Error()
 			return result
@@ -136,20 +137,19 @@ func (c *Controller) AjaxGenKeys() interface{} {
 			result.Error = err.Error()
 			return result
 		}
-		err = c.ExecSQL(`insert into testnet_keys (id, state_id, private, wallet) values(?,?,?,?)`,
-			c.SessCitizenID, c.SessStateID, spriv, idnew)
+		err = c.CreateTestNetKeys(c.SessCitizenID, c.SessStateID, spriv, idnew)
 		if err != nil {
 			result.Error = err.Error()
 			return result
 		}
 	}
 
-	result.Generated, err = c.Single(`select count(id) from testnet_keys where id=? and state_id=?`, c.SessCitizenID, c.SessStateID).Int64()
+	result.Generated, err = c.GetAllTestnetKeys(c.SessCitizenID, c.SessStateID)
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	result.Available, err = c.Single(`select count(id) from testnet_keys where id=? and state_id=? and status=0`, c.SessCitizenID, c.SessStateID).Int64()
+	result.Available, err = c.GetAvailableTestnetKeys(c.SessCitizenID, c.SessStateID)
 	if err != nil {
 		result.Error = err.Error()
 		return result

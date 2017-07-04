@@ -81,12 +81,12 @@ func (c *Controller) EditContract() (string, error) {
 	for i := 0; i < 10; i++ {
 		if i == 0 {
 			if id != 0 {
-				data, err = c.OneRow(`SELECT * FROM "`+prefix+`_smart_contracts" WHERE id = ?`, id).String()
+				data, err = c.GetSmartContractsByID(prefix, id)
 				if err != nil {
 					return "", utils.ErrInfo(err)
 				}
 			} else {
-				data, err = c.OneRow(`SELECT * FROM "`+prefix+`_smart_contracts" WHERE name = ?`, name).String()
+				data, err = c.GetSmartContractsByName(prefix, name)
 				if err != nil {
 					return "", utils.ErrInfo(err)
 				}
@@ -105,7 +105,7 @@ func (c *Controller) EditContract() (string, error) {
 			}
 			rbID = converter.StrToInt64(data["rb_id"])
 		} else {
-			data, err := c.OneRow(`SELECT data, block_id FROM "rollback" WHERE rb_id = ?`, rbID).String()
+			data, err := c.GetDataBlockIdFromRollback(rbID)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}

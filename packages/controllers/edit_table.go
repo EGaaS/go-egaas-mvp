@@ -63,18 +63,17 @@ func (c *Controller) EditTable() (string, error) {
 	if prefix == "global" {
 		global = "1"
 	}
-
-	tableData, err := c.OneRow(`SELECT * FROM "`+prefix+`_tables" WHERE name = ?`, tableName).String()
+	tableData, err := c.GetFullTableData(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	tablePermission, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", tableName)
+	tablePermission, err := c.GetTablePermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	columnsAndPermissions, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`, "key", "value", tableName)
+	columnsAndPermissions, err := c.GetColumnsAndPermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
@@ -83,7 +82,7 @@ func (c *Controller) EditTable() (string, error) {
 		list = append(list, map[string]string{`name`: key, `perm`: value, `type`: sql.GetColumnType(tableName, key)})
 	}
 
-	count, err := c.Single("SELECT count(column_name) FROM information_schema.columns WHERE table_name=?", tableName).Int64()
+	count, err := c.GetColumnsCount(tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

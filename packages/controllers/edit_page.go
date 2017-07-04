@@ -70,7 +70,7 @@ func (c *Controller) EditPage() (string, error) {
 	var block bool
 	for i := 0; i < 30; i++ {
 		if i == 0 {
-			dataPage, err := c.OneRow(`SELECT * FROM "`+prefix+`_pages" WHERE name = ?`, name).String()
+			dataPage, err := c.GetPage(prefix, name)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -82,7 +82,7 @@ func (c *Controller) EditPage() (string, error) {
 			dataPageMain = dataPage
 			block = dataPage[`menu`] == `0`
 		} else {
-			data, err := c.OneRow(`SELECT data, block_id FROM "rollback" WHERE rb_id = ?`, rbID).String()
+			data, err := c.GetDataBlockIdFromRollback(rbID)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -98,7 +98,7 @@ func (c *Controller) EditPage() (string, error) {
 		}
 	}
 
-	dataMenu, err := c.OneRow(`SELECT * FROM "`+prefix+`_menu" WHERE name = ?`, dataPageMain["menu"]).String()
+	dataMenu, err := c.GetMenu(prefix, dataPageMain["menu"])
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

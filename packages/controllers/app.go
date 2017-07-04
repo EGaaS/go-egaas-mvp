@@ -89,7 +89,8 @@ func App(w http.ResponseWriter, r *http.Request) {
 		} else {
 			table = fmt.Sprintf(`"%d_apps"`, GetSessInt64("state_id", sess))
 		}
-		appinfo, err := sql.DB.OneRow(`select * from `+table+` where name=?`, page).String()
+
+		appinfo, err := sql.DB.GetAppsByName(table, page)
 		if err != nil {
 			out = err.Error()
 		} else {

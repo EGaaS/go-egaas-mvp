@@ -51,6 +51,28 @@ func TestPgBuilderRead(t *testing.T) {
 			Value:      "12"}).
 		Compile()
 
+		myStateID, myWalletID, err := d.GetMyStateIDAndWalletID()
+		logger.Debug("%v", myWalletID)
+		if err != nil {
+			d.dbUnlock()
+			logger.Error("%v", err)
+			if d.dSleep(d.sleepTime) {
+				break BEGIN
+			}
+			continue
+		}
+
+		if myStateID > 0 {
+			delegate, err := d.CheckDelegateCB(myStateID)
+			if err != nil {
+				d.dbUnlock()
+				logger.Error("%v", err)
+				if d.dSleep(d.sleepTime) {
+					break BEGIN
+				}
+				continue
+			}
+
 	if len(build.Querys) != 2 {
 		t.Error("incorrect querys count. real length: ", len(reader.Querys))
 	}

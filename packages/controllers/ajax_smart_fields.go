@@ -54,9 +54,8 @@ func (c *Controller) AjaxSmartFields() interface{} {
 		result.Error = `Basic app is not installed`
 		return result
 	}
-	//	_, err = c.GetStateName(stateID)
-	//	if err == nil {
-	if exist, err := c.Single(`select id from "`+stateStr+`_citizens" where id=?`, c.SessWalletID).Int64(); err != nil {
+
+	if exist, err := c.IsCitizenExist(stateStr, c.SessWalletID); err != nil {
 		result.Error = err.Error()
 		return result
 	} else if exist > 0 {
@@ -64,8 +63,7 @@ func (c *Controller) AjaxSmartFields() interface{} {
 		return result
 	}
 
-	if req, err = c.OneRow(`select id, approved from "`+stateStr+`_citizenship_requests" where dlt_wallet_id=? order by id desc`,
-		c.SessWalletID).Int64(); err == nil {
+	if req, err = c.GetCitizenshipRequests(stateStr, c.SessWalletID); err == nil {
 		if len(req) > 0 && req[`id`] > 0 {
 			result.Approved = req[`approved`]
 		} else {
@@ -99,9 +97,9 @@ func (c *Controller) AjaxSmartFields() interface{} {
 				result.Fields = fmt.Sprintf(`[%s]`, strings.Join(fields, `,`))
 
 				if err == nil {
-					result.Price, err = c.Single(`SELECT value FROM "` + converter.Int64ToStr(stateID) + `_state_parameters" where name='citizenship_price'`).Int64()
+					result.Price, err = c.GetCitizenshipPrice(converter.Int64ToStr(stateID))
 					if err == nil {
-						amount, err = c.Single("select amount from dlt_wallets where wallet_id=?", c.SessWalletID).Int64()
+						amount, err = c.GetWalletAmount(c.SessWalletID)
 						result.Valid = (err == nil && amount >= result.Price)
 					}
 				}

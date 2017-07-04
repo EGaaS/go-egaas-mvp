@@ -61,7 +61,7 @@ func (c *Controller) EditColumn() (string, error) {
 		return "", utils.ErrInfo("incorrect table name")
 	}
 
-	columns, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`, "key", "value", tableName)
+	columns, err := c.GetColumnsAndPermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

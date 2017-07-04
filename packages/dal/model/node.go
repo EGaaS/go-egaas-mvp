@@ -4,10 +4,8 @@ import "github.com/EGaaS/go-egaas-mvp/packages/dal/types"
 
 type Node struct {
 	Model
-	//block_generator line 99
-	MyStateID  types.DALInt64
-	MyWalletID types.DALInt64
-	//block_generator line 111
+	MyStateID        types.DALInt64
+	MyWalletID       types.DALInt64
 	DelegateWalletID types.DALInt64
 	DelegateStateID  types.DALInt64
 }

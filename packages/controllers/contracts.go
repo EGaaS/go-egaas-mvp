@@ -42,7 +42,7 @@ func (c *Controller) Contracts() (string, error) {
 		global = "0"
 	}
 
-	stateSmartLaws, err := c.GetAll(`SELECT * FROM "`+prefix+`_smart_contracts" order by id`, -1)
+	stateSmartLaws, err := c.GetOrderedSmartContracts(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
@@ -58,7 +58,7 @@ func (c *Controller) Contracts() (string, error) {
 	}
 	var allStateParameters []string
 	if global == "0" {
-		allStateParameters, err = c.GetList(`SELECT name FROM "` + prefix + `_state_parameters"`).String()
+		allStateParameters, err = c.GetStateNames(prefix)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

@@ -51,7 +51,7 @@ func (c *Controller) AjaxNewState() interface{} {
 		wallet    int64
 	)
 	id := converter.StrToInt64(c.r.FormValue("testnet"))
-	if current, err = c.OneRow(`select country,currency,wallet, private from testnet_emails where id=?`, id).String(); err != nil {
+	if current, err = c.SelectMainDataFromTestnet(id); err != nil {
 		result.Error = err.Error()
 	} else if len(current) == 0 {
 		result.Error = `unknown id`
@@ -71,7 +71,7 @@ func (c *Controller) AjaxNewState() interface{} {
 		}
 		wallet = crypto.Address(pub)
 
-		exist, err = c.Single(`select wallet_id from dlt_wallets where wallet_id=?`, wallet).Int64()
+		exist, err = c.IsWalletExist(converter.Int64ToStr(wallet))
 		if err != nil {
 			result.Error = err.Error()
 			return result
@@ -82,7 +82,7 @@ func (c *Controller) AjaxNewState() interface{} {
 		result.Error = `TestnetKey is absent`
 		return result
 	}
-	err = c.ExecSQL(`update testnet_emails set wallet=?, private=? where id=?`, wallet, spriv, id)
+	err = c.UpdateTestnetEmails(wallet, spriv, id)
 	if err != nil {
 		result.Error = err.Error()
 		return result

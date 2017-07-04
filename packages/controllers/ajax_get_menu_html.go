@@ -38,11 +38,12 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 	var err error
 	if len(prefix) > 0 {
 
-		menuName, err = c.Single(`SELECT menu FROM "`+prefix+`_pages" WHERE name = ?`, pageName).String()
+		menuName, err = c.GetPageMenus(prefix, pageName)
+
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
-		menu, err = c.Single(`SELECT value FROM "`+prefix+`_menu" WHERE name = ?`, menuName).String()
+		menu, err = c.GetValueFromMenu(prefix, menuName)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

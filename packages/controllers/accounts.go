@@ -17,7 +17,6 @@
 package controllers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
@@ -72,8 +71,8 @@ func (c *Controller) Accounts() (string, error) {
 			Amount: amount})
 	}
 
-	amount, err := c.Single(fmt.Sprintf(`select amount from "%d_accounts" where citizen_id=?`,
-		c.SessStateID), c.SessCitizenID).String()
+	amount, err := c.GetAccountAmount(c.SessStateID, c.SessCitizenID)
+
 	if err != nil {
 		return ``, err
 	}
@@ -83,9 +82,7 @@ func (c *Controller) Accounts() (string, error) {
 		newAccount(c.SessCitizenID, `NULL`)
 	}
 
-	list, err := c.GetAll(fmt.Sprintf(`select anon.*, acc.amount from "%d_anonyms" as anon
-	left join "%[1]d_accounts" as acc on acc.citizen_id=anon.id_anonym
-	where anon.id_citizen=?`, c.SessStateID), -1, c.SessCitizenID)
+	list, err := c.GetAnonyms(c.SessStateID, c.SessCitizenID)
 	if err != nil {
 		return ``, err
 	}

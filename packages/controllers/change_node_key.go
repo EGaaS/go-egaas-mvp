@@ -19,6 +19,7 @@ package controllers
 import (
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -42,7 +43,7 @@ func (c *Controller) ChangeNodeKey() (string, error) {
 	txTypeID := utils.TypeInt(txType)
 	timeNow := time.Now().Unix()
 
-	public, err := c.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", c.SessWalletID).String()
+	public, err := c.GetWalletPublickKey(converter.Int64ToStr(c.SessWalletID))
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

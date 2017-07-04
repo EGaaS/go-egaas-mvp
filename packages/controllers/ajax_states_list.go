@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 )
@@ -27,12 +26,12 @@ import (
 func (c *Controller) AjaxStatesList() (string, error) {
 
 	result := make(map[string]map[string]string)
-	data, err := c.GetList(`SELECT id FROM system_states`).String()
+	data, err := c.GetSystemStates()
 	if err != nil {
 		return ``, err
 	}
 	query := func(id string, name string) (string, error) {
-		return c.Single(fmt.Sprintf(`SELECT value FROM "%s_state_parameters" WHERE name = ?`, id), name).String()
+		return c.GetStateValue(id, name)
 	}
 	for _, id := range data {
 		if !c.IsNodeState(converter.StrToInt64(id), c.r.Host) {

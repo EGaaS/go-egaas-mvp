@@ -86,7 +86,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 				}
 			}
 
-			data, err = c.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", walletID).String()
+			data, err = c.GetWalletPublickKey(walletID)
 			if err == nil {
 				var PublicKeys [][]byte
 				PublicKeys = append(PublicKeys, []byte(data["public_key_0"]))
@@ -103,26 +103,10 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 		}
 	}
 	if err == nil {
-		data, err = c.OneRow(`SELECT * FROM "`+converter.Int64ToStr(stateCode)+`_citizenship_requests" WHERE dlt_wallet_id = ? order by id desc`, walletID).String()
+		data, err = c.GetCitizenshipRequestsFull(converter.Int64ToStr(stateCode), converter.StrToInt64(walletID))
 		if err != nil || data == nil || len(data) == 0 {
 			err = fmt.Errorf(`unknown request for wallet %s`, walletID)
-		} /*else {
-			var (
-				fval []byte
-			)
-			buf := new(bytes.Buffer)
-			for _, f := range formdata.File[`photo-0`] {
-				src, err := f.Open()
-				if err == nil {
-					buf.ReadFrom(src)
-					src.Close()
-				}
-			}
-						if fval, err = json.Marshal(vals); err == nil {
-						err = c.ExecSQL(`INSERT INTO `+utils.Int64ToStr(stateCode)+`_citizens_requests_private ( request_id, fields, binary, public ) VALUES ( ?, ?, [hex], [hex] )`,
-						data[`request_id`], fval, hex.EncodeToString(buf.Bytes()), c.r.FormValue(`publicKey`))
-					}
-		}*/
+		}
 	}
 	if err != nil {
 		result.Error = err.Error()

@@ -56,7 +56,7 @@ func (c *Controller) EditMenu() (string, error) {
 		name = c.r.FormValue("name")
 	}
 
-	dataMenu, err := c.OneRow(`SELECT * FROM "`+prefix+`_menu" WHERE name = ?`, name).String()
+	dataMenu, err := c.GetMenu(prefix, name)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

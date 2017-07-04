@@ -44,11 +44,9 @@ func (c *Controller) AjaxCitizenFields() interface{} {
 		err    error
 		amount int64
 	)
-	stateID := int64(1) // utils.StrToInt64(c.r.FormValue(`state_id`))
-	//	_, err = c.GetStateName(stateId)
-	//	if err == nil {
-	if req, err := c.OneRow(`select id, approved from "`+converter.Int64ToStr(stateID)+`_citizenship_requests" where dlt_wallet_id=? order by id desc`,
-		c.SessWalletID).Int64(); err == nil {
+	stateID := int64(1)
+
+	if req, err := c.GetCitizenshipRequests(converter.Int64ToStr(stateID), c.SessWalletID); err == nil {
 		if len(req) > 0 && req[`id`] > 0 {
 			result.Approved = req[`approved`]
 		} else {
@@ -57,18 +55,16 @@ func (c *Controller) AjaxCitizenFields() interface{} {
 {"name":"birthday", "htmlType":"calendar", "txType":"string", "title":"Birthday"},
 {"name":"photo", "htmlType":"file", "txType":"binary", "title":"Photo"}
 ]`, nil
-			//				c.Single(`SELECT value FROM ` + utils.Int64ToStr(stateId) + `_state_parameters where parameter='citizen_fields'`).String()
 			if err == nil {
-				result.Price, err = c.Single(`SELECT value FROM "` + converter.Int64ToStr(stateID) + `_state_parameters" where name='citizenship_price'`).Int64()
+				result.Price, err = c.GetCitizenshipPrice(converter.Int64ToStr(stateID))
 				if err == nil {
-					amount, err = c.Single("select amount from dlt_wallets where wallet_id=?", c.SessWalletID).Int64()
+					amount, err = c.GetWalletAmount(c.SessWalletID)
 					result.Valid = (err == nil && amount >= result.Price)
 				}
 			}
 		}
 	}
 	fmt.Println(`Error`, err)
-	//	}
 	if err != nil {
 		result.Error = err.Error()
 	}

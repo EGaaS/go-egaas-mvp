@@ -66,7 +66,7 @@ func (c *Controller) EditLanguage() (string, error) {
 
 	list := make([]LangRes, 0)
 	if len(name) > 0 {
-		res, err := c.Single(`SELECT res FROM "`+prefix+`_languages" where name=?`, name).String()
+		res, err := c.GetLanguageRes(prefix, name)
 		if err != nil {
 			return "", err
 		}

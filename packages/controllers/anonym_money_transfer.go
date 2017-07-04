@@ -43,7 +43,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 	txTypeID := utils.TypeInt(txType)
 	timeNow := time.Now().Unix()
 
-	fPrice, err := c.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").Int64()
+	fPrice, err := c.GetDltTransfer()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
@@ -56,7 +56,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 	commission := decimal.New(fPrice, 0).Mul(fuelRate)
 
 	log.Debug("sessCitizenID %d SessWalletID %d SessStateID %d", c.SessCitizenID, c.SessWalletID, c.SessStateID)
-	amount, err := c.Single("select amount from dlt_wallets where wallet_id = ?", c.SessWalletID).String()
+	amount, err := c.GetWalletAmountString(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

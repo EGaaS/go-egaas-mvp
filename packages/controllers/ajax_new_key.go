@@ -121,7 +121,8 @@ func (c *Controller) AjaxNewKey() interface{} {
 	}
 	idnew := crypto.Address(pub)
 
-	exist, err := c.Single(`select wallet_id from dlt_wallets where wallet_id=?`, idnew).Int64()
+	exist, err := c.IsWalletExist(converter.Int64ToStr(idnew))
+
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -177,14 +178,12 @@ func (c *Controller) AjaxNewKey() interface{} {
 		log.Fatal(err)
 	}
 	hash = converter.BinToHex(data)
-	err = c.ExecSQL(`INSERT INTO transactions_status (
-			hash, time,	type, wallet_id, citizen_id	) VALUES (
-			[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), header.Type, int64(idkey), int64(idkey))
+	err = c.CreateTxStatus(hash, time.Now().Unix(), header.Type, int64(idkey), int64(idkey))
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, hex.EncodeToString(data))
+	err = c.CreateQueueTx(hash, hex.EncodeToString(data))
 	if err != nil {
 		result.Error = err.Error()
 		return result

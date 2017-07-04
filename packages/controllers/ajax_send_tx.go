@@ -58,7 +58,7 @@ func (c *Controller) AjaxSendTx() interface{} {
 			converter.EncodeLenByte(&sign, signature)
 		}
 		var isPublic []byte
-		isPublic, err = c.Single(`select public_key_0 from dlt_wallets where wallet_id=?`, c.SessWalletID).Bytes()
+		isPublic, err = c.GetSingleWalletPublicKeyBytes(c.SessWalletID)
 		if err == nil && len(sign) > 0 && len(isPublic) == 0 {
 			flags |= consts.TxfPublic
 			public, _ := hex.DecodeString(c.r.FormValue(`public`))
@@ -134,12 +134,10 @@ func (c *Controller) AjaxSendTx() interface{} {
 						log.Fatal(err)
 					}
 					hash = converter.BinToHex(hash)
-					err = c.ExecSQL(`INSERT INTO transactions_status (
-						hash, time,	type, wallet_id, citizen_id	) VALUES (
-						[hex], ?, ?, ?, ? )`, hash, time.Now().Unix(), header.Type, int64(userID), int64(userID)) //c.SessStateID)
+					err = c.CreateTxStatus(hash, time.Now().Unix(), header.Type, int64(userID), int64(userID))
 					if err == nil {
 						log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, hex.EncodeToString(data))
-						err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, hex.EncodeToString(data))
+						err = c.CreateQueueTx(hash, hex.EncodeToString(data))
 						if err == nil {
 							result.Hash = string(hash)
 						}

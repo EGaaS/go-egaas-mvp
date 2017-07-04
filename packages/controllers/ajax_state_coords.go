@@ -34,6 +34,7 @@ func (c *Controller) AjaxStateCoords() interface{} {
 
 	var stateDetails StateDetails
 	stateID := converter.StrToInt64(c.r.FormValue("stateId"))
-	stateDetails.Coords, _ = c.Single(`SELECT coords FROM "` + converter.Int64ToStr(stateID) + `_state_details"`).String()
+
+	stateDetails.Coords, _ = c.GetStateCoords(converter.Int64ToStr(stateID))
 	return stateDetails
 }

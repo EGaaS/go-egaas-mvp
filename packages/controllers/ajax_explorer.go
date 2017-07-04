@@ -40,10 +40,9 @@ func (c *Controller) AjaxExplorer() interface{} {
 	result := ExplorerJSON{}
 	latest := converter.StrToInt64(c.r.FormValue("latest"))
 	if latest > 0 {
-		result.Latest, _ = c.Single("select max(id) from block_chain").Int64()
+		result.Latest, _ = c.GetMaxBlockID()
 		if result.Latest > latest {
-			explorer, err := c.GetAll(`SELECT  b.hash, b.state_id, b.wallet_id, b.time, b.tx, b.id FROM block_chain as b
-		where b.id > $1	order by b.id desc limit 30 offset 0`, -1, latest)
+			explorer, err := c.Get30BlocksFrom(latest)
 			if err == nil {
 				for ind := range explorer {
 					explorer[ind][`hash`] = hex.EncodeToString([]byte(explorer[ind][`hash`]))

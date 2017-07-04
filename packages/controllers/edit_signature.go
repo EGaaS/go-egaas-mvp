@@ -60,7 +60,7 @@ func (c *Controller) EditSignature() (string, error) {
 	var title, cond string
 	list := make([]SignRes, 0)
 	if len(name) > 0 {
-		res, err := c.OneRow(`SELECT value, conditions FROM "`+prefix+`_signatures" where name=?`, name).String()
+		res, err := c.GetValueConditionsFromSignatures(prefix, name)
 		if err != nil {
 			return "", err
 		}

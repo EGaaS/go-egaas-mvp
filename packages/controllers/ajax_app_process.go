@@ -52,17 +52,15 @@ func (c *Controller) AjaxAppProcess() interface{} {
 	} else {
 		table = fmt.Sprintf(`"%d_apps"`, c.SessStateID)
 	}
-	cur, err := c.OneRow(`select * from `+table+` where name=?`, name).String()
+	cur, err := c.GetAppsByName(table, name)
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
 	if len(cur) > 0 {
-		err = c.ExecSQL(fmt.Sprintf(`update %s set done=?, blocks=concat(blocks, ',%d') where name=?`, table, block),
-			done, name)
+		err = c.UpdateBlockInfoInApps(table, block, done, name)
 	} else {
-		err = c.ExecSQL(fmt.Sprintf(`insert into %s (name,done,blocks) values(?,?,'%d')`, table, block),
-			name, done)
+		err = c.CreateBlockInfoInApps(table, block, done, name)
 	}
 	if err != nil {
 		result.Error = err.Error()

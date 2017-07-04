@@ -70,7 +70,7 @@ func (c *Controller) checkTx(result *PrepareTxJSON) (contract *smart.Contract, e
 						pref = `global`
 					}
 					var value string
-					value, err = c.Single(fmt.Sprintf(`select value from "%s_signatures" where name=?`, pref), ret[1]).String()
+					value, err = c.GetValueFromSignatures(pref, ret[1])
 					if err != nil {
 						break
 					}
@@ -130,7 +130,7 @@ func (c *Controller) AjaxPrepareTx() interface{} {
 		var isPublic []byte
 		info := (*contract).Block.Info.(*script.ContractInfo)
 		userID := uint64(c.SessWalletID)
-		isPublic, err = c.Single(`select public_key_0 from dlt_wallets where wallet_id=?`, c.SessWalletID).Bytes()
+		isPublic, err = c.GetSingleWalletPublicKeyBytes(c.SessWalletID)
 		if err == nil && len(isPublic) == 0 {
 			flags |= consts.TxfPublic
 		}

@@ -141,7 +141,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 		if dbInit {
 			// отсутвие таблы выдаст ошибку, значит процесс инсталяции еще не пройден и надо выдать 0-й шаг
 			// the absence of table will show the mistake, this means that the process of installation is not finished and zero-step should be shown
-			_, err = c.DCDB.Single("SELECT progress FROM install").String()
+			_, err = c.GetInstallationState()
 			if err != nil {
 				log.Error("%v", err)
 				dbInit = false
@@ -163,11 +163,11 @@ func Content(w http.ResponseWriter, r *http.Request) {
 
 	if dbInit {
 		var err error
-		installProgress, err = c.DCDB.Single("SELECT progress FROM install").String()
+		installProgress, err = c.GetInstallationState()
 		if err != nil {
 			log.Error("%v", err)
 		}
-		configExists, err = c.DCDB.Single("SELECT first_load_blockchain_url FROM config").String()
+		configExists, err = c.GetFirstLoadBlockchainURL()
 		if err != nil {
 			log.Error("%v", err)
 		}

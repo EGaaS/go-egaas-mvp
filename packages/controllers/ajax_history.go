@@ -52,22 +52,16 @@ func (c *Controller) AjaxHistory() interface{} {
 	log.Debug("a/h walletId %s / c.SessAddress %s", walletID, c.SessAddress)
 	limit := fmt.Sprintf(`LIMIT %d OFFSET %d`, length, converter.StrToInt(c.r.FormValue("start")))
 	if walletID != 0 {
-		total, _ := c.Single(`SELECT count(id) FROM dlt_transactions where sender_wallet_id = ? OR
-		                       recipient_wallet_id = ? OR recipient_wallet_address = ?`, walletID, walletID, c.SessAddress).Int64()
+		total, _ := c.GetTxCountBySenderOrRecepient(walletID, walletID, c.SessAddress)
 		result.Total = int(total)
 		result.Filtered = int(total)
 		if length != 0 {
-			history, err = c.GetAll(`SELECT d.*, w.wallet_id as sw, wr.wallet_id as rw FROM dlt_transactions as d
-		        left join dlt_wallets as w on w.wallet_id=d.sender_wallet_id
-		        left join dlt_wallets as wr on wr.wallet_id=d.recipient_wallet_id
-				where sender_wallet_id=? OR 
-		        recipient_wallet_id=?  OR
-		        recipient_wallet_address=? order by d.id desc  `+limit, -1, walletID, walletID, c.SessAddress)
+			history, err = c.GetAllTxBySenderOrRecepient(walletID, walletID, c.SessAddress, limit)
 			if err != nil {
 				log.Error("%s", err)
 			}
 			for ind := range history {
-				max, _ := c.Single(`select max(id) from block_chain`).Int64()
+				max, _ := c.GetMaxBlockID()
 				history[ind][`confirm`] = converter.Int64ToStr(max - converter.StrToInt64(history[ind][`block_id`]))
 				history[ind][`sender_address`] = converter.AddressToString(converter.StrToInt64(history[ind][`sw`]))
 				recipient := history[ind][`rw`]

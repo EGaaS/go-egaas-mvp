@@ -133,8 +133,7 @@ func (c *Controller) BlockExplorer() (string, error) {
 				return ``, nil
 			}
 		}
-		blockExplorer, err := c.GetAll(`SELECT  b.hash, b.state_id, b.wallet_id, b.time, b.tx, b.id FROM block_chain as b
-		order by b.id desc limit 30 offset 0`, -1)
+		blockExplorer, err := c.GetLast30Blocks()
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

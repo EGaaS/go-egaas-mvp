@@ -37,7 +37,7 @@ func (c *Controller) DashboardAnonym() (string, error) {
 
 	if c.SessWalletID > 0 || len(c.SessAddress) > 0 {
 		var err error
-		amount, err = c.Single("select amount from dlt_wallets where wallet_id = ?", c.SessWalletID).String()
+		amount, err = c.GetWalletAmountString(c.SessWalletID)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

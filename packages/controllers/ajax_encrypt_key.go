@@ -51,7 +51,7 @@ func EncryptNewKey(walletID string) (result EncryptKey) {
 		return result
 	}
 	id = converter.StringToAddress(walletID)
-	pubKey, err := sql.DB.Single(`select public_key_0 from dlt_wallets where wallet_id=?`, id).String()
+	pubKey, err := sql.DB.GetSingleWalletPublicKey(id)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -68,7 +68,7 @@ func EncryptNewKey(walletID string) (result EncryptKey) {
 		pub, _ := hex.DecodeString(result.Public)
 		idnew := crypto.Address(pub)
 
-		exist, err := sql.DB.Single(`select wallet_id from dlt_wallets where wallet_id=?`, idnew).Int64()
+		exist, err := sql.DB.IsWalletExist(converter.Int64ToStr(idnew))
 		if err != nil {
 			result.Error = err.Error()
 			return result

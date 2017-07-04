@@ -44,12 +44,12 @@ func (c *Controller) ChangeStateSmartLaws() (string, error) {
 
 	parameter := c.r.FormValue(`parameter`)
 
-	StateSmartLaws, err := c.OneRow(`SELECT * FROM "`+c.StateIDStr+`_state_parameters" WHERE parameter = ?`, parameter).String()
+	StateSmartLaws, err := c.GetStateParameterByParameter(c.StateIDStr, parameter)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	allStateParameters, err := c.GetList(`SELECT parameter FROM ea_state_parameters`).String()
+	allStateParameters, err := c.GetParametersFromEA()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
