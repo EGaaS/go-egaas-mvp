@@ -105,8 +105,8 @@ func (c *Controller) setVar(name, prefix string) (out string) {
 	for _, icontract := range contracts {
 		var state string
 		icontract, _, state = getState(c.SessStateID, icontract)
-		data, _ := c.OneRow(fmt.Sprintf(`select conditions,value from "%s_%s" where name=?`, state, name), icontract).String()
-		//		fmt.Println(`Data`, err, data)
+		// TODO name always null?
+		data, _ := c.GetContractConditionsAndValue(state, name, icontract)
 		if len(data) > 0 && len(data[`value`]) > 0 {
 			names = append(names, prefix+`_`+icontract)
 			list = append(list, fmt.Sprintf("`%s_%s #= %s`", prefix, icontract, data[`value`]))
@@ -158,8 +158,7 @@ func (c *Controller) setData(name, prefix string) (out string) {
 		for key := range data[0] {
 			if key != `rb_id` && key != `id` {
 				pars = append(pars, key)
-				coltype, _ := c.OneRow(`select data_type,character_maximum_length from information_schema.columns
-where table_name = ? and column_name = ?`, itable, key).String()
+				coltype, _ := c.GetColumnType(itable, key)
 				if len(coltype) > 0 {
 					ival := `0`
 					switch {
@@ -302,7 +301,7 @@ func (c *Controller) ExportTpl() (string, error) {
 								if state == 0 {
 									pref = `global`
 								}
-								sign, err := c.OneRow(fmt.Sprintf(`select * from "%s_signatures" where name=?`, pref), ret[1]).String()
+								sign, err := c.GetSignature(pref, ret[1])
 								if err != nil {
 									break
 								}
@@ -356,8 +355,7 @@ func (c *Controller) ExportTpl() (string, error) {
 					global int
 				)
 				itable, global, state = getState(c.SessStateID, itable)
-				cols, _ := c.Single(fmt.Sprintf(`select columns_and_permissions->'update' from "%s_tables" where name=?`,
-					state), itable).String()
+				cols, _ := c.GetColumnPermissionsByState(state, itable)
 				fmap := make(map[string]string)
 				json.Unmarshal([]byte(cols), &fmap)
 				fields := make([]string, 0)
@@ -368,8 +366,7 @@ func (c *Controller) ExportTpl() (string, error) {
 					if ok, _ := c.IsIndex(itable, ikey); ok {
 						index = 1
 					}
-					coltype, _ := c.OneRow(`select data_type,character_maximum_length from information_schema.columns
-where table_name = ? and column_name = ?`, itable, ikey).String()
+					coltype, _ := c.GetColumnType(itable, key)
 					if len(coltype) > 0 {
 						switch {
 						case coltype[`data_type`] == "character varying":
@@ -400,8 +397,7 @@ where table_name = ? and column_name = ?`, itable, ikey).String()
 			}
 	   }`, global, itable[strings.IndexByte(itable, '_')+1:], strings.Join(fields, `,`)))
 
-				perm, _ := c.Single(fmt.Sprintf(`select columns_and_permissions from "%s_tables" where name=?`,
-					state), itable).String()
+				perm, _ := c.GetPermissionsByState(state, itable)
 				var jperm map[string]interface{}
 				json.Unmarshal([]byte(perm), &jperm)
 				var toedit bool
@@ -612,7 +608,7 @@ where table_name = ? and column_name = ?`, itable, ikey).String()
 				if global == 1 {
 					prefix = `global`
 				}
-				menu, _ := c.Single(fmt.Sprintf(`select menu from "%s_pages" where name=?`, prefix), ipage).String()
+				menu, _ := c.GetPageMenus(prefix, ipage)
 				if len(menu) == 0 {
 					menu = "menu_default"
 				}

@@ -83,40 +83,39 @@ func (c *Controller) Menu() (string, error) {
 		}
 	}
 
-	canCitizen, _ := c.Single(`SELECT count(id) FROM system_states`).Int64()
+	canCitizen, _ := c.GetRecordsCount("system_states")
 	if c.StateIDStr != "" {
 		params := make(map[string]string)
 		params[`state_id`] = c.StateIDStr
 		params[`accept_lang`] = c.r.Header.Get(`Accept-Language`)
 
-		menu, err = c.Single(`SELECT value FROM "`+c.StateIDStr+`_menu" WHERE name = ?`, "main_menu").String()
+		menu, err = c.GetValueFromMenu(c.StateIDStr, "main_menu")
 		if err != nil {
 			return "", err
 		}
 		if len(menu) == 0 {
-			menu, err = c.Single(`SELECT value FROM "`+c.StateIDStr+`_menu" WHERE name = ?`, "menu_default").String()
+			menu, err = c.GetValueFromMenu(c.StateIDStr, "menu_default")
 			if err != nil {
 				return "", err
 			}
 		} else {
 			isMain = true
 		}
-
-		stateName, err = c.Single(`SELECT value FROM "`+c.StateIDStr+`_state_parameters" WHERE name = ?`, "state_name").String()
+		stateName, err = c.GetStateValue(c.StateIDStr, "state_name")
 		if err != nil {
 			return "", err
 		}
-		stateFlag, err = c.Single(`SELECT value FROM "`+c.StateIDStr+`_state_parameters" WHERE name = ?`, "state_flag").String()
+		stateFlag, err = c.GetStateValue(c.StateIDStr, "state_flag")
 		if err != nil {
 			return "", err
 		}
 
-		citizenName, err = c.Single(`SELECT name FROM "`+c.StateIDStr+`_citizens" WHERE id = ?`, c.SessCitizenID).String()
+		citizenName, err = c.GetCitizenName(c.StateIDStr, c.SessCitizenID)
 		if err != nil {
 			log.Error("%v", err)
 		}
 
-		citizenAvatar, err = c.Single(`SELECT avatar FROM "`+c.StateIDStr+`_citizens" WHERE id = ?`, c.SessCitizenID).String()
+		citizenAvatar, err = c.GetCitizenAvatar(c.StateIDStr, c.SessCitizenID)
 		if err != nil {
 			log.Error("%v", err)
 		}

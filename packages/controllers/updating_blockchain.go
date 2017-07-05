@@ -60,7 +60,7 @@ func (c *Controller) UpdatingBlockchain() (string, error) {
 			return "", utils.ErrInfo(err)
 		}
 		if ConfirmedBlockID == 0 {
-			firstLoadBlockchain, err := c.DCDB.Single("SELECT first_load_blockchain FROM config").String()
+			firstLoadBlockchain, err := c.GetFirstLoadBlockchain()
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}

@@ -44,32 +44,32 @@ func (c *Controller) SystemInfo() (string, error) {
 	var err error
 	pageData := systemInfoPage{Data: c.Data}
 
-	pageData.UpdFullNodes, err = c.GetAll(`SELECT * FROM upd_full_nodes`, -1)
+	pageData.UpdFullNodes, err = c.GetAllUpdFullNodes()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.MainLock, err = c.GetAll(`SELECT * FROM main_lock`, -1)
+	pageData.MainLock, err = c.GetMainLock()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.Rollback, err = c.GetAll(`SELECT * FROM rollback ORDER BY rb_id DESC LIMIT 100`, -1)
+	pageData.Rollback, err = c.Get1000Rollback()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.FullNodes, err = c.GetAll(`SELECT * FROM full_nodes`, -1)
+	pageData.FullNodes, err = c.GetAllFullNodes()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.SystemParameters, err = c.GetAll(`SELECT * FROM system_parameters`, -1)
+	pageData.SystemParameters, err = c.GetAllSystemParameters()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.Votes, err = c.GetAll(`SELECT address_vote, sum(amount) as sum FROM dlt_wallets WHERE address_vote !='' GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 10`, -1)
+	pageData.Votes, err = c.GetVotes()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

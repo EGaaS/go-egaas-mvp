@@ -156,7 +156,7 @@ BEGIN:
 		// получим state_id, wallet_id и время последнего блока
 		// If we have reached here, we are in full_nodes. It is necessary to determine where in the list we
 		// will get state_id, wallet_id and the time of the last block
-		prevBlock, err := d.OneRow("SELECT state_id, wallet_id, block_id, time, hex(hash) as hash FROM info_block").Int64()
+		prevBlock, err := d.GetShortInfoBlock()
 		if err != nil {
 			d.dbUnlock()
 			logger.Error("%v", err)
@@ -219,7 +219,7 @@ BEGIN:
 			}
 			continue BEGIN
 		}
-		prevBlock, err = d.OneRow("SELECT state_id, wallet_id, block_id, time, hex(hash) as hash FROM info_block").Int64()
+		prevBlock, err = d.GetShortInfoBlock()
 		if err != nil {
 			d.dbUnlock()
 			logger.Error("%v", err)
@@ -229,7 +229,7 @@ BEGIN:
 			continue BEGIN
 		}
 		logger.Debug("prevBlock %v", prevBlock)
-		prevBlockHash, err := d.Single("SELECT hex(hash) as hash FROM info_block").String()
+		prevBlockHash, err := d.GetInfoBlockHash()
 		if err != nil {
 			d.dbUnlock()
 			logger.Error("%v", err)

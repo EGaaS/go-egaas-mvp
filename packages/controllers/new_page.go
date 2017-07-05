@@ -36,7 +36,7 @@ func (c *Controller) NewPage() (string, error) {
 		global = "0"
 	}
 
-	allMenu, err := c.GetAll(`SELECT * FROM "`+prefix+`_menu"`, -1)
+	allMenu, err := c.GetAllMenus(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

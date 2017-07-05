@@ -40,7 +40,7 @@ func (c *Controller) Forging() (string, error) {
 	txType := "DLTChangeHostVote"
 	timeNow := time.Now().Unix()
 
-	MyWalletData, err := c.OneRow("SELECT host, address_vote, fuel_rate FROM dlt_wallets WHERE wallet_id = ?", c.SessWalletID).String()
+	MyWalletData, err := c.GetWalletHostData(c.SessWalletID)
 	MyWalletData[`address`] = converter.AddressToString(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)

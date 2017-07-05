@@ -40,15 +40,15 @@ func (c *Controller) Interface() (string, error) {
 		prefix = "global"
 	}
 
-	interfacePages, err := c.GetAll(`SELECT * FROM "`+prefix+`_pages" where menu!='0' order by name`, -1)
+	interfacePages, err := c.GetInterfacePages(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
-	interfaceBlocks, err := c.GetAll(`SELECT * FROM "`+prefix+`_pages" where menu='0' order by name`, -1)
+	interfaceBlocks, err := c.GetInterfaceBlocks(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
-	interfaceMenu, err := c.GetAll(`SELECT * FROM "`+prefix+`_menu" order by name`, -1)
+	interfaceMenu, err := c.GetAllMenus(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

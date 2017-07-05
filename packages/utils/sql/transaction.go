@@ -19,3 +19,7 @@ func (db *DCDB) CreateTxStatus(hash []byte, time int64, txType int32, walletID i
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, hash, time, txType, walletID, citizenID)
 }
+
+func (db *DCDB) GetBlockIDError(hash string) (map[string]string, error) {
+	return db.OneRow(`SELECT block_id, error FROM transactions_status WHERE hash = [hex]`, hash).String()
+}

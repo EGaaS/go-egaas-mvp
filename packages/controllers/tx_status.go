@@ -25,7 +25,7 @@ func (c *Controller) TxStatus() (string, error) {
 
 	hash := c.r.FormValue("hash")
 
-	tx, err := c.OneRow(`SELECT block_id, error FROM transactions_status WHERE hash = [hex]`, hash).String()
+	tx, err := c.GetBlockIDError(hash)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

@@ -250,7 +250,7 @@ BEGIN:
 					}
 					continue BEGIN
 				}
-				err = d.ExecSQL(`UPDATE config SET current_load_blockchain = 'file'`)
+				err = d.SetCurrentLoadBlockchainFile()
 				if err != nil {
 					if d.unlockPrintSleep(err, d.sleepTime) {
 						break BEGIN

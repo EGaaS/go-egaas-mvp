@@ -124,15 +124,7 @@ func (c *Controller) Install() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL(`
-	DO $$ DECLARE
-	    r RECORD;
-	BEGIN
-	    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
-		EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-	    END LOOP;
-	END $$;
-	`)
+	err = c.DropTables()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()
@@ -153,14 +145,14 @@ func (c *Controller) Install() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL("INSERT INTO config (first_load_blockchain, first_load_blockchain_url, auto_reload) VALUES (?, ?, ?)", firstLoad, firstLoadBlockchainURL, 259200)
+	err = c.CreateConfig(firstLoad, firstLoadBlockchainURL, 259200)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL(`INSERT INTO install (progress) VALUES ('complete')`)
+	err = c.MarkInstallationComplete()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()
@@ -207,7 +199,7 @@ func (c *Controller) Install() (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = c.DCDB.ExecSQL(`INSERT INTO my_node_keys (private_key, public_key, block_id) VALUES (?, [hex], ?)`, NodePrivateKeyStr, npubkey, 1)
+	err = c.CreateNodeKeys(NodePrivateKeyStr, npubkey)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()
@@ -225,7 +217,7 @@ func (c *Controller) Install() (string, error) {
 		*utils.DltWalletID = crypto.Address(PublicKeyBytes2)
 	}
 
-	err = c.DCDB.ExecSQL(`UPDATE config SET dlt_wallet_id = ?`, *utils.DltWalletID)
+	err = c.UpdateConfig(*utils.DltWalletID)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()

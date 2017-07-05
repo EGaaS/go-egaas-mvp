@@ -33,8 +33,7 @@ type modalAnonymPage struct {
 
 // ModalAnonym shows QR code of the wallet
 func (c *Controller) ModalAnonym() (string, error) {
-
-	MyWalletData, err := c.OneRow("SELECT host, address_vote as addressVote  FROM dlt_wallets WHERE wallet_id = ?", c.SessWalletID).String()
+	MyWalletData, err := c.GetShortHostData(c.SessWalletID)
 	MyWalletData[`address`] = converter.AddressToString(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)

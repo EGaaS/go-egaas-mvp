@@ -82,7 +82,7 @@ func (c *Controller) LoginECDSA() (string, error) {
 				return "", utils.ErrInfo(err)
 			}
 			if converter.InSliceString(`global_states_list`, list) {
-				stateID, err = c.Single("select gstate_id from global_states_list where state_name=?", state).Int64()
+				stateID, err = c.GetGlobalStateID(state)
 				if err != nil {
 					return "", utils.ErrInfo(err)
 				}

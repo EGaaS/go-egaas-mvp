@@ -43,12 +43,12 @@ func (c *Controller) ListOfTables() (string, error) {
 	if global == "1" {
 		prefix = "global"
 	}
-	tables, err := c.GetAll(`SELECT * FROM "`+prefix+`_tables"`, -1)
+	tables, err := c.GetTables(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 	for i, data := range tables {
-		count, err := c.Single(`SELECT count(id) FROM "` + data["name"] + `"`).Int64()
+		count, err := c.GetRecordsCount(data["name"])
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

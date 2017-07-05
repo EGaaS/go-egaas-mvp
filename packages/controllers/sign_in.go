@@ -91,8 +91,7 @@ func (c *Controller) AjaxSignIn() interface{} {
 		//result = SignInJson{}
 		log.Debug("stateId %v", stateID)
 		if _, err := c.CheckStateName(stateID); err == nil {
-			citizenID, err = c.Single(`SELECT id FROM "`+converter.Int64ToStr(stateID)+`_citizens" WHERE id = ?`,
-				walletID).Int64()
+			citizenID, err = c.IsCitizenExist(converter.Int64ToStr(stateID), walletID)
 			if err != nil {
 				result.Error = err.Error()
 				return result

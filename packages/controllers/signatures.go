@@ -40,7 +40,7 @@ func (c *Controller) Signatures() (string, error) {
 		global = "0"
 	}
 
-	signatures, err := c.GetAll(`SELECT * FROM "`+prefix+`_signatures" order by name`, -1)
+	signatures, err := c.GetAllSignatures(prefix)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

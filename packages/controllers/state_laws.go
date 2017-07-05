@@ -42,12 +42,12 @@ func (c *Controller) StateLaws() (string, error) {
 	txType := "StateLaws"
 	timeNow := time.Now().Unix()
 
-	stateLaws, err := c.GetAll(`SELECT * FROM ea_state_laws`, -1)
+	stateLaws, err := c.GetEAStateLaws()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	allStateParameters, err := c.GetList(`SELECT parameter FROM ea_state_parameters`).String()
+	allStateParameters, err := c.GetEAStateParameters()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

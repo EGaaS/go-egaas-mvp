@@ -41,7 +41,7 @@ func (c *Controller) StateParameters() (string, error) {
 	txType := "StateParameters"
 	timeNow := time.Now().Unix()
 
-	stateParameters, err := c.GetAll(`SELECT * FROM "`+c.StateIDStr+`_state_parameters" order by name`, -1)
+	stateParameters, err := c.GetAllStateParameters(c.StateIDStr)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

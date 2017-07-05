@@ -42,7 +42,7 @@ func (c *Controller) RestoreAccess() (string, error) {
 	txType := "RestoreAccessActive"
 	timeNow := time.Now().Unix()
 
-	data, err := c.OneRow("SELECT active FROM system_restore_access WHERE state_id  =  ?", c.SessStateID).Int64()
+	data, err := c.IsSystemRestoreAccessActive(c.SessStateID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

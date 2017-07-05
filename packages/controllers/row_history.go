@@ -55,14 +55,14 @@ func (c *Controller) RowHistory() (string, error) {
 	} else {
 		global = "0"
 	}
-	columns, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`, "key", "value", tableName)
+	columns, err := c.GetColumnsAndPermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 	columns["id"] = ""
 	columns["block_id"] = ""
 	for i := 0; i < 100; i++ {
-		data, err := c.OneRow(`SELECT data, block_id FROM "rollback" WHERE rb_id = ?`, rbID).String()
+		data, err := c.GetDataBlockIdFromRollback(rbID)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

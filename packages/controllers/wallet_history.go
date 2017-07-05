@@ -44,7 +44,7 @@ func (c *Controller) WalletHistory() (string, error) {
 	if walletID == 0 {
 		walletID = c.SessWalletID
 	}
-	current, err := c.OneRow(`select amount, rb_id from dlt_wallets where wallet_id=?`, walletID).String()
+	current, err := c.GetWalletAmountAndRollbackID(walletID)
 	if err != nil {
 		return ``, utils.ErrInfo(err)
 	}
@@ -53,7 +53,7 @@ func (c *Controller) WalletHistory() (string, error) {
 		balance, _ := decimal.NewFromString(current[`amount`])
 		for len(list) <= 100 && rb > 0 {
 			var data map[string]string
-			prev, err := c.OneRow(`select * from rollback where rb_id=?`, rb).String()
+			prev, err := c.GetRollback(rb)
 			if err != nil {
 				return ``, utils.ErrInfo(err)
 			}

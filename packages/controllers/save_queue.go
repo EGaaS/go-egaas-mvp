@@ -577,14 +577,7 @@ func (c *Controller) SaveQueue() (string, error) {
 			return "", utils.ErrInfo(err)
 		}
 		if myWalletID == walletID {
-			err = c.ExecSQL(`INSERT INTO my_node_keys (
-									public_key,
-									private_key
-								)
-								VALUES (
-									[hex],
-									?
-								)`, publicKey, privateKey)
+			err = c.CreateNodeKeysWithoutBlockID(publicKey, privateKey)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -638,8 +631,7 @@ func (c *Controller) SaveQueue() (string, error) {
 		if len(encKey) == 0 {
 			return ``, fmt.Errorf(`incorrect encrypted key`)
 		}
-		err = c.ExecSQL(fmt.Sprintf(`INSERT INTO "%d_anonyms" (id_citizen, id_anonym, encrypted)
-			VALUES (?,?,[hex])`, stateID), userID, accountID, encKey)
+		err = c.CreateAnonyms(stateID, userID, accountID, encKey)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
@@ -667,14 +659,7 @@ func (c *Controller) SaveQueue() (string, error) {
 			return "", utils.ErrInfo(err)
 		}
 		if myWalletID == walletID {
-			err = c.ExecSQL(`INSERT INTO my_node_keys (
-									public_key,
-									private_key
-								)
-								VALUES (
-									[hex],
-									?
-								)`, publicKey, privateKey)
+			err = c.CreateNodeKeysWithoutBlockID(publicKey, privateKey)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -697,26 +682,13 @@ func (c *Controller) SaveQueue() (string, error) {
 		log.Fatal(err)
 	}
 	hash = converter.BinToHex(hash)
-	err = c.ExecSQL(`INSERT INTO transactions_status (
-				hash,
-				time,
-				type,
-				wallet_id,
-				citizen_id
-			)
-			VALUES (
-				[hex],
-				?,
-				?,
-				?,
-				?
-			)`, hash, time.Now().Unix(), txType, walletID, citizenID)
+	err = c.CreateTxStatus(hash, time.Now().Unix(), int32(txType), walletID, citizenID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
 	log.Debug("INSERT INTO queue_tx (hash, data) VALUES (%s, %s)", hash, converter.BinToHex(data))
-	err = c.ExecSQL("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", hash, converter.BinToHex(data))
+	err = c.CreateAnotherQueueTx(hash, converter.BinToHex(data))
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

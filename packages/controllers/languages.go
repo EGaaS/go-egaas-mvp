@@ -36,7 +36,7 @@ func (c *Controller) Languages() (string, error) {
 		prefix = c.StateIDStr
 		global = "0"
 	}
-	list, err := c.GetAll(`SELECT name, res FROM "`+prefix+`_languages" order by name`, -1)
+	list, err := c.GetLanguages(prefix)
 	if err != nil {
 		return "", err
 	}

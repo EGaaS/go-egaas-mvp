@@ -67,8 +67,7 @@ func GetChain() {
 	for {
 		if sql.DB.DB != nil {
 			// b.hash, b.state_id,
-			explorer, err := sql.DB.GetAll(`SELECT   b.wallet_id, b.time, b.tx, b.id FROM block_chain as b
-			where b.id > $1	order by b.id desc limit 30 offset 0`, -1, chainLatest)
+			explorer, err := sql.DB.GetLast30TxAndWalletInfo(chainLatest)
 			if err == nil && len(explorer) > 0 {
 				chainLatest = converter.StrToInt64(explorer[0][`id`])
 				if chainOff+len(explorer) > chainLimit {

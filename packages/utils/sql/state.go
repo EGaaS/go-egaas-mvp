@@ -26,10 +26,26 @@ func (db *DCDB) GetStateParameterByName(stateID, name string) (map[string]string
 	return db.OneRow(`SELECT * FROM "`+stateID+`_state_parameters" WHERE name = ?`, name).String()
 }
 
+func (db *DCDB) GetAllStateParameters(tablePrefix string) ([]map[string]string, error) {
+	return db.GetAll(`SELECT * FROM "`+tablePrefix+`_state_parameters" order by name`, -1)
+}
+
 func (db *DCDB) GetParametersFromEA() ([]string, error) {
 	return db.GetList(`SELECT parameter FROM ea_state_parameters`).String()
 }
 
 func (db *DCDB) GetStateNames(statePrefix string) ([]string, error) {
 	return db.GetList(`SELECT name FROM "` + statePrefix + `_state_parameters"`).String()
+}
+
+func (db *DCDB) GetGlobalStateID(stateName string) (int64, error) {
+	return db.Single("select gstate_id from global_states_list where state_name=?", stateName).Int64()
+}
+
+func (db *DCDB) GetEAStateLaws() ([]map[string]string, error) {
+	return db.GetAll(`SELECT * FROM ea_state_laws`, -1)
+}
+
+func (db *DCDB) GetEAStateParameters() ([]string, error) {
+	return db.GetList(`SELECT parameter FROM ea_state_parameters`).String()
 }
