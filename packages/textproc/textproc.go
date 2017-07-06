@@ -258,7 +258,7 @@ func Process(input string, vars *map[string]string) (out string) {
 		isFunc, isMap, isArr int
 		params               [][]rune
 		pmap                 map[string]string
-		isKey, toLine        bool
+		isKey, toLine, skip  bool
 		pair                 rune
 	)
 	noproc := true
@@ -268,16 +268,6 @@ func Process(input string, vars *map[string]string) (out string) {
 	forbody := make([]rune, 0, 1024)
 	autobody := make([]rune, 0, 1024)
 	for off, ch := range input {
-		if (*vars)[`for_loop`] == `1` {
-			if off+10 < len(input) && input[off:off+10] == `ForListEnd` {
-				(*vars)[`for_body`] = string(forbody)
-				forbody = forbody[:0]
-				(*vars)[`for_loop`] = `0`
-			} else {
-				forbody = append(forbody, ch)
-				continue
-			}
-		}
 		if (*vars)[`auto_loop`] == `1` {
 			if off+13 < len(input) && input[off:off+13] == `AutoUpdateEnd` {
 				(*vars)[`auto_body`] = string(autobody)
@@ -288,12 +278,31 @@ func Process(input string, vars *map[string]string) (out string) {
 				//	continue
 			}
 		}
+		if (*vars)[`for_loop`] == `1` {
+			if off+10 < len(input) && input[off:off+10] == `ForListEnd` {
+				(*vars)[`for_body`] = string(forbody)
+				forbody = forbody[:0]
+				(*vars)[`for_loop`] = `0`
+			} else {
+				forbody = append(forbody, ch)
+				continue
+			}
+		}
+		if skip {
+			skip = false
+			continue
+		}
 		if isMap > 0 {
 			if pair > 0 {
 				if ch != pair {
 					value = append(value, ch)
 				} else {
-					pair = 0
+					if off+1 == len(input) || rune(input[off+1]) != pair {
+						pair = 0
+					} else {
+						value = append(value, ch)
+						skip = true
+					}
 				}
 				continue
 			}
@@ -350,7 +359,12 @@ func Process(input string, vars *map[string]string) (out string) {
 				if ch != pair {
 					params[len(params)-1] = append(params[len(params)-1], ch)
 				} else {
-					pair = 0
+					if off+1 == len(input) || rune(input[off+1]) != pair {
+						pair = 0
+					} else {
+						params[len(params)-1] = append(params[len(params)-1], ch)
+						skip = true
+					}
 				}
 				continue
 			}

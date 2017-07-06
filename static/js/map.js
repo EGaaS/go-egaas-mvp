@@ -2496,11 +2496,15 @@ function regMap(coords, render) {
 }
 
 var newCoordsContainer;
+var newAddressContainer;
+var newAreaContainer;
 
-function openMap(container) {
-    newCoordsContainer = $("#" + container);
+function openMap(container, address, area) {
     StateCoords = [];
-
+    newCoordsContainer = $("#" + container);
+	newAddressContainer = address ? address : container + "_address";
+	newAreaContainer = area ? area : container + "_area";
+	
     $("#dl_modal").load("content?controllerHTML=modal_map", {}, function () {
         var modal = $("#modal_map");
         updateLanguage("#dl_modal .lang");
@@ -2544,11 +2548,18 @@ function saveMap() {
 
     newCoordsContainer.val(center + zoom + points);
 
-    if (!$("#" + newCoordsContainer.attr("id") + "_address").length) {
-        $('<div class="form-group"> <label>Address</label><input id="' + newCoordsContainer.attr("id") + '_address' + '" class="form-control" type="text" disabled></div>').insertAfter(newCoordsContainer.parent());
+    if (!$("#" + newAddressContainer).length) {
+        $('<div class="form-group"> <label>Address</label><input id="' + newAddressContainer + '" class="form-control" type="text"></div>').insertAfter(newCoordsContainer.parent());
     }
-
-    getMapAddress($("#" + newCoordsContainer.attr("id") + "_address"), JSON.parse(newCoordsContainer.val()))
+	
+	if (!$("#" + newAreaContainer).length) {
+		$('<div class="form-group"> <label>Area (sq meters)</label><input id="' + newAreaContainer + '" class="form-control" type="text"></div>').insertAfter(newCoordsContainer.parent());
+    }
+	
+	setTimeout(function(){
+		getMapAddress($("#" + newAddressContainer), JSON.parse(newCoordsContainer.val()));
+		getMapAddressSquare($("#" + newAreaContainer), JSON.parse(newCoordsContainer.val()));
+	}, 0)
 }
 
 var miniMapNum = 0;

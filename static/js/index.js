@@ -204,7 +204,7 @@ var GKey = {
 		GKey.Address = address;
 		var data = {
 			EncKey: localStorage.getItem('EncKey'),
-			//			Encrypt: localStorage.getItem('Encrypt'),
+			Encrypt: localStorage.getItem('Encrypt'),
 			Public: GKey.Public,
 			Address: address,
 			StateId: GKey.StateId,
@@ -228,6 +228,7 @@ var GKey = {
 	clear: function () {
 		//		localStorage.removeItem('PubKey');
 		localStorage.removeItem('EncKey');
+		localStorage.removeItem('Encrypt');
 		localStorage.removeItem('Address');
 		this.Address = '';
 		this.StateId = '';
@@ -1613,12 +1614,40 @@ function autoUpdate(id, period) {
 			}, "html");
 }
 
+var tempCoordsAddress;
+var tempCoordsArea;
+
 function getMapAddress(elem, coords) {
 	getMapGeocode(coords, function (address) {
-		elem.val(address);
-		elem.text(address);
+		if (elem.val() === "" || elem.text() === ""/* || arraysEqual(coords, tempCoordsAddress) === false*/) {
+			elem.val(address);
+			elem.text(address);
+		}
+		
+		tempCoordsAddress = coords;
 	});
 }
+
+function getMapAddressSquare(elem, coords) {
+	var area = [];
+	coords = coords.cords;
+	
+	for (i = 0; i < coords.length; i++) {
+		area.push(new google.maps.LatLng(coords[i][0], coords[i][1]));
+	}
+	
+	if (elem.val() === "" || elem.text() === "" || arraysEqual(coords, tempCoordsArea) === false) {
+		elem.val(google.maps.geometry.spherical.computeArea(area).toFixed(2));
+		elem.text(google.maps.geometry.spherical.computeArea(area).toFixed(2));
+	}
+	
+	tempCoordsArea = coords;
+}
+
+function arraysEqual(a, b) {
+	return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function getMapGeocode(coords, callback) {
 	var latlng = {};
 	var geocoder = new google.maps.Geocoder;
