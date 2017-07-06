@@ -7,3 +7,7 @@ func (db *DCDB) GetShortInfoBlock() (map[string]int64, error) {
 func (db *DCDB) GetInfoBlockHash() (string, error) {
 	return db.Single("SELECT hex(hash) as hash FROM info_block").String()
 }
+
+func (db *DCDB) GetBlockIDFromInfoBlock() (int64, error) {
+	return db.Single("SELECT block_id FROM info_block").Int64()
+}

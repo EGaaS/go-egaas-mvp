@@ -30,9 +30,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/astaxie/beego/config"
 	"github.com/go-bindata-assetfs"
 )
@@ -129,7 +130,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 	var result NewStateResult
 
 	errFunc := func(msg string) {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, lib.EscapeForJSON(msg))))
+		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, converter.EscapeForJSON(msg))))
 	}
 
 	r.ParseForm()
@@ -138,7 +139,7 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 	country := escape(strings.TrimSpace(r.FormValue(`country`)))
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if len(email) == 0 || !utils.ValidateEmail(email) {
+	if len(email) == 0 || !converter.ValidateEmail(email) {
 		errFunc(`Email is not valid`)
 		return
 	}
@@ -150,34 +151,32 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 		errFunc(`Currency cannot be empty`)
 		return
 	}
-	if id, err := utils.DB.Single(`select id from global_states_list where state_name=?`, country).Int64(); err != nil {
+	if id, err := sql.DB.GetStateID(country); err != nil {
 		errFunc(err.Error())
 		return
 	} else if id > 0 {
 		errFunc(fmt.Sprintf(`State %s already exists`, country))
 		return
 	}
-	if id, err := utils.DB.Single(`select id from global_currencies_list where currency_code=?`, currency).Int64(); err != nil {
+	if id, err := sql.DB.GetCurrencyID(currency); err != nil {
 		errFunc(err.Error())
 		return
 	} else if id > 0 {
 		errFunc(fmt.Sprintf(`Currency %s already exists`, currency))
 		return
 	}
-	if exist, err := utils.DB.Single(`select id from testnet_emails where email=? and country = ? and currency=?`,
-		email, country, currency).Int64(); err != nil {
+	if exist, err := sql.DB.GetTestNetEmailID(email, country, currency); err != nil {
 		errFunc(err.Error())
 		return
 	} else if exist > 0 {
 		errFunc(fmt.Sprintf(`The same request has been already sent`))
 		return
 	}
-	id, err := utils.DB.ExecSQLGetLastInsertID(`insert into testnet_emails (email,country,currency) 
-				values(?,?,?)`, `testnet_emails`, email, country, currency)
+	id, err := sql.DB.CreateTestNetEmails(email, country, currency)
 	if err != nil {
 		result.Error = err.Error()
 	} else {
-		result.Result = utils.StrToInt64(id)
+		result.Result = converter.StrToInt64(id)
 		resp, err := http.Get(strings.TrimRight(gSettings.Node, `/`) + `/ajax?json=ajax_new_state&testnet=` + id)
 		if err != nil {
 			errFunc(err.Error())
@@ -198,13 +197,13 @@ func newstateHandler(w http.ResponseWriter, r *http.Request) {
 			errFunc(answerJSON.Error)
 			return
 		}
-		upd, err := utils.DB.OneRow(`select private, wallet from testnet_emails where id=?`, id).String()
+		upd, err := sql.DB.GetPrivateWalletFromTestNet(id)
 		if err != nil {
 			errFunc(err.Error())
 			return
 		}
 		result.Private = upd[`private`]
-		result.Wallet = lib.AddressToString(utils.StrToInt64(upd[`wallet`]))
+		result.Wallet = converter.AddressToString(converter.StrToInt64(upd[`wallet`]))
 	}
 
 	if jsonData, err := json.Marshal(result); err == nil {
@@ -218,11 +217,11 @@ func newregisterHandler(w http.ResponseWriter, r *http.Request) {
 	var result NewRegisterResult
 
 	errFunc := func(msg string) {
-		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, lib.EscapeForJSON(msg))))
+		w.Write([]byte(fmt.Sprintf(`{"error":"%s"}`, converter.EscapeForJSON(msg))))
 	}
 
 	r.ParseForm()
-	state := utils.StrToInt64(r.FormValue(`state`))
+	state := converter.StrToInt64(r.FormValue(`state`))
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if state == 0 {
@@ -232,7 +231,7 @@ func newregisterHandler(w http.ResponseWriter, r *http.Request) {
 	regMutex.Lock()
 	defer regMutex.Unlock()
 
-	key, err := utils.DB.OneRow(`select id, wallet, private from testnet_keys where state_id=? and status=0`, state).String()
+	key, err := sql.DB.GetIdWalletPrivateKeyFromTestNet(state)
 	if err != nil {
 		errFunc(err.Error())
 		return
@@ -241,8 +240,7 @@ func newregisterHandler(w http.ResponseWriter, r *http.Request) {
 		errFunc(`There are not available keys`)
 		return
 	}
-	err = utils.DB.ExecSQL(`update testnet_keys set status=1 where id=? and state_id=? and status=0 and wallet=?`,
-		key[`id`], state, key[`wallet`])
+	err = sql.DB.MarkTestnetKeysStatus1(converter.StrToInt64(key[`id`]), state, converter.StrToInt64(key[`wallet`]))
 	if err != nil {
 		errFunc(err.Error())
 		return
@@ -296,17 +294,17 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		available, state int64
 		err              error
 	)
-	state = utils.StrToInt64(r.FormValue(`state`))
+	state = converter.StrToInt64(r.FormValue(`state`))
 	if state == 0 {
 		message = `State parameter is not defined`
 	} else {
-		country, err = utils.DB.Single(`select state_name from global_states_list where gstate_id=?`, state).String()
+		country, err = sql.DB.GetGlobalStateName(state)
 		if err != nil {
 			message = err.Error()
 		} else if len(country) == 0 {
 			message = fmt.Sprintf(`State %d has not been found`, state)
 		} else {
-			available, err = utils.DB.Single(`select count(id) from testnet_keys where state_id=? and status=0`, state).Int64()
+			available, err = sql.DB.GetStatePendingKeysCount(state)
 			if err != nil {
 				message = err.Error()
 			} else if available == 0 {
@@ -362,29 +360,15 @@ func main() {
 	} else {
 		configIni, err = fullConfigIni.GetSection("default")
 	}
-	if utils.DB, err = utils.NewDbConnect(configIni); err != nil {
+	if sql.DB, err = sql.NewDbConnect(configIni); err != nil {
 		log.Fatalln(`Utils connection`, err)
 	}
-	list, err := utils.DB.GetAllTables()
+	list, err := sql.DB.GetAllTables()
 	if err != nil || len(list) == 0 {
 		log.Fatalln(`GetAllTables`, err)
 	}
-	if !utils.InSliceString(`testnet_emails`, list) {
-		if err = utils.DB.ExecSQL(`CREATE SEQUENCE testnet_emails_id_seq START WITH 1;
-CREATE TABLE "testnet_emails" (
-"id" integer NOT NULL DEFAULT nextval('testnet_emails_id_seq'),
-"email" varchar(128) NOT NULL DEFAULT '',
-"country" varchar(128) NOT NULL DEFAULT '',
-"currency" varchar(32) NOT NULL DEFAULT '',
-"private" varchar(64) NOT NULL DEFAULT '',
-"wallet" bigint NOT NULL DEFAULT '0',
-"status" integer NOT NULL DEFAULT '0',
-"code" integer NOT NULL DEFAULT '0',
-"validate" integer NOT NULL DEFAULT '0'
-);
-ALTER SEQUENCE testnet_emails_id_seq owned by testnet_emails.id;
-ALTER TABLE ONLY "testnet_emails" ADD CONSTRAINT testnet_emails_pkey PRIMARY KEY (id);
-CREATE INDEX testnet_index_email ON "testnet_emails" (email);`); err != nil {
+	if !converter.InSliceString(`testnet_emails`, list) {
+		if err = sql.DB.CreateTestNetEmailsTable(); err != nil {
 			log.Fatalln(err)
 		}
 	}
@@ -447,15 +431,8 @@ CREATE INDEX testnet_index_email ON "testnet_emails" (email);`); err != nil {
 				}
 
 			}*/
-	if !utils.InSliceString(`testnet_keys`, list) {
-		if err = utils.DB.ExecSQL(`CREATE TABLE "testnet_keys" (
-		"id" bigint NOT NULL DEFAULT '0',
-		"state_id" integer NOT NULL DEFAULT '0',
-		"private" varchar(64) NOT NULL DEFAULT '',
-		"wallet" bigint NOT NULL DEFAULT '0',
-		"status" integer NOT NULL DEFAULT '0'
-		);
-		CREATE INDEX testnet_index_keys ON "testnet_keys" (id,state_id,status);`); err != nil {
+	if !converter.InSliceString(`testnet_keys`, list) {
+		if err = sql.DB.CreateTestNetKeysTable(); err != nil {
 			log.Fatalln(err)
 		}
 	}

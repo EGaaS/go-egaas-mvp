@@ -59,7 +59,7 @@ func history(r *http.Request) interface{} {
 		count = 200
 	}
 	list := make([]histOper, 0)
-	current, err := sql.DB.OneRow(`select amount, rb_id from dlt_wallets where wallet_id=?`, wallet).String()
+	current, err := sql.DB.GetWalletAmountAndRollbackID(wallet)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -69,9 +69,7 @@ func history(r *http.Request) interface{} {
 		balance, _ := decimal.NewFromString(current[`amount`])
 		for len(list) < count && rb > 0 {
 			var data map[string]string
-			prev, err := sql.DB.OneRow(`select r.*, b.time from rollback as r
-			left join block_chain as b on b.id=r.block_id
-			where r.rb_id=?`, rb).String()
+			prev, err := sql.DB.GetRollbackInfo(rb)
 			if err != nil {
 				result.Error = err.Error()
 				return result
@@ -104,7 +102,7 @@ func history(r *http.Request) interface{} {
 		}
 	}
 	if rb == 0 {
-		first, err := sql.DB.OneRow(`select * from dlt_transactions where recipient_wallet_id=? order by id`, wallet).String()
+		first, err := sql.DB.GetTransactionByRecipient(wallet)
 		if err != nil {
 			result.Error = err.Error()
 			return result

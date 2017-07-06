@@ -38,7 +38,7 @@ func balance(r *http.Request) interface{} {
 		result.Error = `Wallet is invalid`
 		return result
 	}
-	total, err := sql.DB.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
+	total, err := sql.DB.GetWalletAmountString(wallet)
 	if err != nil {
 		result.Error = err.Error()
 		return result

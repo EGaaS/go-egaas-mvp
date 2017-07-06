@@ -11,3 +11,9 @@ func (db *DCDB) Get1000Rollback() ([]map[string]string, error) {
 func (db *DCDB) GetRollback(rollbackID int64) (map[string]string, error) {
 	return db.OneRow(`select * from rollback where rb_id=?`, rollbackID).String()
 }
+
+func (db *DCDB) GetRollbackInfo(rollbackID int64) (map[string]string, error) {
+	return db.OneRow(`select r.*, b.time from rollback as r
+			left join block_chain as b on b.id=r.block_id
+			where r.rb_id=?`, rollbackID).String()
+}

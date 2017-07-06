@@ -30,7 +30,7 @@ var (
 )
 
 func Migration() {
-	oldDbVersion, err := sql.DB.Single(`SELECT version FROM migration_history ORDER BY id DESC LIMIT 1`).String()
+	oldDbVersion, err := sql.DB.GetMigrationHistoryVersion()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 	}
@@ -40,7 +40,7 @@ func Migration() {
 
 	log.Debug("*utils.OldVersion %v", *utils.OldVersion)
 	if len(*utils.OldVersion) > 0 {
-		err = sql.DB.ExecSQL(`INSERT INTO migration_history (version, date_applied) VALUES (?, ?)`, consts.VERSION, time.Now().Unix())
+		err = sql.DB.CreateMigrationHistory(consts.VERSION, time.Now().Unix())
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 		}

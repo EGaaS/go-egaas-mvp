@@ -101,16 +101,7 @@ func (t *TCPServer) Type1() {
 			// there is no reason to accept the old blocks
 			if newDataBlockID >= blockID {
 				newDataHash := converter.BinToHex(converter.BytesShift(&binaryData, 32))
-				err = t.ExecSQL(`
-						INSERT INTO queue_blocks (
-							hash,
-							full_node_id,
-							block_id
-						) VALUES (
-							[hex],
-							?,
-							?
-						) ON CONFLICT DO NOTHING`, newDataHash, fullNodeID, newDataBlockID)
+				err = t.CreateQueueBlock(newDataHash, fullNodeID, newDataBlockID)
 				if err != nil {
 					log.Error("%v", utils.ErrInfo(err))
 					return
@@ -149,7 +140,7 @@ func (t *TCPServer) Type1() {
 			log.Debug("newDataTxHash %s", newDataTxHash)
 			// проверим, нет ли у нас такой тр-ии
 			// check if we have such a transaction
-			exists, err := t.Single("SELECT count(hash) FROM log_transactions WHERE hex(hash) = ?", newDataTxHash).Int64()
+			exists, err := t.IsTransactionLogExists(newDataTxHash)
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -161,7 +152,7 @@ func (t *TCPServer) Type1() {
 
 			// проверим, нет ли у нас такой тр-ии
 			// check if we have such a transaction
-			exists, err = t.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ?", newDataTxHash).Int64()
+			exists, err = t.IsTransactionExists(newDataTxHash)
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -173,7 +164,7 @@ func (t *TCPServer) Type1() {
 
 			// проверим, нет ли у нас такой тр-ии
 			// check if we have such a transaction
-			exists, err = t.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", newDataTxHash).Int64()
+			exists, err = t.IsTransactionQueueExists(newDataTxHash)
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 				return
@@ -265,7 +256,7 @@ func (t *TCPServer) Type1() {
 				}
 				hash = converter.BinToHex(hash)
 				log.Debug("INSERT INTO queue_tx (hash, data, from_gate) %s, %s, 1", hash, txHex)
-				err = t.ExecSQL(`INSERT INTO queue_tx (hash, data, from_gate) VALUES ([hex], [hex], 1)`, hash, txHex)
+				err = t.CreateGateQueueTx(hash, txHex)
 				if len(txBinData) == 0 {
 					log.Error("%v", utils.ErrInfo(err))
 					return

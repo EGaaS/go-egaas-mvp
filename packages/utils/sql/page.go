@@ -15,3 +15,7 @@ func (db *DCDB) GetInterfacePages(tableprefix string) ([]map[string]string, erro
 func (db *DCDB) GetInterfaceBlocks(tablePrefix string) ([]map[string]string, error) {
 	return db.GetAll(`SELECT * FROM "`+tablePrefix+`_pages" where menu='0' order by name`, -1)
 }
+
+func (db *DCDB) GetValueFromPage(tableName string, page string) (string, error) {
+	return db.Single(`SELECT value FROM global_pages WHERE name =?`, page).String()
+}

@@ -37,7 +37,7 @@ func (t *TCPServer) Type7() {
 		return
 	}
 	blockID := converter.BinToDec(buf)
-	block, err := t.Single("SELECT data FROM block_chain WHERE id  =  ?", blockID).Bytes()
+	block, err := t.GetDataFromBlockchain(blockID)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		return

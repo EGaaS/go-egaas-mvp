@@ -29,7 +29,7 @@ import (
 
 // Type10 writes the number of the maximum block
 func (t *TCPServer) Type10() {
-	blockID, err := t.Single("SELECT block_id FROM info_block").Int64()
+	blockID, err := t.GetBlockIDFromInfoBlock()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		return

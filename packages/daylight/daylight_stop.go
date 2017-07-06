@@ -38,7 +38,7 @@ func Stop() {
 		//panic(err)
 		//os.Exit(1)
 	}
-	err = sql.DB.ExecSQL(`INSERT INTO stop_daemons(stop_time) VALUES (?)`, time.Now().Unix())
+	err = sql.DB.CreateStopDaemons(time.Now().Unix())
 	if err != nil {
 		IosLog("err:" + fmt.Sprintf("%s", utils.ErrInfo(err)))
 		log.Error("%v", utils.ErrInfo(err))

@@ -38,13 +38,13 @@ func WaitStopTime() {
 			continue
 		}
 		if !first {
-			err := sql.DB.ExecSQL(`DELETE FROM stop_daemons`)
+			err := sql.DB.DeleteStopDaemon()
 			if err != nil {
 				log.Error(utils.ErrInfo(err).Error())
 			}
 			first = true
 		}
-		dExists, err := sql.DB.Single(`SELECT stop_time FROM stop_daemons`).Int64()
+		dExists, err := sql.DB.SelectStopTime()
 		if err != nil {
 			log.Error(utils.ErrInfo(err).Error())
 		}

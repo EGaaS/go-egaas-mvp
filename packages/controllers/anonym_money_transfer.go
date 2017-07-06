@@ -43,7 +43,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 	txTypeID := utils.TypeInt(txType)
 	timeNow := time.Now().Unix()
 
-	fPrice, err := c.GetDltTransfer()
+	fPrice, err := c.GetDltTransferPrice()
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

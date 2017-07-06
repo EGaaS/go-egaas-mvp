@@ -80,8 +80,7 @@ func send(r *http.Request) interface{} {
 		result.Error = err.Error()
 		return result
 	}
-
-	fPrice, err := sql.DB.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
+	fPrice, err := sql.DB.GetDltTransferPriceString()
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -98,7 +97,7 @@ func send(r *http.Request) interface{} {
 	}
 	commission := fPriceDecemal.Mul(fuelRate)
 
-	total, err := sql.DB.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, sender).String()
+	total, err := sql.DB.GetWalletAmountString(sender)
 	if err != nil {
 		result.Error = err.Error()
 		return result

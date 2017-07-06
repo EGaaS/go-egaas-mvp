@@ -39,7 +39,8 @@ func (t *TCPServer) Type4() {
 	log.Debug("blockID %d", blockID)
 	// используется для учета кол-ва подвержденных блоков, т.е. тех, которые есть у большинства нодов
 	// it is used to account the number of affected blocks, those which belong to majority of nodes
-	hash, err := t.Single("SELECT hash FROM block_chain WHERE id = ?", blockID).String()
+
+	hash, err := t.GetHashFromBlockhain(blockID)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		t.Conn.Write(converter.DecToBin(0, 1))

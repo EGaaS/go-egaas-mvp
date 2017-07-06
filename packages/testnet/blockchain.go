@@ -26,8 +26,9 @@ import (
 	"time"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
-	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 type getCntJSON struct {
@@ -78,19 +79,19 @@ func GetTx() {
 
 	for {
 		// b.hash, b.state_id,
-		explorer, err := utils.DB.GetAll(`SELECT b.data, b.time, b.tx, b.id FROM block_chain as b
-		where b.id > $1	order by b.id desc limit 30 offset 0`, -1, txLatest)
+		explorer, err := sql.DB.GetLast30BlockInfoFrom(txLatest)
 		if err == nil && len(explorer) > 0 {
-			txLatest = utils.StrToInt64(explorer[0][`id`])
+			txLatest = converter.StrToInt64(explorer[0][`id`])
 			for i := len(explorer); i > 0; i-- {
 				item := explorer[i-1]
-				if utils.StrToInt64(item[`tx`]) == 0 {
+				if converter.StrToInt64(item[`tx`]) == 0 {
 					continue
 				}
 				block := ([]byte(item[`data`]))[1:]
 				utils.ParseBlockHeader(&block)
 				for len(block) > 0 {
-					size := int(utils.DecodeLength(&block))
+					size64, _ := converter.DecodeLength(&block)
+					size := int(size64)
 					if size == 0 || len(block) < size {
 						break
 					}
@@ -107,13 +108,13 @@ func GetTx() {
 							name = fmt.Sprintf("unknown %d", itype)
 						}
 						input := block[1:]
-						txtime = utils.BinToDecBytesShift(&input, 4)
-						length := utils.DecodeLength(&input)
+						txtime = converter.BinToDecBytesShift(&input, 4)
+						length, _ := converter.DecodeLength(&input)
 						if length > 0 && length < 30 {
-							wallet = utils.BytesToInt64(utils.BytesShift(&input, length))
-							length = utils.DecodeLength(&input)
+							wallet = converter.BytesToInt64(converter.BytesShift(&input, length))
+							length, _ = converter.DecodeLength(&input)
 							if length > 0 && length < 20 {
-								state = utils.BytesToInt64(utils.BytesShift(&input, length))
+								state = converter.BytesToInt64(converter.BytesShift(&input, length))
 							}
 						} else {
 							break
@@ -155,7 +156,7 @@ func GetTx() {
 						}
 						input := block[:]
 						header := consts.TXHeader{}
-						if err = lib.BinUnmarshal(&input, &header); err != nil {
+						if err = converter.BinUnmarshal(&input, &header); err != nil {
 							break
 						}
 						txtime = int64(header.Time)
@@ -166,15 +167,15 @@ func GetTx() {
 					case `GenCitizen`:
 						comment = `1`
 					}
-					if name == `GenCitizen` && txTop.TxName == name && txTop.BlockID == utils.StrToInt64(item[`id`]) &&
-						txTop.Address == lib.AddressToString(wallet) {
-						txTop.Comment = fmt.Sprintf(`%d`, utils.StrToInt64(txTop.Comment)+1)
+					if name == `GenCitizen` && txTop.TxName == name && txTop.BlockID == converter.StrToInt64(item[`id`]) &&
+						txTop.Address == converter.AddressToString(wallet) {
+						txTop.Comment = fmt.Sprintf(`%d`, converter.StrToInt64(txTop.Comment)+1)
 					} else {
 						txTop = txTop.next
 						txID++
 						txTop.ID = txID
-						txTop.BlockID = utils.StrToInt64(item[`id`])
-						txTop.Address = lib.AddressToString(wallet)
+						txTop.BlockID = converter.StrToInt64(item[`id`])
+						txTop.Address = converter.AddressToString(wallet)
 						txTop.Comment = comment
 						txTop.TxName = name
 						txTop.Time = time.Unix(txtime, 0).String()[:19]
@@ -182,7 +183,7 @@ func GetTx() {
 							if val, ok := txStates[state]; ok {
 								txTop.State = val
 							} else {
-								stateName, _ := utils.DB.Single(`select state_name from global_states_list where gstate_id=?`, state).String()
+								stateName, _ := sql.DB.GetGlobalStateName(state)
 								if len(stateName) > 0 {
 									txStates[state] = stateName
 									txTop.State = stateName

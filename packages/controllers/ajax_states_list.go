@@ -26,7 +26,7 @@ import (
 func (c *Controller) AjaxStatesList() (string, error) {
 
 	result := make(map[string]map[string]string)
-	data, err := c.GetSystemStates()
+	data, err := c.GetAllSystemStatesIDs()
 	if err != nil {
 		return ``, err
 	}

@@ -55,3 +55,19 @@ func (db *DCDB) GetTables(tablePrefix string) ([]map[string]string, error) {
 func (db *DCDB) GetRecordsCount(tableName string) (int64, error) {
 	return db.Single(`SELECT count(id) FROM "` + tableName + `"`).Int64()
 }
+
+func (db *DCDB) GetAnotherRecordsCount(tableName string) (int64, error) {
+	return db.Single(`SELECT count(*) FROM ` + tableName).Int64()
+}
+
+func (db *DCDB) GetCustomFieldsFromCustomTable(fields string, tableNameAndClause string) ([]map[string]string, error) {
+	return db.GetAll(`select `+fields+` from `+tableNameAndClause, -1)
+}
+
+func (db *DCDB) GetCustomFieldsFromCustomTableOneRow(fields string, tableNameAndClause string) (map[string]string, error) {
+	return db.OneRow(`select ` + fields + ` from ` + tableNameAndClause).String()
+}
+
+func (db *DCDB) GetCustomFieldsFromCustomTableOneField(field string, tableNameAndClause string) (string, error) {
+	return db.Single(`select ` + field + ` from ` + tableNameAndClause).String()
+}

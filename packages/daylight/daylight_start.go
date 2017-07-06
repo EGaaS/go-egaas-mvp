@@ -329,7 +329,8 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 		startData := map[string]int64{"install": 1, "config": 1, "queue_tx": 99999, "log_transactions": 1, "transactions_status": 99999, "block_chain": 1, "info_block": 1, "dlt_wallets": 1, "confirmations": 9999999, "full_nodes": 1, "system_parameters": 4, "my_node_keys": 99999, "transactions": 999999}
 		for _, table := range allTable {
-			count, err := sql.DB.Single(`SELECT count(*) FROM ` + converter.EscapeName(table)).Int64()
+
+			count, err := sql.DB.GetAnotherRecordsCount(converter.EscapeName(table))
 			if err != nil {
 				fmt.Println(err)
 				panic(err)

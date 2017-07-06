@@ -34,7 +34,7 @@ import (
 // KillPid kills the process with the specified pid
 func KillPid(pid string) error {
 	if sql.DB != nil && sql.DB.DB != nil {
-		err := sql.DB.ExecSQL(`INSERT INTO stop_daemons(stop_time) VALUES (?)`, time.Now().Unix())
+		err := sql.DB.CreateStopDaemons(time.Now().Unix())
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			return err

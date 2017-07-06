@@ -6,12 +6,20 @@ func (db *DCDB) GetCitizenshipPrice(stateID string) (int64, error) {
 	return db.Single(`SELECT value FROM "` + stateID + `_state_parameters" where name='citizenship_price'`).Int64()
 }
 
+func (db *DCDB) GetEGSRate(stateID string) (float64, error) {
+	return db.Single(`SELECT value FROM "`+stateID+`_state_parameters" WHERE name = ?`, `egs_rate`).Float64()
+}
+
 func (db *DCDB) GetStateCoords(stateID string) (string, error) {
 	return db.Single(`SELECT coords FROM "` + stateID + `_state_details"`).String()
 }
 
-func (db *DCDB) GetSystemStates() ([]string, error) {
+func (db *DCDB) GetAllSystemStatesIDs() ([]string, error) {
 	return db.GetList(`SELECT id FROM system_states`).String()
+}
+
+func (db *DCDB) GetAllSystemStatesIDsOrdered() ([]map[string]string, error) {
+	return db.GetAll(`select id from system_states order by id`, -1)
 }
 
 func (db *DCDB) GetStateValue(stateID string, stateName string) (string, error) {
@@ -40,6 +48,14 @@ func (db *DCDB) GetStateNames(statePrefix string) ([]string, error) {
 
 func (db *DCDB) GetGlobalStateID(stateName string) (int64, error) {
 	return db.Single("select gstate_id from global_states_list where state_name=?", stateName).Int64()
+}
+
+func (db *DCDB) GetGlobalStateName(stateID int64) (string, error) {
+	return db.Single(`select state_name from global_states_list where gstate_id=?`, stateID).String()
+}
+
+func (db *DCDB) GetStateID(stateName string) (int64, error) {
+	return DB.Single(`select id from global_states_list where state_name=?`, stateName).Int64()
 }
 
 func (db *DCDB) GetEAStateLaws() ([]map[string]string, error) {

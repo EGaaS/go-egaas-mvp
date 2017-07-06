@@ -18,7 +18,6 @@ package language
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -72,7 +71,7 @@ func UpdateLang(state int, name, value string) {
 // loadLang загружает языковые ресурсы из БД для данного государства
 // loadLang download the language sources from database for the state
 func loadLang(state int) error {
-	list, err := sql.DB.GetAll(fmt.Sprintf(`select * from "%d_languages"`, state), -1)
+	list, err := sql.DB.GetAllLanguages(state)
 	if err != nil {
 		return err
 	}

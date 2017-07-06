@@ -170,7 +170,7 @@ func init() {
 func LoadContracts() (err error) {
 	var states []map[string]string
 	prefix := []string{`global`}
-	states, err = sql.DB.GetAll(`select id from system_states order by id`, -1)
+	states, err = sql.DB.GetAllSystemStatesIDsOrdered()
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func LoadContracts() (err error) {
 // LoadContract reads and compiles contract of new state
 func LoadContract(prefix string) (err error) {
 	var contracts []map[string]string
-	contracts, err = sql.DB.GetAll(`select * from "`+prefix+`_smart_contracts" order by id`, -1)
+	contracts, err = sql.DB.GetOrderedSmartContracts(prefix)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func LoadContract(prefix string) (err error) {
 
 // Balance returns the balance of the wallet
 func Balance(walletID int64) (decimal.Decimal, error) {
-	balance, err := sql.DB.Single("SELECT amount FROM dlt_wallets WHERE wallet_id = ?", walletID).String()
+	balance, err := sql.DB.GetWalletAmountString(walletID)
 	if err != nil {
 		return decimal.New(0, 0), err
 	}
@@ -217,12 +217,12 @@ func Balance(walletID int64) (decimal.Decimal, error) {
 
 // EGSRate returns egs_rate of the state
 func EGSRate(idstate int64) (float64, error) {
-	return sql.DB.Single(`SELECT value FROM "`+converter.Int64ToStr(idstate)+`_state_parameters" WHERE name = ?`, `egs_rate`).Float64()
+	return sql.DB.GetEGSRate(converter.Int64ToStr(idstate))
 }
 
 // StateParam returns the value of state parameters
 func StateParam(idstate int64, name string) (string, error) {
-	return sql.DB.Single(`SELECT value FROM "`+converter.Int64ToStr(idstate)+`_state_parameters" WHERE name = ?`, name).String()
+	return sql.DB.GetStateValue(converter.Int64ToStr(idstate), name)
 }
 
 // Param returns the value of the specified varaible
@@ -697,7 +697,7 @@ func GetList(vars *map[string]string, pars ...string) string {
 		limit = converter.StrToInt(pars[5])
 	}
 
-	value, err := sql.DB.GetAll(`select `+fields+` from `+converter.EscapeName(pars[1])+where+order, limit)
+	value, err := sql.DB.GetCustomFieldsFromCustomTable(fields, converter.EscapeName(pars[1])+where+order, limit)
 	if err != nil {
 		return err.Error()
 	}
@@ -821,7 +821,7 @@ func GetRowVars(vars *map[string]string, pars ...string) string {
 		where = ` where ` + converter.Escape(pars[2])
 	}
 	fmt.Println(`select * from ` + converter.EscapeName(pars[1]) + where)
-	value, err := sql.DB.OneRow(`select * from ` + converter.EscapeName(pars[1]) + where).String()
+	value, err := sql.DB.GetCustomFieldsFromCustomTableOneRow("*", converter.EscapeName(pars[1])+where)
 	if err != nil {
 		return err.Error()
 	}
@@ -845,7 +845,7 @@ func GetOne(vars *map[string]string, pars ...string) string {
 	} else if len(pars) == 3 {
 		where = ` where ` + converter.Escape(pars[2])
 	}
-	value, err := sql.DB.Single(`select ` + converter.Escape(pars[0]) + ` from ` + converter.EscapeName(pars[1]) + where).String()
+	value, err := sql.DB.GetCustomFieldsFromCustomTableOneField(converter.Escape(pars[0]), converter.EscapeName(pars[1])+where)
 	if err != nil {
 		return err.Error()
 	}
@@ -1689,7 +1689,7 @@ func getSelect(linklist string) (data []map[string]string, id string, name strin
 	if len(tbl) > 2 {
 		id = tbl[2]
 	}
-	count, err = sql.DB.Single(`select count(*) from ` + tblname).Int64()
+	count, err = sql.DB.GetAnotherRecordsCount(tblname)
 	if err != nil {
 		return
 	}
@@ -2225,8 +2225,10 @@ func ChartBar(vars *map[string]string, pars *map[string]string) string {
 			limit = fmt.Sprintf(` offset %d limit %d`, converter.StrToInt64(opar[0]), converter.StrToInt64(opar[1]))
 		}
 	}
-	list, err := sql.DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, converter.EscapeName(value), converter.EscapeName(label),
-		converter.EscapeName((*pars)[`Table`]), where, order, limit), -1)
+	list, err := sql.DB.GetCustomFieldsFromCustomTable(
+		fmt.Sprintf(`%s,%s`, converter.EscapeName(value), converter.EscapeName(label)),
+		fmt.Sprintf(`%s %s %s%s`, converter.EscapeName((*pars)[`Table`]), where, order, limit))
+
 	if err != nil {
 		return err.Error()
 	}
@@ -2318,8 +2320,8 @@ func ChartPie(vars *map[string]string, pars *map[string]string) string {
 		} else {
 			limit = fmt.Sprintf(` limit %d`, len(colors))
 		}
-		list, err := sql.DB.GetAll(fmt.Sprintf(`select %s,%s from %s %s %s%s`, converter.EscapeName(value), converter.EscapeName(label),
-			converter.EscapeName((*pars)[`Table`]), where, order, limit), -1)
+		list, err := sql.DB.GetCustomFieldsFromCustomTable(fmt.Sprintf(`%s,%s`, converter.EscapeName(value), converter.EscapeName(label)),
+			fmt.Sprintf(`%s %s %s%s`, converter.EscapeName((*pars)[`Table`]), where, order, limit))
 		if err != nil {
 			return err.Error()
 		}
@@ -2545,14 +2547,14 @@ func ProceedTemplate(html string, data interface{}) (string, error) {
 func CreateHTMLFromTemplate(page string, citizenID, stateID int64, params *map[string]string) (string, error) {
 	var data string
 	var err error
-	query := `SELECT value FROM "` + converter.Int64ToStr(stateID) + `_pages" WHERE name = ?`
+	tableName := converter.Int64ToStr(stateID) + `_pages`
 	if (*params)[`global`] == `1` {
-		query = `SELECT value FROM global_pages WHERE name = ?`
+		tableName = `global_pages`
 	}
 	if page == `body` && len((*params)[`autobody`]) > 0 {
 		data = (*params)[`autobody`]
 	} else {
-		data, err = sql.DB.Single(query, page).String()
+		data, err = sql.DB.GetValueFromPage(tableName, page)
 		if err != nil {
 			return "", err
 		}
