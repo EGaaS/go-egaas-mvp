@@ -53,8 +53,7 @@ func (p *Parser) RestoreAccessFront() error {
 	if p.TxWalletID != consts.RECOVERY_ADDRESS {
 		return p.ErrInfo("p.TxWalletID != consts.RECOVERY_ADDRESS")
 	}
-
-	data, err := p.OneRow("SELECT * FROM system_restore_access WHERE state_id  =  ?", p.TxMaps.Int64["state_id"]).Int64()
+	data, err := p.AnotherGetAllFromSystemRestoreAccess(p.TxMaps.Int64["state_id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -96,7 +95,7 @@ func (p *Parser) RestoreAccessFront() error {
 
 // RestoreAccess proceeds RestoreAccess transaction
 func (p *Parser) RestoreAccess() error {
-	citizenID, err := p.Single(`SELECT citizen_id FROM system_restore_access WHERE state_id = ?`, p.TxMaps.Int64["state_id"]).String()
+	citizenID, err := p.GetCitizenIDFromSystemRestoreAccess(p.TxMaps.Int64["state_id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}

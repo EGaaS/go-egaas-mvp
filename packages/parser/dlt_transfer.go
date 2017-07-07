@@ -54,7 +54,7 @@ func (p *Parser) DLTTransferFront() error {
 	}
 
 	// public key need only when we don't have public_key in the dlt_wallets table
-	PublicKey, err := p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
+	PublicKey, err := p.GetSingleWalletPublicKey(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -73,7 +73,7 @@ func (p *Parser) DLTTransferFront() error {
 		return p.ErrInfo("amount<=0")
 	}
 
-	fPrice, err := p.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").String()
+	fPrice, err := p.GetDltTransferPriceString()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -111,7 +111,7 @@ func (p *Parser) DLTTransferFront() error {
 		return p.ErrInfo("incorrect sign OOPS")
 	}
 
-	totalAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
+	totalAmount, err := p.GetWalletAmountString(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -129,13 +129,13 @@ func (p *Parser) DLTTransferFront() error {
 func (p *Parser) DLTTransfer() error {
 	log.Debug("wallet address %s", p.TxMaps.String["walletAddress"])
 	address := converter.StringToAddress(p.TxMaps.String["walletAddress"])
-	walletID, err := p.Single(`SELECT wallet_id FROM dlt_wallets WHERE wallet_id = ?`, address).Int64()
+	walletID, err := p.IsWalletExistFromInt64(address)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	log.Debug("walletID %d", walletID)
 	//if walletID > 0 {
-	pkey, err := p.Single(`SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?`, p.TxWalletID).String()
+	pkey, err := p.GetSingleStringWalletPublickKey(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -180,22 +180,20 @@ func (p *Parser) DLTTransfer() error {
 
 	// пишем в общую историю тр-ий
 	// record into the general transaction history
-	dltTransactionsID, err := p.ExecSQLGetLastInsertID(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
-		p.TxWalletID, walletID, converter.AddressToString(int64(converter.StrToUint64(p.TxMaps.String["walletAddress"]))), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
+	dltTransactionsID, err := p.CreateDltTransaction(p.TxWalletID, walletID, converter.AddressToString(int64(converter.StrToUint64(p.TxMaps.String["walletAddress"]))), p.TxMaps.Decimal["amount"].String(), p.TxMaps.Decimal["commission"].String(), p.TxMaps.Bytes["comment"], p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, "dlt_transactions", dltTransactionsID)
+	err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, "dlt_transactions", dltTransactionsID)
 	if err != nil {
 		return err
 	}
 
-	dltTransactionsID, err = p.ExecSQLGetLastInsertID(`INSERT INTO dlt_transactions ( sender_wallet_id, recipient_wallet_id, recipient_wallet_address, amount, commission, comment, time, block_id ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )`, "dlt_transactions",
-		p.TxWalletID, p.BlockData.WalletId, converter.AddressToString(p.BlockData.WalletId), p.TxMaps.Decimal["commission"].String(), 0, "Commission", p.BlockData.Time, p.BlockData.BlockId)
+	dltTransactionsID, err = p.CreateAnotherDltTransaction(p.TxWalletID, p.BlockData.WalletId, converter.AddressToString(p.BlockData.WalletId), p.TxMaps.Decimal["commission"].String(), 0, "Commission", p.BlockData.Time, p.BlockData.BlockId)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, "dlt_transactions", dltTransactionsID)
+	err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, "dlt_transactions", dltTransactionsID)
 	if err != nil {
 		return err
 	}

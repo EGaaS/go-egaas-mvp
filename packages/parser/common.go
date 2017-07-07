@@ -170,7 +170,7 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 		log.Fatal(err)
 	}
 	searchedHash = converter.BinToHex(searchedHash)
-	hash, err := p.Single(`SELECT hash FROM log_transactions WHERE hex(hash) = ?`, searchedHash).String()
+	hash, err := p.GetHashFromLogTransactions(searchedHash)
 	log.Debug("SELECT hash FROM log_transactions WHERE hex(hash) = %s", searchedHash)
 	if err != nil {
 		log.Error("%s", utils.ErrInfo(err))
@@ -184,7 +184,7 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	if transactions {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ? and verified = 1", searchedHash).Int64()
+		exists, err := p.IsVerifiedTransactionExists(searchedHash)
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
@@ -197,7 +197,7 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	if txQueue {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", searchedHash).Int64()
+		exists, err := p.IsTransactionQueueExists(searchedHash)
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
@@ -216,13 +216,12 @@ func (p *Parser) GetInfoBlock() error {
 	// последний успешно записанный блок
 	// the last successfully recorded block
 	p.PrevBlock = new(utils.BlockData)
-	var q string
+	var err error
 	if p.ConfigIni["db_type"] == "mysql" || p.ConfigIni["db_type"] == "sqlite" {
-		q = "SELECT LOWER(HEX(hash)) as hash, block_id, time FROM info_block"
+		err = p.MySQLiteGetInfoBlockData(&p.PrevBlock.Hash, &p.PrevBlock.BlockId, &p.PrevBlock.Time)
 	} else if p.ConfigIni["db_type"] == "postgresql" {
-		q = "SELECT encode(hash, 'HEX')  as hash, block_id, time FROM info_block"
+		err = p.PgGetInfoBlockData(&p.PrevBlock.Hash, &p.PrevBlock.BlockId, &p.PrevBlock.Time)
 	}
-	err := p.QueryRow(q).Scan(&p.PrevBlock.Hash, &p.PrevBlock.BlockId, &p.PrevBlock.Time)
 
 	if err != nil && err != sql.ErrNoRows {
 		return p.ErrInfo(err)
@@ -243,12 +242,11 @@ func (p *Parser) InsertIntoBlockchain() error {
 	//mutex.Lock()
 	// пишем в цепочку блоков
 	// record into the block chain
-	err := p.ExecSQL("DELETE FROM block_chain WHERE id = ?", p.BlockData.BlockId)
+	err := p.DeleteFromBlockchainInt64(p.BlockData.BlockId)
 	if err != nil {
 		return err
 	}
-	err = p.ExecSQL("INSERT INTO block_chain (id, hash, data, state_id, wallet_id, time, tx) VALUES (?, [hex], [hex], ?, ?, ?, ?)",
-		p.BlockData.BlockId, p.BlockData.Hash, p.blockHex, p.BlockData.StateID, p.BlockData.WalletId, p.BlockData.Time, p.TxIds)
+	err = p.CreateBlockchainWithTx(p.BlockData.BlockId, p.BlockData.Hash, p.blockHex, p.BlockData.StateID, p.BlockData.WalletId, p.BlockData.Time, p.TxIds)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -385,7 +383,7 @@ func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
 	}
 	// получим сумму на кошельке юзера
 	// recieve the amount on the user's wallet
-	strAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
+	strAmount, err := p.GetWalletAmountString(wallet)
 	if err != nil {
 		return err
 	}
@@ -421,16 +419,17 @@ func (p *Parser) MyTableChecking(table, id_column string, id int64, ret_column s
 
 // CheckTableExists checks if the table exists
 func (p *Parser) CheckTableExists(table string) (bool, error) {
-	var q string
+	var exists int64
+	var err error
 	switch p.ConfigIni["db_type"] {
 	case "sqlite":
-		q = `SELECT name FROM sqlite_master WHERE type='table' AND name='` + table + `';`
+		exists, err = p.IsSqliteTableExists(table)
 	case "postgresql":
-		q = `SELECT relname FROM pg_class WHERE relname = '` + table + `';`
+		exists, err = p.IsPGTableExists(table)
 	case "mysql":
-		q = `SHOW TABLES LIKE '` + table + `'`
+		exists, err = p.IsMySQLTableExists(table)
 	}
-	exists, err := p.Single(q).Int64()
+
 	if err != nil {
 		return false, err
 	}
@@ -452,7 +451,7 @@ func (p *Parser) BlockError(err error) {
 	}
 	p.DeleteQueueTx([]byte(p.TxHash))
 	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %x", errText, p.TxHash)
-	p.ExecSQL("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
+	p.MarkTransactionStatusError(p.TxHash, errText)
 }
 
 // AccessRights checks the access right by executing the condition value
@@ -461,8 +460,7 @@ func (p *Parser) AccessRights(condition string, iscondition bool) error {
 	if iscondition {
 		param = `conditions`
 	}
-	conditions, err := p.Single(`SELECT `+param+` FROM "`+converter.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
-		condition).String()
+	conditions, err := p.GetParamFromState(param, converter.Int64ToStr(int64(p.TxStateID)), condition)
 	if err != nil {
 		return err
 	}
@@ -501,7 +499,7 @@ func (p *Parser) AccessTable(table, action string) error {
 		return nil
 	}*/
 
-	tablePermission, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", table)
+	tablePermission, err := p.GetTablePermissions(prefix, table)
 	if err != nil {
 		return err
 	}
@@ -532,8 +530,7 @@ func (p *Parser) AccessColumns(table string, columns []string) error {
 		return nil
 	}*/
 
-	columnsAndPermissions, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`,
-		"key", "value", table)
+	columnsAndPermissions, err := p.GetColumnsAndPermissions(prefix, table)
 	if err != nil {
 		return err
 	}
@@ -561,7 +558,7 @@ func (p *Parser) AccessChange(table, name string) error {
 		prefix = p.TxStateIDStr
 	}
 	//	prefix := utils.Int64ToStr(int64(p.TxStateID))
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_`+table+`" WHERE name = ?`, name).String()
+	conditions, err := p.GetConditionsFromSomewhere(prefix, table, name)
 	if err != nil {
 		return err
 	}
@@ -581,7 +578,7 @@ func (p *Parser) AccessChange(table, name string) error {
 }
 
 func (p *Parser) getEGSPrice(name string) (decimal.Decimal, error) {
-	fPrice, err := p.Single(`SELECT value->'`+name+`' FROM system_parameters WHERE name = ?`, "op_price").String()
+	fPrice, err := p.GetSomePriceFromSystemParameters(name)
 	if err != nil {
 		return decimal.New(0, 0), p.ErrInfo(err)
 	}
@@ -705,7 +702,7 @@ func (p *Parser) payFPrice() error {
 		return nil
 	}
 	var amount string
-	if amount, err = p.Single(`select amount from dlt_wallets where wallet_id=?`, fromID).String(); err != nil {
+	if amount, err = p.GetWalletAmountString(fromID); err != nil {
 		return err
 	}
 	damount, err := decimal.NewFromString(amount)

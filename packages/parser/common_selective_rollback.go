@@ -33,14 +33,14 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 	tblname := converter.EscapeName(table)
 	// получим rb_id, по которому можно найти данные, которые были до этого
 	// we obtain rb_id with help of that it is possible to find the data which was before
-	rbID, err := p.Single("SELECT rb_id FROM " + tblname + " " + where + " order by rb_id desc").Int64()
+	rbID, err := p.SelectRbIDFromSomeTable(tblname, where)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	if rbID > 0 {
 		// данные, которые восстановим
 		// data that we will be restored
-		rbData, err := p.OneRow("SELECT * FROM rollback WHERE rb_id  =  ?", rbID).String()
+		rbData, err := p.GetRollback(rbID)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
@@ -69,13 +69,13 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		}
 		// подчищаем _log
 		// clean up the _log
-		err = p.ExecSQL("DELETE FROM rollback WHERE rb_id = ?", rbID)
+		err = p.DeleteFromRollback(rbID)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
 		p.rollbackAI("rollback", 1)
 	} else {
-		err = p.ExecSQL("DELETE FROM " + tblname + " " + where)
+		err = p.DeleteSomethingFromSomewhere(tblname, where)
 		if err != nil {
 			return p.ErrInfo(err)
 		}

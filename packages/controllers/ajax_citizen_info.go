@@ -86,7 +86,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 				}
 			}
 
-			data, err = c.GetWalletPublickKey(walletID)
+			data, err = c.GetWalletPublickKeyFromString(walletID)
 			if err == nil {
 				var PublicKeys [][]byte
 				PublicKeys = append(PublicKeys, []byte(data["public_key_0"]))

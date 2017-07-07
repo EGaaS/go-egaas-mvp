@@ -61,7 +61,7 @@ func (p *Parser) EditTableFront() error {
 	}*/
 
 	table := prefix + `_tables`
-	exists, err := p.Single(`select count(*) from "`+table+`" where name = ?`, p.TxMaps.String["table_name"]).Int64()
+	exists, err := p.GetRecordsCountWhereName(table, p.TxMaps.String["table_name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -100,7 +100,7 @@ func (p *Parser) EditTable() error {
 
 	table := prefix + `_tables`
 	tblname := p.TxMaps.String["table_name"]
-	logData, err := p.OneRow(`SELECT columns_and_permissions, rb_id FROM "`+table+`" where name=?`, tblname).String()
+	logData, err := p.GetPermissionsAndRollbackIDByName(table, tblname)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (p *Parser) EditTable() error {
 	if err != nil {
 		return err
 	}
-	rbID, err := p.ExecSQLGetLastInsertID("INSERT INTO rollback ( data, block_id ) VALUES ( ?, ? )", "rollback", string(jsonData), p.BlockData.BlockId)
+	rbID, err := p.CreateRollback(string(jsonData), p.BlockData.BlockId)
 	if err != nil {
 		return err
 	}
@@ -130,8 +130,7 @@ func (p *Parser) EditTable() error {
 			return err
 		}
 		p.TxMaps.String[action] = strings.Replace(p.TxMaps.String[action], `"`, `\"`, -1)
-		err = p.ExecSQL(`UPDATE "`+table+`" SET columns_and_permissions = jsonb_set(columns_and_permissions, '{`+action+`}', ?, true), rb_id = ? WHERE name = ?`,
-			`"`+p.TxMaps.String[action]+`"`, rbID, tblname)
+		err = p.CreateColumnsAndPermissions(table, action, p.TxMaps.String[action], rbID, tblname)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
@@ -141,7 +140,7 @@ func (p *Parser) EditTable() error {
 			return p.ErrInfo(err)
 		}*/
 
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, table, p.TxMaps.String["table_name"])
+	err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, table, p.TxMaps.String["table_name"])
 	if err != nil {
 		return err
 	}

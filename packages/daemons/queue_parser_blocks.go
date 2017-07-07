@@ -89,14 +89,14 @@ BEGIN:
 			continue BEGIN
 		}
 
-		prevBlockData, err := d.OneRow("SELECT * FROM info_block").String()
+		prevBlockData, err := d.GetOneInfoBlock()
 		if err != nil {
 			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
 				break BEGIN
 			}
 			continue BEGIN
 		}
-		newBlockData, err := d.OneRow("SELECT * FROM queue_blocks").String()
+		newBlockData, err := d.GetOneBlockQueue()
 		if err != nil {
 			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
 				break BEGIN
@@ -141,7 +141,7 @@ BEGIN:
 		 * Загрузка блоков для детальной проверки
 		 */
 		// download of the blocks for the detailed check
-		host, err := d.Single("SELECT host FROM full_nodes WHERE id = ?", newBlockData["full_node_id"]).String()
+		host, err := d.GetNodeHost(newBlockData["full_node_id"])
 		if err != nil {
 			d.DeleteQueueBlock(newBlockData["hash_hex"])
 			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {

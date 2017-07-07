@@ -11,3 +11,7 @@ func (db *DCDB) GetDltTransferPriceString() (string, error) {
 func (db *DCDB) GetAllSystemParameters() ([]map[string]string, error) {
 	return db.GetAll(`SELECT * FROM system_parameters`, -1)
 }
+
+func (db *DCDB) GetSomePriceFromSystemParameters(paramName string) (string, error) {
+	return db.Single(`SELECT value->'`+paramName+`' FROM system_parameters WHERE name = ?`, "op_price").String()
+}

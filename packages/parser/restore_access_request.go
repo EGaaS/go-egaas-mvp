@@ -41,7 +41,7 @@ func (p *Parser) RestoreAccessRequestFront() error {
 		return p.ErrInfo(err)
 	}
 
-	data, err := p.OneRow("SELECT * FROM system_restore_access WHERE state_id  =  ?", p.TxStateID).Int64()
+	data, err := p.GetAllFromSystemRestoreAccess(p.TxStateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

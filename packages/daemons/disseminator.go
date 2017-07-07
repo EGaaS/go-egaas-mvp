@@ -108,7 +108,7 @@ BEGIN:
 
 		// Есть ли мы в списке тех, кто может генерить блоки
 		// if we are in the cycle of those who are able to generate blocks
-		fullNodeID, err := d.Single("SELECT id FROM full_nodes WHERE final_delegate_state_id = ? OR final_delegate_wallet_id = ? OR state_id = ? OR wallet_id = ?", myStateID, myWalletID, myStateID, myWalletID).Int64()
+		fullNodeID, err := d.GetNodeID(myStateID, myWalletID, myStateID, myWalletID)
 		if err != nil {
 			logger.Error("%v", err)
 			if d.dSleep(d.sleepTime) {
@@ -135,14 +135,14 @@ BEGIN:
 			// take the hash of current block and number of a block
 			// для теста ролбеков отключим на время
 			// disconnect for some time to test rollbacks
-			data, err := d.OneRow("SELECT block_id, hash FROM info_block WHERE sent  =  0").Bytes()
+			data, err := d.GetUnsendedBlockIDHashFromInfoBlock()
 			if err != nil {
 				if d.dPrintSleep(err, d.sleepTime) {
 					break BEGIN
 				}
 				continue BEGIN
 			}
-			err = d.ExecSQL("UPDATE info_block SET sent = 1")
+			err = d.MarkInfoBlockSended()
 			if err != nil {
 				if d.dPrintSleep(err, d.sleepTime) {
 					break BEGIN
@@ -162,7 +162,7 @@ BEGIN:
 				toBeSent = append(toBeSent, converter.DecToBin(0, 1)...)
 				toBeSent = append(toBeSent, converter.DecToBin(converter.BytesToInt64(data["block_id"]), 3)...)
 				toBeSent = append(toBeSent, data["hash"]...)
-				err = d.ExecSQL("UPDATE info_block SET sent = 1")
+				err = d.MarkInfoBlockSended()
 				if err != nil {
 					if d.dPrintSleep(err, d.sleepTime) {
 						break BEGIN
@@ -233,7 +233,7 @@ BEGIN:
 			// возьмем хэши и сами тр-ии
 			// take hashes and transactions themselve
 			logging.WriteSelectiveLog("SELECT hash, data FROM transactions WHERE sent  =  0")
-			rows, err := d.Query("SELECT hash, data FROM transactions WHERE sent  =  0")
+			rows, err := d.GetHashDataOfUnsendedTransactions()
 			if err != nil {
 				logging.WriteSelectiveLog(err)
 				if d.dPrintSleep(err, d.sleepTime) {
@@ -254,7 +254,7 @@ BEGIN:
 				logger.Debug("hash %x", hash)
 				hashHex := converter.BinToHex(hash)
 				logging.WriteSelectiveLog("UPDATE transactions SET sent = 1 WHERE hex(hash) = " + string(hashHex))
-				affect, err := d.ExecSQLGetAffect("UPDATE transactions SET sent = 1 WHERE hex(hash) = ?", hashHex)
+				affect, err := d.MarkTransactionSended(hashHex)
 				if err != nil {
 					logging.WriteSelectiveLog(err)
 					rows.Close()
@@ -390,7 +390,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 			txHash = converter.BinToHex(txHash)
 			logger.Debug("txHash %s (host : %v)", txHash, host)
 			logging.WriteSelectiveLog("SELECT data FROM transactions WHERE hex(hash) = " + string(txHash))
-			tx, err := d.Single("SELECT data FROM transactions WHERE hex(hash) = ?", txHash).Bytes()
+			tx, err := d.GetTransactionData(txHash)
 			logger.Debug("tx %x", tx)
 			if err != nil {
 				logging.WriteSelectiveLog(err)

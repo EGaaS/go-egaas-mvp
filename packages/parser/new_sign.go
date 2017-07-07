@@ -19,6 +19,7 @@ package parser
 import (
 	//	"encoding/json"
 	"fmt"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -64,7 +65,7 @@ func (p *Parser) NewSignFront() error {
 	if p.TxMaps.Int64["global"] == 0 {
 		prefix = p.TxStateIDStr
 	}
-	if exist, err := p.Single(`select name from "`+prefix+"_signatures"+`" where name=?`, p.TxMap["name"]).String(); err != nil {
+	if exist, err := p.IsSignatureExists(prefix, p.TxMap["name"]); err != nil {
 		return p.ErrInfo(err)
 	} else if len(exist) > 0 {
 		return p.ErrInfo(fmt.Sprintf("The signature %s already exists", p.TxMap["name"]))

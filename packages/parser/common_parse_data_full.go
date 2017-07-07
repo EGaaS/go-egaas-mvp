@@ -67,7 +67,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 	}
 
 	logging.WriteSelectiveLog("DELETE FROM transactions WHERE used = 1")
-	afect, err := p.ExecSQLGetAffect("DELETE FROM transactions WHERE used = 1")
+	afect, err := p.DeleteUsedTransactions()
 	if err != nil {
 		logging.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
@@ -120,7 +120,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			hashFull = converter.BinToHex(hashFull)
 			logging.WriteSelectiveLog("UPDATE transactions SET used=1 WHERE hex(hash) = " + string(hashFull))
-			affect, err := p.ExecSQLGetAffect("UPDATE transactions SET used=1 WHERE hex(hash) = ?", hashFull)
+			affect, err := p.MarkTransactionUsed(hashFull)
 			if err != nil {
 				logging.WriteSelectiveLog(err)
 				logging.WriteSelectiveLog("RollbackTo")
@@ -255,7 +255,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			// даем юзеру понять, что его тр-ия попала в блок
 			// let user know that his transaction  is added in the block
-			p.ExecSQL("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockId, hashFull)
+			p.MarkTransactionStatusByBlockIDBytes(p.BlockData.BlockId, hashFull)
 			log.Debug("UPDATE transactions_status SET block_id = %d WHERE hex(hash) = %s", p.BlockData.BlockId, hashFull)
 
 			// Тут было time(). А значит если бы в цепочке блоков были блоки в которых были бы одинаковые хэши тр-ий, то ParseDataFull вернул бы error

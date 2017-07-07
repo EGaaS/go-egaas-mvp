@@ -106,7 +106,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 		// если существуют глючная цепочка, тот тут мы её проигнорируем
 		// if the buggy chain exists, here we will ignore it
-		cbadBlocks, err := p.Single("SELECT bad_blocks FROM config").Bytes()
+		cbadBlocks, err := p.GetBadBlocksFromConfig()
 		if err != nil {
 			ClearTmp(blocks)
 			return utils.ErrInfo(err)
@@ -137,7 +137,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 		// нам нужен хэш предыдущего блока, чтобы найти, где началась вилка
 		// we need the hash of previous block to find where the fork started
-		prevBlockHash, err := p.Single("SELECT hash FROM block_chain WHERE id  =  ?", blockID-1).String()
+		prevBlockHash, err := p.GetHashFromBlockhain(blockID - 1)
 		if err != nil {
 			ClearTmp(blocks)
 			return utils.ErrInfo(err)
@@ -231,7 +231,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 	/*}*/
 
 	logging.WriteSelectiveLog("UPDATE transactions SET verified = 0 WHERE verified = 1 AND used = 0")
-	affect, err := p.ExecSQLGetAffect("UPDATE transactions SET verified = 0 WHERE verified = 1 AND used = 0")
+	affect, err := p.MarkTransactionUnverified()
 	if err != nil {
 		logging.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
@@ -338,11 +338,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				// заносим наши данные из block_chain, которые были ранее
 				// we insert from block_chain our data which was before
 				log.Debug("We push data from our block_chain, which were previously")
-				rows, err := p.Query(p.FormatQuery(`
-					SELECT data
-					FROM block_chain
-					WHERE id > ?
-					ORDER BY id ASC`), blockID)
+				rows, err := p.GetAllDataFromBlockchain(blockID)
 				if err != nil {
 					return p.ErrInfo(err)
 				}
@@ -365,7 +361,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				// because in the previous request to block_chain the data could be absent, because the $block_id is bigger than our the biggest id in block_chain
 				// то значит info_block мог не обновится и остаться от занесения новых блоков, что приведет к пропуску блока в block_chain
 				// that means the info_block could not be updated and could stay away from adding new blocks, which will result in skipping the block in block_chain
-				lastMyBlock, err := p.OneRow("SELECT * FROM block_chain ORDER BY id DESC").String()
+				lastMyBlock, err := p.GetLastBlockchainRecord()
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
@@ -382,7 +378,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
-				err = p.ExecSQL(`UPDATE config SET my_block_id = ?`, lastMyBlockData.BlockId)
+				err = p.SetBlockIDInConfig(lastMyBlockData.BlockId)
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
@@ -396,7 +392,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 	// если всё занеслось без ошибок, то удаляем блоки из block_chain и заносим новые
 	// if all was recorded without errors, delete the blocks from block_chain and insert new
-	affect, err = p.ExecSQLGetAffect("DELETE FROM block_chain WHERE id > ?", blockID)
+	affect, err = p.DeleteBlockchainFrom(blockID)
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
@@ -406,7 +402,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 	// для поиска бага
 	// to search for bugs
-	maxBlockID, err := p.Single("SELECT id FROM block_chain ORDER BY id DESC LIMIT 1").Int64()
+	maxBlockID, err := p.GetMaxBlockID()
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
@@ -427,23 +423,23 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 			// пишем в цепочку блоков
 			// record in the chain of blocks
-			err = p.ExecSQL("UPDATE info_block SET hash = [hex], block_id = ?, time = ?, wallet_id = ?, state_id = ?, sent = 0", prevBlock[blockID].Hash, prevBlock[blockID].BlockId, prevBlock[blockID].Time, prevBlock[blockID].WalletId, prevBlock[blockID].StateID)
+			err = p.UpdateInfoBlock(prevBlock[blockID].Hash, prevBlock[blockID].BlockId, prevBlock[blockID].Time, prevBlock[blockID].WalletId, prevBlock[blockID].StateID)
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
-			err = p.ExecSQL(`UPDATE config SET my_block_id = ?`, prevBlock[blockID].BlockId)
+			err = p.UpdateConfigBlockID(blockID)
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
 
 			// т.к. эти данные создали мы сами, то пишем их сразу в таблицу проверенных данных, которые будут отправлены другим нодам
 			// because this data we made by ourselves, so you can record them directly to the table of verified data, that will be send to other nodes
-			exists, err := p.Single("SELECT id FROM block_chain WHERE id = ?", blockID).Int64()
+			exists, err := p.IsBlockchainBlockExists(blockID)
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
 			if exists == 0 {
-				affect, err := p.ExecSQLGetAffect("INSERT INTO block_chain (id, hash, state_id, wallet_id, time, data) VALUES (?, [hex], ?, ?, ?, [hex])", blockID, prevBlock[blockID].Hash, prevBlock[blockID].StateID, prevBlock[blockID].WalletId, prevBlock[blockID].Time, blockHex)
+				affect, err := p.CreateBlockchain(blockID, prevBlock[blockID].Hash, prevBlock[blockID].StateID, prevBlock[blockID].WalletId, prevBlock[blockID].Time, blockHex)
 				if err != nil {
 					return utils.ErrInfo(err)
 				}
@@ -456,7 +452,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 			log.Debug("tmpFileName %v", tmpFileName)
 			// для поиска бага
 			// to search for bugs
-			maxBlockID, err := p.Single("SELECT id FROM block_chain ORDER BY id DESC LIMIT 1").Int64()
+			maxBlockID, err := p.GetMaxBlockID()
 			if err != nil {
 				return utils.ErrInfo(err)
 			}

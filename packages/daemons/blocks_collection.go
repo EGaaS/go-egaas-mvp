@@ -138,7 +138,7 @@ BEGIN:
 		if *utils.StartBlockID > 0 {
 			del := []string{"queue_tx", "my_notifications", "main_lock"}
 			for _, table := range del {
-				err := sql.DB.ExecSQL(`DELETE FROM ` + table)
+				err := sql.DB.DeleteAllFromTable(table)
 				fmt.Println(`DELETE FROM ` + table)
 				if err != nil {
 					fmt.Println(err)
@@ -391,7 +391,7 @@ BEGIN:
 		d.dbUnlock()
 
 		logger.Debug("UPDATE config SET current_load_blockchain = 'nodes'")
-		err = d.ExecSQL(`UPDATE config SET current_load_blockchain = 'nodes'`)
+		err = d.MarkLoadBlockainNodes()
 		if err != nil {
 			//!!!			d.unlockPrintSleep(err, d.sleepTime) unlock был выше
 			if d.dPrintSleep(err, d.sleepTime) {
@@ -559,7 +559,7 @@ BEGIN:
 			// we need the hash of the previous block, to check the signature
 			prevBlockHash := ""
 			if blockID > 1 {
-				prevBlockHash, err = d.Single("SELECT hash FROM block_chain WHERE id = ?", blockID-1).String()
+				prevBlockHash, err = d.GetHashFromBlockhain(blockID - 1)
 				if err != nil {
 					if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
 						break BEGIN
@@ -643,7 +643,7 @@ BEGIN:
 				logger.Info("plug found blockID=%v\n", blockID)
 
 				logging.WriteSelectiveLog("UPDATE transactions SET verified = 0 WHERE verified = 1 AND used = 0")
-				affect, err := d.ExecSQLGetAffect("UPDATE transactions SET verified = 0 WHERE verified = 1 AND used = 0")
+				affect, err := d.MarkTransactionUnverified()
 				if err != nil {
 					logging.WriteSelectiveLog(err)
 					if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {

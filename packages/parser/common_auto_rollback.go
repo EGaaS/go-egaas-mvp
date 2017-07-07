@@ -29,7 +29,7 @@ type rollbackTxRowType struct {
 func (p *Parser) autoRollback() error {
 
 	var rollbackTxRow rollbackTxRowType
-	rows, err := p.QueryRows("SELECT tx_hash, table_name, table_id FROM rollback_tx WHERE tx_hash = [hex] ORDER BY id DESC", p.TxHash)
+	rows, err := p.GetRollbackTx(p.TxHash)
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
@@ -44,7 +44,7 @@ func (p *Parser) autoRollback() error {
 			return p.ErrInfo(err)
 		}
 	}
-	err = p.ExecSQL("DELETE FROM rollback_tx WHERE tx_hash = [hex]", p.TxHash)
+	err = p.DeleteFromRollbackTx(p.TxHash)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

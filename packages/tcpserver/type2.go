@@ -77,7 +77,7 @@ func (t *TCPServer) Type2() {
 			log.Fatal(err)
 		}
 		hash = converter.BinToHex(hash)
-		err = t.DeleteFromQueueTx(hash)
+		err = t.DeleteFromQueueTxBytes(hash)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			return

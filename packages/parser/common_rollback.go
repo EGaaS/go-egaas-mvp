@@ -132,7 +132,7 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 				if err != nil {
 					log.Error("error: %v", err)
 				}
-				affect, err := p.ExecSQLGetAffect("DELETE FROM transactions WHERE hex(hash) = ?", p.TxHash)
+				affect, err := p.DeleteTransaction(p.TxHash)
 				if err != nil {
 					logging.WriteSelectiveLog(err)
 					return utils.ErrInfo(err)
@@ -141,7 +141,7 @@ func (p *Parser) RollbackTo(binaryData []byte, skipCurrent bool) error {
 			}
 
 			logging.WriteSelectiveLog("UPDATE transactions SET used = 0, verified = 0 WHERE hex(hash) = " + string(p.TxHash))
-			affect, err := p.ExecSQLGetAffect("UPDATE transactions SET used = 0, verified = 0 WHERE hex(hash) = ?", p.TxHash)
+			affect, err := p.MarkTransactionUnusedAndUnverified(string(p.TxHash))
 			if err != nil {
 				logging.WriteSelectiveLog(err)
 				return utils.ErrInfo(err)

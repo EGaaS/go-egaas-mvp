@@ -18,3 +18,12 @@ func (db *DCDB) CreateAnonyms(stateID int64, citizenID int64, accountID int64, e
 	return db.ExecSQL(fmt.Sprintf(`INSERT INTO "%d_anonyms" (id_citizen, id_anonym, encrypted)
 			VALUES (?,?,[hex])`, stateID), citizenID, accountID, encryptedKey)
 }
+
+func (db *DCDB) CreateAnonymsTable(id string) error {
+	return db.ExecSQL(`CREATE TABLE "` + id + `_anonyms" (
+				"id_citizen" bigint NOT NULL DEFAULT '0',
+				"id_anonym" bigint NOT NULL DEFAULT '0',
+				"encrypted" bytea  NOT NULL DEFAULT ''
+				);
+				CREATE INDEX "` + id + `_anonyms_index_id" ON "` + id + `_anonyms" (id_citizen);`)
+}

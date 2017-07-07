@@ -697,7 +697,7 @@ func GetList(vars *map[string]string, pars ...string) string {
 		limit = converter.StrToInt(pars[5])
 	}
 
-	value, err := sql.DB.GetCustomFieldsFromCustomTable(fields, converter.EscapeName(pars[1])+where+order, limit)
+	value, err := sql.DB.GetCustomFieldsFromCustomTableWithLimit(fields, converter.EscapeName(pars[1])+where+order, limit)
 	if err != nil {
 		return err.Error()
 	}

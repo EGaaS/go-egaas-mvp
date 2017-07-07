@@ -55,7 +55,7 @@ func (p *Parser) NewColumnFront() error {
 		return p.ErrInfo(err)
 	}
 	table := prefix + `_tables`
-	exists, err := p.Single(`select count(*) from "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"]).Int64()
+	exists, err := p.IsColumnExists(table, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"])
 	log.Debug(`select count(*) from "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"])
 	if err != nil {
 		return p.ErrInfo(err)
@@ -64,7 +64,7 @@ func (p *Parser) NewColumnFront() error {
 		return p.ErrInfo(`column exists`)
 	}
 
-	count, err := p.Single("SELECT count(column_name) FROM information_schema.columns WHERE table_name=?", p.TxMaps.String["table_name"]).Int64()
+	count, err := p.GetColumnsCount(p.TxMaps.String["table_name"])
 	if count >= consts.MAX_COLUMNS+2 /*id + rb_id*/ {
 		return fmt.Errorf(`Too many columns. Limit is %d`, consts.MAX_COLUMNS)
 	}
@@ -102,7 +102,7 @@ func (p *Parser) NewColumn() error {
 	}
 	table := prefix + `_tables`
 
-	logData, err := p.OneRow(`SELECT columns_and_permissions, rb_id FROM "`+table+`" where name=?`, tblname).String()
+	logData, err := p.GetPermissionsAndRollbackIDByName(table, tblname)
 	if err != nil {
 		return err
 	}
@@ -121,16 +121,16 @@ func (p *Parser) NewColumn() error {
 	if err != nil {
 		return err
 	}
-	rbID, err := p.ExecSQLGetLastInsertID("INSERT INTO rollback ( data, block_id ) VALUES ( ?, ? )", "rollback", string(jsonData), p.BlockData.BlockId)
+	rbID, err := p.CreateRollback(string(jsonData), p.BlockData.BlockId)
 	if err != nil {
 		return err
 	}
-	err = p.ExecSQL(`UPDATE "`+table+`" SET columns_and_permissions = jsonb_set(columns_and_permissions, '{update, `+p.TxMaps.String["column_name"]+`}', ?, true), rb_id = ? WHERE name = ?`, `"`+converter.EscapeForJSON(p.TxMaps.String["permissions"])+`"`, rbID, tblname)
+	err = p.UpdateColumnAndPermissions(table, p.TxMaps.String["column_name"], converter.EscapeForJSON(p.TxMaps.String["permissions"]), rbID, tblname)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, table, tblname)
+	err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, table, tblname)
 	if err != nil {
 		return err
 	}
@@ -151,13 +151,13 @@ func (p *Parser) NewColumn() error {
 		colType = `double precision`
 	}
 
-	err = p.ExecSQL(`ALTER TABLE "` + tblname + `" ADD COLUMN ` + p.TxMaps.String["column_name"] + ` ` + colType)
+	err = p.ChangeColumn(tblname, p.TxMaps.String["column_name"], colType)
 	if err != nil {
 		return err
 	}
 
 	if p.TxMaps.Int64["index"] == 1 {
-		err = p.ExecSQL(`CREATE INDEX "` + tblname + `_` + p.TxMaps.String["column_name"] + `_index" ON "` + tblname + `" (` + p.TxMaps.String["column_name"] + `)`)
+		err = p.CreateIndex(tblname, p.TxMaps.String["column_name"])
 		if err != nil {
 			return err
 		}

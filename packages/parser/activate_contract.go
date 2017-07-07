@@ -60,12 +60,13 @@ func (p *Parser) ActivateContractFront() error {
 		return p.ErrInfo("incorrect contract id")
 	}
 	if p.TxMaps.String["id"][0] > '9' {
-		p.TxMaps.String["id"], err = p.Single(`SELECT id FROM "`+prefix+`_smart_contracts" WHERE name = ?`, p.TxMaps.String["id"]).String()
+		p.TxMaps.String["id"], err = p.GetSmartContractID(prefix, p.TxMaps.String["id"])
 		if len(p.TxMaps.String["id"]) == 0 {
 			return p.ErrInfo("incorrect contract name")
 		}
 	}
-	active, err := p.Single(`SELECT active FROM "`+prefix+`_smart_contracts" WHERE id = ?`, p.TxMaps.String["id"]).String()
+
+	active, err := p.IsSmartContractActive(prefix, p.TxMaps.String["id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}

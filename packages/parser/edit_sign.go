@@ -65,7 +65,7 @@ func (p *Parser) EditSignFront() error {
 			return p.ErrInfo(err)
 		}
 	}
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_signatures" WHERE name = ?`, p.TxMaps.String["name"]).String()
+	conditions, err := p.GetConditionsFromSignatures(prefix, p.TxMaps.String["name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}

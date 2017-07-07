@@ -39,7 +39,7 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}*/
-	err := p.ExecSQL("UPDATE transactions SET verified = 0 WHERE verified = 1 AND used = 0")
+	err := p.MarkTransactionUnverifiedExec()
 	if err != nil {
 		logging.WriteSelectiveLog(err)
 		return p.ErrInfo(err)
@@ -51,7 +51,7 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 	// откатываем наши блоки
 	// roll back our blocks
 	for {
-		rows, err := p.Query(p.FormatQuery("SELECT id, data FROM block_chain WHERE id > ? ORDER BY id DESC LIMIT "+fmt.Sprintf(`%d`, limit)+` OFFSET 0`), blockID)
+		rows, err := p.GetIDDataFromBlockchainLimited(blockID, limit)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
@@ -80,7 +80,7 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 				return p.ErrInfo(err)
 			}
 
-			err = p.ExecSQL("DELETE FROM block_chain WHERE id = ?", block["id"])
+			err = p.DeleteFromBlockchain(block["id"])
 			if err != nil {
 				return p.ErrInfo(err)
 			}
@@ -88,7 +88,7 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 		blocks = blocks[:0]
 	}
 	var hash, data []byte
-	err = p.QueryRow(p.FormatQuery("SELECT hash, data FROM block_chain WHERE id  =  ?"), blockID).Scan(&hash, &data)
+	err = p.GetHashDataFromBlockchain(blockID, &hash, &data)
 	if err != nil && err != sql.ErrNoRows {
 		return p.ErrInfo(err)
 	}
@@ -101,12 +101,11 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 	}
 	walletID := converter.BinToDecBytesShift(&data, size)
 	StateID := converter.BinToDecBytesShift(&data, 1)
-	err = p.ExecSQL("UPDATE info_block SET hash = [hex], block_id = ?, time = ?, wallet_id = ?, state_id = ?",
-		converter.BinToHex(hash), iblock, time, walletID, StateID)
+	err = p.AnotherUpdateInfoBlock(converter.BinToHex(hash), iblock, time, walletID, StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	err = p.ExecSQL("UPDATE config SET my_block_id = ?", iblock)
+	err = p.UpdateConfigBlockID(iblock)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

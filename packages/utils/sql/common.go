@@ -9,6 +9,10 @@ func (db *DCDB) GetColumnType(tableName, columnName string) (map[string]string, 
 		where table_name = ? and column_name = ?`, tableName, columnName).String()
 }
 
+func (db *DCDB) GetColumnsAndTypes(tableName string) ([]map[string]string, error) {
+	return db.GetAll(`select column_name, data_type from information_schema.columns where table_name=?`, -1, tableName)
+}
+
 func (db *DCDB) DropTables() error {
 	return db.ExecSQL(`
 	DO $$ DECLARE
@@ -19,4 +23,12 @@ func (db *DCDB) DropTables() error {
 	    END LOOP;
 	END $$;
 	`)
+}
+
+func (db *DCDB) ChangeColumn(tableName string, columnName string, columnType string) error {
+	return db.ExecSQL(`ALTER TABLE "` + tableName + `" ADD COLUMN ` + columnName + ` ` + columnType)
+}
+
+func (db *DCDB) CreateIndex(tableName string, column string) error {
+	return db.ExecSQL(`CREATE INDEX "` + tableName + `_` + column + `_index" ON "` + tableName + `" (` + column + `)`)
 }

@@ -177,8 +177,7 @@ func (p *Parser) CallContract(flags int) (err error) {
 			p.TxPtr.(*consts.TXHeader).Sign = p.TxPtr.(*consts.TXHeader).Sign[:len(p.TxPtr.(*consts.TXHeader).Sign)-64]
 		}
 		if len(p.PublicKeys) == 0 {
-			data, err := p.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?",
-				int64(p.TxPtr.(*consts.TXHeader).WalletID)).String()
+			data, err := p.GetWalletPublickKeyFromInt64(int64(p.TxPtr.(*consts.TXHeader).WalletID))
 			if err != nil {
 				return err
 			}
@@ -426,12 +425,12 @@ func DBInt(tblname string, name string, id int64) (int64, error) {
 		return 0, err
 	}
 
-	return sql.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where id=?`, id).Int64()
+	return sql.DB.GetSomethingSomwhereByID(converter.EscapeName(name), converter.EscapeName(tblname), id)
 }
 
 func getBytea(table string) map[string]bool {
 	isBytea := make(map[string]bool)
-	colTypes, err := sql.DB.GetAll(`select column_name, data_type from information_schema.columns where table_name=?`, -1, table)
+	colTypes, err := sql.DB.GetColumnsAndTypes(table)
 	if err != nil {
 		return isBytea
 	}
@@ -463,8 +462,7 @@ func DBStringExt(tblname string, name string, id interface{}, idname string) (st
 	} else if !isIndex {
 		return ``, fmt.Errorf(`there is not index on %s`, idname)
 	}
-	return sql.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+
-		converter.EscapeName(idname)+`=?`, id).String()
+	return sql.DB.GetRecordsFromSomwhereWithSomethingID(converter.EscapeName(name), converter.EscapeName(tblname), converter.EscapeName(idname), id)
 }
 
 // DBIntExt возвращает числовое значение колонки name у записи с указанным значением поля idname
@@ -517,7 +515,8 @@ func DBStringWhere(tblname string, name string, where string, params ...interfac
 			return ``, fmt.Errorf(`there is not index on %s`, iret[1])
 		}
 	}
-	return sql.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+
+	return sql.DB.GetCustomFieldsFromCustomTableWithLimit()
+	sql.DB.Single(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+
 		strings.Replace(converter.Escape(where), `$`, `?`, -1), params...).String()
 }
 
@@ -642,7 +641,7 @@ func DBAmount(tblname, column string, id int64) decimal.Decimal {
 		return decimal.New(0, 0)
 	}
 
-	balance, err := sql.DB.Single("SELECT amount FROM "+converter.EscapeName(tblname)+" WHERE "+converter.EscapeName(column)+" = ?", id).String()
+	balance, err := sql.DB.GetAmountFromSomewhere(converter.EscapeName(tblname), converter.EscapeName(column), id)
 	if err != nil {
 		return decimal.New(0, 0)
 	}
@@ -718,7 +717,7 @@ func UpdateContract(p *Parser, name, value, conditions string) error {
 		values []interface{}
 	)
 	prefix := converter.Int64ToStr(int64(p.TxStateID))
-	cnt, err := p.OneRow(`SELECT id,conditions, active FROM "`+prefix+`_smart_contracts" WHERE name = ?`, name).String()
+	cnt, err := p.GetIdConditionsActiveFromSmartContract(prefix, name)
 	if err != nil {
 		return err
 	}
@@ -837,7 +836,7 @@ func CheckSignature(i *map[string]interface{}, name string) error {
 	}
 	//	fmt.Println(`CheckSignature`, i, state, name)
 	p := (*i)[`parser`].(*Parser)
-	value, err := p.Single(`select value from "`+pref+`_signatures" where name=?`, name).String()
+	value, err := p.GetValueFromSignatures(pref, name)
 	if err != nil {
 		return err
 	}
@@ -954,7 +953,7 @@ func DBGetList(tblname string, name string, offset, limit int64, order string,
 	if limit <= 0 {
 		limit = -1
 	}
-	list, err := sql.DB.GetAll(`select `+converter.Escape(name)+` from `+converter.EscapeName(tblname)+` where `+
+	list, err := sql.DB.GetSomethingFromSomewhereSomehow(converter.Escape(name), converter.EscapeName(tblname),
 		strings.Replace(converter.Escape(where), `$`, `?`, -1)+order+fmt.Sprintf(` offset %d `, offset), int(limit), params...)
 	result := make([]interface{}, len(list))
 	for i := 0; i < len(list); i++ {
@@ -977,7 +976,7 @@ func DBGetTable(tblname string, columns string, offset, limit int64, order strin
 		limit = -1
 	}
 	cols := strings.Split(converter.Escape(columns), `,`)
-	list, err := sql.DB.GetAll(`select `+strings.Join(cols, `,`)+` from `+converter.EscapeName(tblname)+` where `+
+	list, err := sql.DB.GetSomethingFromSomewhereSomehow(strings.Join(cols, `,`), converter.EscapeName(tblname),
 		where+order+fmt.Sprintf(` offset %d `, offset), int(limit), params...)
 	result := make([]interface{}, len(list))
 	for i := 0; i < len(list); i++ {

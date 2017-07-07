@@ -97,7 +97,7 @@ BEGIN:
 		// чистим зацикленные
 		// clean the looped
 		logging.WriteSelectiveLog("DELETE FROM transactions WHERE verified = 0 AND used = 0 AND counter > 10")
-		affect, err := d.ExecSQLGetAffect("DELETE FROM transactions WHERE verified = 0 AND used = 0 AND counter > 10")
+		affect, err := d.DeleteBadTransactions()
 		if err != nil {
 			logging.WriteSelectiveLog(err)
 			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {

@@ -39,7 +39,7 @@ func (p *Parser) generalCheck(name string) error {
 	// проверим, есть ли такой юзер и заодно получим public_key
 	// check if such a user exists and at the same time we will get the public_key
 	if p.TxMaps.Int64["type"] == utils.TypeInt("DLTTransfer") || p.TxMaps.Int64["type"] == utils.TypeInt("NewState") || p.TxMaps.Int64["type"] == utils.TypeInt("DLTChangeHostVote") || p.TxMaps.Int64["type"] == utils.TypeInt("ChangeNodeKeyDLT") || p.TxMaps.Int64["type"] == utils.TypeInt("CitizenRequest") || p.TxMaps.Int64["type"] == utils.TypeInt("UpdFullNodes") {
-		data, err := p.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", converter.BytesToInt64(p.TxMap["wallet_id"])).String()
+		data, err := p.GetWalletPublickKey(p.TxMap["wallet_id"])
 		if err != nil {
 			return utils.ErrInfo(err)
 		}
@@ -67,7 +67,7 @@ func (p *Parser) generalCheck(name string) error {
 		}
 	} else {
 		log.Debug(`SELECT * FROM "`+converter.UInt32ToStr(p.TxStateID)+`_citizens" WHERE id = %d`, p.TxCitizenID)
-		data, err := p.OneRow("SELECT public_key_0 FROM dlt_wallets WHERE wallet_id = ?", converter.Int64ToStr(p.TxCitizenID)).String()
+		data, err := p.GetWalletPublickKeyFromString(converter.Int64ToStr(p.TxCitizenID))
 		if err != nil {
 			return utils.ErrInfo(err)
 		}

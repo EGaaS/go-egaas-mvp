@@ -73,7 +73,7 @@ func (p *Parser) EditContractFront() error {
 			return p.ErrInfo(err)
 		}
 	}
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_smart_contracts" WHERE id = ?`, p.TxMaps.String["id"]).String()
+	conditions, err := p.GetConditionFromSmartContract(prefix, p.TxMaps.String["id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -99,7 +99,7 @@ func (p *Parser) EditContract() error {
 	if p.TxMaps.Int64["global"] == 0 {
 		prefix = p.TxStateIDStr
 	}
-	item, err := p.OneRow(`SELECT id, active FROM "`+prefix+`_smart_contracts" WHERE id = ?`, p.TxMaps.String["id"]).String()
+	item, err := p.IsSmartContractActiveAndID(prefix, p.TxMaps.String["id"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}

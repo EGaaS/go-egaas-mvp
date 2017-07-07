@@ -98,7 +98,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 	}
 	// если есть, что логировать
 	// if there is something to log
-	logData, err := p.OneRow(`SELECT ` + addSQLFields + ` rb_id FROM "` + table + `" ` + addSQLWhere).String()
+	logData, err := p.GetCustomFieldsFromCustomTableOneRow(addSQLFields+` rb_id FROM "`, addSQLWhere)
 	if err != nil {
 		return tableID, err
 	}
@@ -129,7 +129,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 		if err != nil {
 			return tableID, err
 		}
-		rbID, err := p.ExecSQLGetLastInsertID("INSERT INTO rollback ( data, block_id ) VALUES ( ?, ? )", "rollback", string(jsonData), p.BlockData.BlockId)
+		rbID, err := p.InsertIntoRollback(string(jsonData), p.BlockData.BlockId)
 		if err != nil {
 			return tableID, err
 		}
@@ -153,7 +153,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 				addSQLUpdate += fields[i] + `='` + strings.Replace(values[i], `'`, `''`, -1) + `',`
 			}
 		}
-		err = p.ExecSQL(`UPDATE "`+table+`" SET `+addSQLUpdate+` rb_id = ? `+addSQLWhere, rbID)
+		err = p.UpdateSomeTable(table, addSQLUpdate, addSQLWhere, rbID)
 		log.Debug(`UPDATE "` + table + `" SET ` + addSQLUpdate + ` rb_id = ? ` + addSQLWhere)
 		//log.Debug("logId", logId)
 		if err != nil {
@@ -199,7 +199,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 		}
 	}
 	if generalRollback {
-		err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, table, tableID)
+		err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, table, tableID)
 		if err != nil {
 			return tableID, err
 		}

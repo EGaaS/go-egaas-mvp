@@ -72,12 +72,7 @@ BEGIN:
 				}
 				continue BEGIN
 			}
-			rows, err := d.Query(d.FormatQuery(`
-					SELECT id, data
-					FROM block_chain
-					WHERE id > ? AND id <= ?
-					ORDER BY id
-					`), endBlockID, curBlockID-consts.COUNT_BLOCK_BEFORE_SAVE)
+			rows, err := d.GetIDDataFromBlockchain(endBlockID, curBlockID-consts.COUNT_BLOCK_BEFORE_SAVE)
 			if err != nil {
 				file.Close()
 				if d.dPrintSleep(utils.ErrInfo(err), d.sleepTime) {

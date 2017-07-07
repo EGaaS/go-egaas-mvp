@@ -25,3 +25,18 @@ func (db *DCDB) GetCitizenName(stateID string, citizenID int64) (string, error) 
 func (db *DCDB) GetCitizenAvatar(stateID string, citizenID int64) (string, error) {
 	return db.Single(`SELECT avatar FROM "`+stateID+`_citizens" WHERE id = ?`, citizenID).String()
 }
+
+func (db *DCDB) CreateCitizensTable(id string) error {
+	return db.ExecSQL(`CREATE TABLE "` + id + `_citizens" (
+				"id" bigint NOT NULL DEFAULT '0',
+				"public_key_0" bytea  NOT NULL DEFAULT '',				
+				"block_id" bigint NOT NULL DEFAULT '0',
+				"rb_id" bigint NOT NULL DEFAULT '0'
+				);
+				ALTER TABLE ONLY "` + id + `_citizens" ADD CONSTRAINT "` + id + `_citizens_pkey" PRIMARY KEY (id);
+				`)
+}
+
+func (db *DCDB) CreateFirstCitizenRecord(id string, walletID int64, privateKey []byte) error {
+	return db.ExecSQL(`INSERT INTO "`+id+`_citizens" (id,public_key_0) VALUES (?, [hex])`, walletID, privateKey)
+}

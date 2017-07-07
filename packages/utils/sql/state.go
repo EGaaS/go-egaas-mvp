@@ -65,3 +65,68 @@ func (db *DCDB) GetEAStateLaws() ([]map[string]string, error) {
 func (db *DCDB) GetEAStateParameters() ([]string, error) {
 	return db.GetList(`SELECT parameter FROM ea_state_parameters`).String()
 }
+
+func (db *DCDB) GetParamFromState(param string, stateID string, condition string) (string, error) {
+	return db.Single(`SELECT `+param+` FROM "`+stateID+`_state_parameters" WHERE name = ?`, condition).String()
+}
+
+func (db *DCDB) CreateStateTable(stateID string) error {
+	return db.ExecSQL(`CREATE TABLE "` + stateID + `_state_parameters" (
+				"name" varchar(100)  NOT NULL DEFAULT '',
+				"value" text  NOT NULL DEFAULT '',
+				"bytecode" bytea  NOT NULL DEFAULT '',
+				"conditions" text  NOT NULL DEFAULT '',
+				"rb_id" bigint NOT NULL DEFAULT '0'
+				);
+				ALTER TABLE ONLY "` + stateID + `_state_parameters" ADD CONSTRAINT "` + stateID + `_state_parameters_pkey" PRIMARY KEY (name);`)
+}
+
+func (db *DCDB) CreateStateConditions(stateID string, sid string, psid string, currency string, country string, walletID int64) error {
+	return db.ExecSQL(`INSERT INTO "`+stateID+`_state_parameters" (name, value, bytecode, conditions) VALUES
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?),
+		(?, ?, ?, ?)`,
+		"restore_access_condition", sid, "", psid,
+		"new_table", sid, "", psid,
+		"new_column", sid, "", psid,
+		"changing_tables", sid, "", psid,
+		"changing_language", sid, "", psid,
+		"changing_signature", sid, "", psid,
+		"changing_smart_contracts", sid, "", psid,
+		"changing_menu", sid, "", psid,
+		"changing_page", sid, "", psid,
+		"currency_name", currency, "", psid,
+		"gender_list", "male,female", "", psid,
+		"money_digit", "0", "", psid,
+		"tx_fiat_limit", "10", "", psid,
+		"state_name", country, "", psid,
+		"gov_account", walletID, "", psid,
+		"dlt_spending", walletID, "", psid,
+		"state_flag", "", "", psid,
+		"state_coords", ``, "", psid,
+		"citizenship_price", "1000000", "", psid)
+}
+
+func (db *DCDB) GetMaxSystemStateID() (int64, error) {
+	return db.Single(`SELECT max(id) FROM "system_states"`).Int64()
+}
+
+func (db *DCDB) DeleteFromSystemStates(stateID int64) error {
+	return db.ExecSQL(`DELETE FROM "system_states" WHERE id = ?`, stateID)
+}

@@ -19,8 +19,9 @@ package parser
 import (
 	"fmt"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"strings"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 // AppendPageInit initialize AppendPage transaction
@@ -79,7 +80,7 @@ func (p *Parser) AppendPage() error {
 		prefix = "global"
 	}
 	log.Debug("value page", p.TxMaps.String["value"])
-	page, err := p.Single(`SELECT value FROM "`+prefix+`_pages" WHERE name = ?`, p.TxMaps.String["name"]).String()
+	page, err := p.GetValueFromPage(prefix+`_pages`, p.TxMaps.String["name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}

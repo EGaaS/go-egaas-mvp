@@ -83,7 +83,7 @@ func (p *Parser) EditWalletFront() error {
 		}
 	}
 	id := converter.StrToInt64(string(p.TxMap["id"]))
-	conditions, err := p.Single(`SELECT conditions_change FROM "dlt_wallets" WHERE wallet_id = ?`, id).String()
+	conditions, err := p.GetConditionsChange(id)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

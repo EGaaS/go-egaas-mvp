@@ -49,18 +49,16 @@ func (p *Parser) UpdBlockInfo() {
 	log.Debug("%v", p.CurrentVersion)
 
 	if p.BlockData.BlockId == 1 {
-		err := p.ExecSQL("INSERT INTO info_block (hash, block_id, time, state_id, wallet_id, current_version) VALUES ([hex], ?, ?, ?, ?, ?)",
-			p.BlockData.Hash, blockID, p.BlockData.Time, p.BlockData.StateID, p.BlockData.WalletId, p.CurrentVersion)
+		err := p.CreateInfoBlock(p.BlockData.Hash, blockID, p.BlockData.Time, p.BlockData.StateID, p.BlockData.WalletId, p.CurrentVersion)
 		if err != nil {
 			log.Error("%v", err)
 		}
 	} else {
-		err := p.ExecSQL("UPDATE info_block SET hash = [hex], block_id = ?, time = ?, state_id = ?, wallet_id = ?, sent = 0",
-			p.BlockData.Hash, blockID, p.BlockData.Time, p.BlockData.StateID, p.BlockData.WalletId)
+		err := p.UpdateInfoBlock(p.BlockData.Hash, blockID, p.BlockData.Time, p.BlockData.StateID, p.BlockData.WalletId)
 		if err != nil {
 			log.Error("%v", err)
 		}
-		err = p.ExecSQL("UPDATE config SET my_block_id = ? WHERE my_block_id < ?", blockID, blockID)
+		err = p.AnotherUpdateBlockID(blockID, blockID)
 		if err != nil {
 			log.Error("%v", err)
 		}

@@ -19,6 +19,7 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/language"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -76,7 +77,7 @@ func (p *Parser) NewLangFront() error {
 			return fmt.Errorf(`empty lanuguage resource`)
 		}
 	} else {
-		if exist, err := p.Single(`select name from "`+prefix+"_languages"+`" where name=?`, p.TxMap["name"]).String(); err != nil {
+		if exist, err := p.IsLanguageExistsFromBytes(prefix, p.TxMap["name"]); err != nil {
 			return p.ErrInfo(err)
 		} else if len(exist) > 0 {
 			return p.ErrInfo(fmt.Sprintf("The language resource %s already exists", p.TxMap["name"]))
@@ -98,7 +99,7 @@ func (p *Parser) NewLang() error {
 		var list map[string]string
 		json.Unmarshal([]byte(p.TxMap["res"]), &list)
 		for name, res := range list {
-			if exist, err := p.Single(`select name from "`+prefix+"_languages"+`" where name=?`, name).String(); err != nil {
+			if exist, err := p.IsLanguageExists(prefix, name); err != nil {
 				return p.ErrInfo(err)
 			} else if len(exist) == 0 {
 				_, err := p.selectiveLoggingAndUpd([]string{"name", "res"}, []interface{}{name, res}, prefix+"_languages", nil, nil, true)

@@ -55,7 +55,7 @@ func (p *Parser) EditColumnFront() error {
 	if strings.HasPrefix(p.TxMaps.String["table_name"], `global`) {
 		table = `global_tables`
 	}
-	exists, err := p.Single(`select count(*) from "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"]).Int64()
+	exists, err := p.IsColumnExists(table, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -85,8 +85,7 @@ func (p *Parser) EditColumn() error {
 	if strings.HasPrefix(p.TxMaps.String["table_name"], `global`) {
 		table = `global_tables`
 	}
-	logData, err := p.OneRow(`SELECT columns_and_permissions, rb_id FROM "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`,
-		p.TxMaps.String["column_name"], p.TxMaps.String["table_name"]).String()
+	logData, err := p.GetPermissionsAndRollbackID(table, p.TxMaps.String["column_name"], p.TxMaps.String["table_name"])
 	if err != nil {
 		return err
 	}
@@ -105,17 +104,16 @@ func (p *Parser) EditColumn() error {
 	if err != nil {
 		return err
 	}
-	rbID, err := p.ExecSQLGetLastInsertID("INSERT INTO rollback ( data, block_id ) VALUES ( ?, ? )", "rollback", string(jsonData), p.BlockData.BlockId)
+	rbID, err := p.CreateRollback(string(jsonData), p.BlockData.BlockId)
 	if err != nil {
 		return err
 	}
-	err = p.ExecSQL(`UPDATE "`+table+`" SET columns_and_permissions = jsonb_set(columns_and_permissions, '{update, `+p.TxMaps.String["column_name"]+`}', ?, true), rb_id = ? WHERE name = ?`,
-		`"`+converter.EscapeForJSON(p.TxMaps.String["permissions"])+`"`, rbID, p.TxMaps.String["table_name"])
+	err = p.UpdateColumnAndPermissions(table, p.TxMaps.String["column_name"], converter.EscapeForJSON(p.TxMaps.String["permissions"]), rbID, p.TxMaps.String["table_name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockId, p.TxHash, table, p.TxMaps.String["table_name"])
+	err = p.CreateRollbackTX(p.BlockData.BlockId, p.TxHash, table, p.TxMaps.String["table_name"])
 	if err != nil {
 		return err
 	}

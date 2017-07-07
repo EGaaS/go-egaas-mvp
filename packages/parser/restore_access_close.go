@@ -42,7 +42,8 @@ func (p *Parser) RestoreAccessCloseFront() error {
 	}
 
 	// check whether or not already close
-	close, err := p.Single("SELECT close FROM system_restore_access WHERE user_id  =  ? AND state_id = ?", p.TxUserID, p.TxUserID).Int64()
+
+	close, err := p.GetCloseFromsystemRestoreAccess(p.TxUserID, p.TxUserID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

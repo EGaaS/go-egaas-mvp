@@ -114,7 +114,7 @@ BEGIN:
 
 			logger.Debug("blockID: %d", blockID)
 
-			hash, err := d.Single("SELECT hash FROM block_chain WHERE id = ?", blockID).String()
+			hash, err := d.GetHashFromBlockhain(blockID)
 			if err != nil {
 				logger.Error("%v", err)
 			}
@@ -155,16 +155,16 @@ BEGIN:
 				}
 				logger.Info("st0 %v  st1 %v", st0, st1)
 			}
-			exists, err := d.Single("SELECT block_id FROM confirmations WHERE block_id= ?", blockID).Int64()
+			exists, err := d.IsBlockConfirmationExists(blockID)
 			if exists > 0 {
 				logger.Debug("UPDATE confirmations SET good = %v, bad = %v, time = %v WHERE block_id = %v", st1, st0, time.Now().Unix(), blockID)
-				err = d.ExecSQL("UPDATE confirmations SET good = ?, bad = ?, time = ? WHERE block_id = ?", st1, st0, time.Now().Unix(), blockID)
+				err = d.MarkConfirmations(st1, st0, time.Now().Unix(), blockID)
 				if err != nil {
 					logger.Error("%v", err)
 				}
 			} else {
 				logger.Debug("INSERT INTO confirmations ( block_id, good, bad, time ) VALUES ( %v, %v, %v, %v )", blockID, st1, st0, time.Now().Unix())
-				err = d.ExecSQL("INSERT INTO confirmations ( block_id, good, bad, time ) VALUES ( ?, ?, ?, ? )", blockID, st1, st0, time.Now().Unix())
+				err = d.CreateConfirmation(st1, st0, time.Now().Unix(), blockID)
 				if err != nil {
 					logger.Error("%v", err)
 				}

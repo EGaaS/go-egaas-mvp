@@ -94,7 +94,7 @@ func (p *Parser) NewTableFront() error {
 		prefix = `global`
 	}
 
-	exists, err := p.Single(`SELECT count(*) FROM "`+table+`" WHERE name = ?`, prefix+`_`+p.TxMaps.String["table_name"]).Int64()
+	exists, err := p.GetRecordsCountWhereName(`SELECT count(*) FROM "`+table+`" WHERE name = ?`, prefix+`_`+p.TxMaps.String["table_name"])
 	log.Debug(`SELECT count(*) FROM "` + table + `" WHERE name = ?`)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -121,81 +121,23 @@ func (p *Parser) NewTableFront() error {
 
 // NewTable proceeds NewTable transaction
 func (p *Parser) NewTable() error {
+	var cols [][]string
+	json.Unmarshal([]byte(p.TxMaps.String["columns"]), &cols)
 
 	tableName := `global_` + p.TxMaps.String["table_name"]
 	if p.TxMaps.Int64["global"] == 0 {
 		tableName = p.TxStateIDStr + `_` + p.TxMaps.String["table_name"]
 	}
-	var cols [][]string
-	json.Unmarshal([]byte(p.TxMaps.String["columns"]), &cols)
 
-	//citizenIdStr := utils.Int64ToStr(p.TxCitizenID)
-	colsSQL := ""
-	colsSQL2 := ""
-	sqlIndex := ""
-	for _, data := range cols {
-		colType := ``
-		colDef := ``
-		switch data[1] {
-		case "text":
-			colType = `varchar(102400)`
-		case "int64":
-			colType = `bigint`
-			colDef = `NOT NULL DEFAULT '0'`
-		case "time":
-			colType = `timestamp`
-		case "hash":
-			colType = `bytea`
-		case "double":
-			colType = `double precision`
-		case "money":
-			colType = `decimal (30, 0)`
-			colDef = `NOT NULL DEFAULT '0'`
-		}
-		colsSQL += `"` + data[0] + `" ` + colType + " " + colDef + " ,\n"
-		colsSQL2 += `"` + data[0] + `": "ContractConditions(\"MainCondition\")",`
-		if data[2] == "1" {
-			sqlIndex += `CREATE INDEX "` + tableName + `_` + data[0] + `_index" ON "` + tableName + `" (` + data[0] + `);`
-		}
-	}
-	colsSQL2 = colsSQL2[:len(colsSQL2)-1]
-
-	sql := `CREATE SEQUENCE "` + tableName + `_id_seq" START WITH 1;
-				CREATE TABLE "` + tableName + `" (
-				"id" bigint NOT NULL  default nextval('` + tableName + `_id_seq'),
-				` + colsSQL + `
-				"rb_id" bigint NOT NULL DEFAULT '0'
-				);
-				ALTER SEQUENCE "` + tableName + `_id_seq" owned by "` + tableName + `".id;
-				ALTER TABLE ONLY "` + tableName + `" ADD CONSTRAINT "` + tableName + `_pkey" PRIMARY KEY (id);`
-	fmt.Println(sql)
-	err := p.ExecSQL(sql)
+	err := p.CreateNewTable(cols, tableName, p.TxMaps.Int64["global"], p.TxStateIDStr)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-
-	err = p.ExecSQL(sqlIndex)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
-	prefix := `global`
-	if p.TxMaps.Int64["global"] == 0 {
-		prefix = p.TxStateIDStr
-	}
-	err = p.ExecSQL(`INSERT INTO "`+prefix+`_tables" ( name, columns_and_permissions ) VALUES ( ?, ? )`,
-		tableName, `{"general_update":"ContractConditions(\"MainCondition\")", "update": {`+colsSQL2+`},
-		"insert": "ContractConditions(\"MainCondition\")", "new_column":"ContractConditions(\"MainCondition\")"}`)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
 	return nil
 }
 
 // NewTableRollback rollbacks NewTable transaction
 func (p *Parser) NewTableRollback() error {
-
 	err := p.autoRollback()
 	if err != nil {
 		return p.ErrInfo(err)
@@ -205,13 +147,13 @@ func (p *Parser) NewTableRollback() error {
 	if p.TxMaps.Int64["global"] == 0 {
 		tableName = p.TxStateIDStr + `_` + p.TxMaps.String["table_name"]
 	}
-	err = p.ExecSQL(`DROP TABLE "` + tableName + `"`)
+	err = p.AnotherDropTable(tableName)
 
 	prefix := `global`
 	if p.TxMaps.Int64["global"] == 0 {
 		prefix = p.TxStateIDStr
 	}
-	err = p.ExecSQL(`DELETE FROM "`+prefix+`_tables" WHERE name = ?`, tableName)
+	err = p.DeleteFromTable(prefix, tableName)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

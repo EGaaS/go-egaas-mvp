@@ -129,7 +129,7 @@ BEGIN:
 
 		// проверим, прошло ли время с момента последнего обновления
 		// check if the time of the last updating passed
-		updFullNodes, err := d.Single("SELECT time FROM upd_full_nodes").Int64()
+		updFullNodes, err := d.GettimeFromUpdFullNodes()
 		if err != nil {
 			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
 				break BEGIN

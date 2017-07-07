@@ -18,6 +18,7 @@ package parser
 
 import (
 	"fmt"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -77,7 +78,7 @@ func (p *Parser) AppendMenu() error {
 		prefix = "global"
 	}
 	log.Debug("value page", p.TxMaps.String["value"])
-	page, err := p.Single(`SELECT value FROM "`+prefix+`_menu" WHERE name = ?`, p.TxMaps.String["name"]).String()
+	page, err := p.GetValueFromMenu(prefix, p.TxMaps.String["name"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
