@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/EGaaS/go-egaas-mvp)](https://goreportcard.com/report/github.com/EGaaS/go-egaas-mvp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/EGaaS/go-egaas-mvp)](https://goreportcard.com/report/github.com/EGaaS/go-egaas-mvp) [![Build Status](https://travis-ci.org/EGaaS/go-egaas-mvp.svg?branch=master)](https://travis-ci.org/EGaaS/go-egaas-mvp)
 
 ### Installation v1.x - only egs-wallet
 
