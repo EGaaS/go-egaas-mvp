@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/EGaaS/go-egaas-mvp.svg?branch=1.0)](https://travis-ci.org/EGaaS/go-egaas-mvp)
+
 <h1>Installation</h1>
 
 * Install golang >=1.6 https://golang.org/dl/
