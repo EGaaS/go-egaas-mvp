@@ -79,6 +79,6 @@ func TestEncrypt(t *testing.T) {
 	mode := cipher.NewCBCDecrypter(c, iv)
 	mode.CryptBlocks(privateKeyBin, privateKeyBin)
 	fmt.Printf("nodelpad %s\n", privateKeyBin)
-	privateKeyBin = lib.PKCS7UnPadding(privateKeyBin)
+	privateKeyBin, _ = lib.PKCS7UnPadding(privateKeyBin)
 	fmt.Printf("delpad %s\n", privateKeyBin)
 }
