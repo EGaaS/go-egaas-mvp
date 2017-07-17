@@ -11,4 +11,3 @@ install: make go-bindata
 before_script: make static
 
 script: make build
-
