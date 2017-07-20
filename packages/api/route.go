@@ -55,12 +55,17 @@ func Route(route *hr.Router) {
 	get(`test/:name`, ``, getTest)
 	get(`content/page/:page`, `?global:int64`, contentPage)
 	get(`content/menu/:name`, `?global:int64`, contentMenu)
+	get(`lang/:name`, ``, getLang)
+	get(`langlist`, `?limit ?offset:int64`, langList)
 	get(`menu/:name`, `?global:int64`, getMenu)
+	get(`menulist`, `?limit ?offset ?global:int64`, menuList)
 	get(`page/:name`, `?global:int64`, getPage)
+	get(`pagelist`, `?limit ?offset ?global:int64`, pageList)
 	get(`contract/:id`, `?global:int64`, getContract)
 	get(`contractlist`, `?limit ?offset ?global:int64`, contractList)
 
 	post(`login`, `pubkey signature:hex,?state:int64`, login)
+	postTx(`lang`, `name trans:string`, txPreNewLang, txLang)
 	postTx(`menu`, `name value conditions:string, global:int64`, txPreNewMenu, txMenu)
 	postTx(`page`, `name menu value conditions:string, global:int64`, txPreNewPage, txPage)
 	postTx(`contract`, `name value conditions ?wallet:string, global:int64`, txPreNewContract, txContract)
@@ -70,8 +75,11 @@ func Route(route *hr.Router) {
 
 	putTx(`activatecontract/:id`, `?global:int64`, txPreActivateContract, txActivateContract)
 	putTx(`contract/:id`, `value conditions:string, global:int64`, txPreEditContract, txContract)
+	putTx(`lang/:name`, `trans:string`, txPreEditLang, txLang)
 	putTx(`menu/:name`, `value conditions:string, global:int64`, txPreEditMenu, txMenu)
+	putTx(`appendmenu/:name`, `value:string, global:int64`, txPreAppendMenu, txAppendMenu)
 	putTx(`page/:name`, `menu value conditions:string, global:int64`, txPreEditPage, txPage)
+	putTx(`appendpage/:name`, `value:string, global:int64`, txPreAppendPage, txAppendPage)
 }
 
 func processParams(input string) (params map[string]int) {
