@@ -116,8 +116,9 @@ func (c *Controller) Install() (string, error) {
 		dropConfig()
 		return "", utils.ErrInfo(err)
 	}
+	sql.DB = DB
 	c.DCDB = DB
-	if c.DCDB.DB == nil {
+	if c.DCDB == nil {
 		err = fmt.Errorf("utils.DB == nil")
 		log.Error("%v", utils.ErrInfo(err))
 		dropConfig()

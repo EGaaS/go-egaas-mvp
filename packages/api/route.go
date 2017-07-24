@@ -64,13 +64,17 @@ func Route(route *hr.Router) {
 	get(`statelist`, `?limit ?offset:int64`, authState, stateList)
 	get(`stateparams/:name`, ``, authState, getStateParams)
 	get(`stateparamslist`, `?limit ?offset:int64`, authState, stateParamsList)
+	get(`table/:name`, `?global:int64`, authState, getTable)
+	get(`tables`, `?limit ?offset ?global:int64`, authState, tableList)
 	get(`contract/:id`, `?global:int64`, authState, getContract)
 	get(`contractlist`, `?limit ?offset ?global:int64`, authState, contractList)
 
 	post(`login`, `pubkey signature:hex,?state:int64`, login)
+	postTx(`column/:table`, `name type permissions:string, index:int64`, txPreNewColumn, txNewColumn)
 	postTx(`lang`, `name trans:string`, txPreNewLang, txLang)
 	postTx(`menu`, `name value conditions:string, global:int64`, txPreNewMenu, txMenu)
 	postTx(`newstate`, `name currency:string`, txPreNewState, txNewState)
+	postTx(`table`, `name columns:string, global:int64`, txPreNewTable, txNewTable)
 	postTx(`page`, `name menu value conditions:string, global:int64`, txPreNewPage, txPage)
 	postTx(`stateparams`, `name value conditions:string`, txPreNewStateParams, txStateParams)
 	postTx(`contract`, `name value conditions ?wallet:string, global:int64`, txPreNewContract, txContract)
@@ -86,6 +90,8 @@ func Route(route *hr.Router) {
 	putTx(`page/:name`, `menu value conditions:string, global:int64`, txPreEditPage, txPage)
 	putTx(`appendpage/:name`, `value:string, global:int64`, txPreAppendPage, txAppendPage)
 	putTx(`stateparams/:name`, `value conditions:string`, txPreEditStateParams, txStateParams)
+	putTx(`table/:name`, `insert new_column general_update:string`, txPreEditTable, txEditTable)
+	putTx(`column/:table/:name`, `permissions:string`, txPreEditColumn, txEditColumn)
 }
 
 func processParams(input string) (params map[string]int) {
