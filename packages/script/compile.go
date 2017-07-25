@@ -59,7 +59,7 @@ will be compiled into Block(a) which will have two child blocks Block (b) and Bl
 */
 
 const (
-	// The list of state types 
+	// The list of state types
 	stateRoot = iota
 	stateBody
 	stateBlock
@@ -77,7 +77,7 @@ const (
 	stateFields
 	stateEval
 
-	// The list of state flags 
+	// The list of state flags
 	statePush     = 0x0100
 	statePop      = 0x0200
 	stateStay     = 0x0400
@@ -792,7 +792,7 @@ main:
 			}
 			if !call {
 				cmd = &ByteCode{cmdExtend, lexem.Value.(string)}
-				if (*lexems)[i+1].Type == isLBrack {
+				if i < len(*lexems)-1 && (*lexems)[i+1].Type == isLBrack {
 					buffer = append(buffer, &ByteCode{cmdIndex, 0})
 				}
 			}
