@@ -150,16 +150,27 @@ BEGIN:
 			Time: curTime, UserID: myWalletID, StateID: 0, PublicKey: []byte(`null`)}}
 		signature, err := d.GetBinSign(toSerialize.ForSign())
 		if err != nil {
-			logger.Error("%v", err)
+			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
+				break BEGIN
+			}
+			continue BEGIN
 		}
 		if len(signature) == 0 {
-			logger.Error("%v", fmt.Errorf(`Empty signature UpdFullNodes`))
+			err = fmt.Errorf(`Empty signature UpdFullNodes`)
+			logger.Error("%v", err)
+			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
+				break BEGIN
+			}
+			continue BEGIN
 		}
 		toSerialize.BinSignatures = converter.EncodeLengthPlusData(signature)
 		transactionTypeBin := converter.DecToBin(txType, 1)
 		serializedData, err := msgpack.Marshal(toSerialize)
 		if err != nil {
-			logger.Error("%v", err)
+			if d.unlockPrintSleep(utils.ErrInfo(err), d.sleepTime) {
+				break BEGIN
+			}
+			continue BEGIN
 		}
 		data := append(transactionTypeBin, serializedData...)
 		err = d.InsertReplaceTxInQueue(data)
