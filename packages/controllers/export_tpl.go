@@ -18,18 +18,17 @@ package controllers
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"sort"
 	"strings"
 	//	"strconv"
 	"encoding/json"
 
+	"regexp"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"regexp"
 )
 
 const nExportTpl = `export_tpl`
@@ -257,7 +256,7 @@ func (c *Controller) ExportTpl() (string, error) {
 	message := ``
 	if len(name) > 0 {
 		var out string
-		tplname := filepath.Join(*utils.Dir, name+`.tpl`)
+		tplname := name + `.tpl`
 		out += `SetVar(
 	global = 0,
 	type_new_page_id = TxId(NewPage),
@@ -691,11 +690,16 @@ where table_name = ? and column_name = ?`, itable, ikey).String()
 
 		out += strings.Replace(strings.Join(list, ",\r\n"), "`", `\"`, -1) + "]`\r\n)"
 
-		if err := ioutil.WriteFile(tplname, []byte(out), 0644); err != nil {
-			message = err.Error()
-		} else {
-			message = fmt.Sprintf(`File %s has been created`, tplname)
-		}
+		headers := c.w.Header()
+		headers.Del("Content-Type")
+		headers.Del("Content-Disposition")
+		headers.Del("Content-Transfer-Encoding")
+
+		headers.Add("Content-Type", "application/octet-stream")
+		headers.Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", tplname))
+		headers.Add("Content-Transfer-Encoding", "binary")
+
+		return out, nil
 	}
 	prefix := utils.Int64ToStr(c.SessStateID)
 	loadlist := func(name string) (*[]exportInfo, error) {
