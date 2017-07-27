@@ -1489,12 +1489,16 @@ func LiTemplate(vars *map[string]string, pars ...string) string {
 // Navigation returns bread crumb navigation links
 func Navigation(vars *map[string]string, pars ...string) string {
 	li := make([]string, 0)
-	for _, ipar := range pars {
-		li = append(li, converter.SanitizeScript(ipar))
+	for ind, ipar := range pars {
+		val := converter.SanitizeScript(ipar)
+		if ind > 0 && len(val) > 0 && val[0] != '<' {
+			val = `&nbsp;/&nbsp;&nbsp;` + val
+		}
+		li = append(li, val)
 	}
 	return textproc.Macro(fmt.Sprintf(`<ol class="breadcrumb"><span class="pull-right">
 	<a href='#' onclick="load_template('sys-editPage', {name: '#page#', global:'#global#'} )">Edit</a></span>%s</ol>`,
-		strings.Join(li, `&nbsp;/&nbsp;`)), vars)
+		strings.Join(li, `&nbsp;`)), vars)
 }
 
 // MarkDown returns processed markdown text
