@@ -860,10 +860,13 @@ func GetOne(vars *map[string]string, pars ...string) string {
 }
 
 func getClass(class string) (string, string) {
+	special := map[string]string{
+		`copyclipboard`: `onClick="CopyToClipboard('#clipboard')"`,
+	}
 	list := make([]string, 0)
 	buf := make([]rune, 0)
 	var quote bool
-	for _, ch := range class { //converter.Sanitize(class, `"' #-=`)
+	for _, ch := range converter.Sanitize(class, `"' #-=`) {
 		if ch == ' ' && !quote && len(buf) > 0 {
 			list = append(list, string(buf))
 			buf = buf[:0]
@@ -893,13 +896,14 @@ func getClass(class string) (string, string) {
 				}
 				more = append(more, fmt.Sprintf(`%s="%s"`, lr[0], right))
 			}
+		} else if ispecial, ok := special[ilist]; ok {
+			more = append(more, ispecial)
 		} else if strings.HasPrefix(ilist, `xs-`) || strings.HasPrefix(ilist, `sm-`) ||
 			strings.HasPrefix(ilist, `md-`) || strings.HasPrefix(ilist, `lg`) {
 			classes = append(classes, `col-`+ilist)
 		} else if ilist != `''` {
 			classes = append(classes, ilist)
 		}
-
 	}
 	return strings.Join(classes, ` `), strings.Join(more, ` `)
 }
