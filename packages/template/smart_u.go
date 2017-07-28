@@ -2621,6 +2621,7 @@ func CreateHTMLFromTemplate(page string, citizenID, stateID int64, params *map[s
 	(*params)[`page`] = page
 	(*params)[`state_id`] = converter.Int64ToStr(stateID)
 	(*params)[`citizen`] = converter.Int64ToStr(citizenID)
+	(*params)[`lang`] = language.GetLang(int(stateID), (*params)[`accept_lang`])
 	if len(data) > 0 {
 		templ := textproc.Process(data, params)
 		if (*params)[`isrow`] == `opened` {
