@@ -1,0 +1,596 @@
+{
+  function optionalList(value) {
+    return value !== null ? value : [];
+  }
+  
+  function extractOptional(optional, index) {
+    return optional ? optional[index] : null;
+  }
+  
+  function extractList(list, index) {
+    return list.map(function(element) { return element[index]; });
+  }
+  
+  function buildList(head, tail, index) {
+    console.log("buildList", head, tail, index);
+    return [head].concat(extractList(tail, index));
+  }
+  
+  function parseArrayParamsToObject(params, paramsObj) {
+  	var i = 0;
+    for(var paramName in paramsObj) {
+    	if (paramsObj.hasOwnProperty(paramName)) {
+        	if(params && typeof params[i] != "undefined")
+    			paramsObj[paramName] = params[i];
+            i++;
+    	}
+    }
+  }
+  
+  function arrayToNamedObject(arr) {
+    var obj = {};
+    if(arr && arr.length) {
+      for(var i = 0; i < arr.length; i++) {
+        obj[arr[i].name] = arr[i].value;
+      }
+    }
+  	return obj;
+  }
+}
+
+Start
+  = __ template:Template __ { return template; }
+
+SourceCharacter
+  = .
+  
+WhiteSpace "whitespace"
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+
+LineTerminator
+  = [\n\r\u2028\u2029]
+
+LineTerminatorSequence "end of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u2028"
+  / "\u2029"
+
+Comment "comment"
+  = MultiLineComment
+  / SingleLineComment
+
+MultiLineComment
+  = "/*" (!"*/" SourceCharacter)* "*/"
+
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
+
+SingleLineComment
+  = "//" (!LineTerminator SourceCharacter)*  
+__
+  = (WhiteSpace / LineTerminatorSequence / Comment)*
+  
+_
+  = (WhiteSpace / MultiLineCommentNoLineTerminator)*  
+  
+Template
+  = body:SourceElements? {
+      return {
+        type: "Template",
+        body: optionalList(body)
+      };
+    }
+    
+SourceElements
+  = head:SourceElement tail:(__ SourceElement)* {
+      return buildList(head, tail, 1);
+    }
+
+SourceElement
+  = Statement
+  
+Statement
+  = Tag
+  
+Tag
+  = A
+  / P
+  / Image
+  / Div
+  / Divs
+  / UList
+
+NoSpaceArgument
+  = str:[a-zA-Zа-яА-Я0-9\-_\./]* { return str.join(""); }
+
+Argument
+  = '"' str:[^\"]* '"' { return str.join(""); }
+  / '``' str:[^\`]* '``' { return str.join(""); }
+  / str:[^\),"`]* { return str.join(""); }  
+//  / str:[a-zA-Zа-яА-Я0-9-\_:/\./ ]* { return str.join(""); }  
+
+Arguments
+  = "(" __ args:(ArgumentList __)? ")" {
+      return optionalList(extractOptional(args, 0));
+    }
+
+ArgumentList
+  = head:Argument tail:(__ "," __ Argument)* {
+      return buildList(head, tail, 3);
+    }
+    
+NamedArgument
+  = name:[a-zA-Z0-9]+ _ "=" _ '"' str:[^\"]* '"' { return { name: name.join(""), value: str.join("") }; }
+  / name:[a-zA-Z0-9]+ _ "=" _ '``' str:[^\`]* '``' { return { name: name.join(""), value: str.join("") }; }
+  / name:[a-zA-Z0-9]+ _ "=" _ str:[^\},"`]* { return { name: name.join(""), value: str.join("") }; }
+//  / str:[a-zA-Zа-яА-Я0-9-\_:/\./ ]* { return str.join(""); }      
+
+NamedArguments //именованные аргументы func{class=big, text=hello}
+  = "{" __ args:(NamedArgumentList __)? "}" {
+      return optionalList(extractOptional(args, 0));
+    }
+
+NamedArgumentList
+  = head:NamedArgument tail:(__ "," __ NamedArgument)* {
+      return arrayToNamedObject(buildList(head, tail, 3));
+    }
+
+A
+  = "A:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "A",
+        params: { "class": param }
+      }
+    }
+  / "A" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null,
+      "href": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "A",
+        params: paramsObj      
+    } 
+  } 
+  / "A" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "A",
+        params: params    
+    } 
+  }
+
+P
+  = "P" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "P",
+        params: paramsObj
+      }
+    } 
+  / "P" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "P",
+        params: params    
+    } 
+  }
+
+Image
+  = "Image:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "Image",
+        params: { "src": param }
+      }
+    }
+  / "Image" params:Arguments  {
+    
+    var paramsObj = {
+      "src": null,
+      "alt": null,
+      "class": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Image",
+        params: paramsObj
+      }
+  } 
+  / "Image" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Image",
+        params: params    
+    } 
+  }
+  
+Div
+  = "Div" params:Arguments  {
+    
+    var paramsObj = {
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Div",
+        params: paramsObj
+      }
+  } 
+  / "Div" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Div",
+        params: params    
+    } 
+  }  
+ 
+Divs
+  = "Divs" params:Arguments __ body:SourceElements? __ "DivsEnd:" {   
+    return {
+      type: "tag",
+      name: "Divs",
+      nestedClassList: params,
+      body: optionalList(body)
+    }       
+  }
+
+UList
+  = "UList" params:Arguments __ body:LiElements? __ "UListEnd:" {   
+    var paramsObj = {
+      "class": null,
+      "ol": null,
+      "liClass": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+      type: "tag",
+      name: "UList",
+      params: paramsObj,
+      body: optionalList(body)
+    }       
+  }
+  / "UList" params:NamedArguments __ body:LiElements? __ "UListEnd:" {
+  	return {
+        type: "tag",
+        name: "UList",
+        params: params,
+        body: optionalList(body)
+    }
+  }
+  
+LiElements
+  = head:LiElement tail:(__ LiElement)* {
+      return buildList(head, tail, 1);
+    }
+
+LiElement
+  = Li
+  / LiBegin
+
+Li
+  = "Li:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "Li",
+        params: { "text": param }
+      }
+    }
+  / "Li" params:Arguments  {
+    
+    var paramsObj = {
+      "text": null,      
+      "class": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Li",
+        params: paramsObj
+      }
+  } 
+  / "Li" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Li",
+        params: params    
+    } 
+  }
+  
+LiBegin
+  = "LiBegin" params:Arguments __ body:SourceElements? __ "LiEnd:" {
+    var paramsObj = {      
+      "class": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+      type: "tag",
+      name: "LiBegin",
+      params: paramsObj,
+      body: optionalList(body)
+    }       
+  }
+  / "LiBegin" params:NamedArguments __ body:SourceElements? __ "LiEnd:" {
+    
+    return {
+      type: "tag",
+      name: "LiBegin",
+      params: params,
+      body: optionalList(body)
+    }       
+  } 
+  / "LiBegin:" param:NoSpaceArgument __ body:SourceElements? __ "LiEnd:" {
+    
+    return {
+      type: "tag",
+      name: "LiBegin",
+      params: { class: param },
+      body: optionalList(body)
+    }       
+  }  
+  ------------
+
+
+
+A(href = http)
+
+P(``b-green``, Текс абзаца)
+P(b-green, "Текс абзаца")
+P{text = Привет! проверка, class="big"}
+Image:/img/logo.png
+Image(http://egaas.org/logo.png, логотип, b-small)
+Image{src = http://egaas.org/logo.png, alt=логотип, class=b-small b-right data-title=test}
+A(b-big,тект ссылки, ``http://ya.ru``) 
+A{text=Искать в яндексе, href = "https://yandex.ru/search", class=b-big b-info}
+
+Div{text = kaka, class = f}
+
+Divs(pull-left b-red, b-panel)
+
+  P(``b-green``, Текс абзаца)
+  A(b-big,тект ссылки, ``http://ya.ru``) 
+DivsEnd:
+
+UList(b-big, ol)
+  Li:первый
+  Li:второй
+  Li(третий, b-underline)
+  LiBegin:b-big
+    A{text=Искать в яндексе, href = "https://yandex.ru/search", class=b-big b-info}
+  LiEnd:
+
+  LiBegin(b-big b-blue)
+    A{text=Искать в google, href = "https://google.com/search", class=b-big b-info}
+
+    Divs(pull-left b-red, b-panel)
+      P(``b-green``, Текс абзаца)
+      A(b-big,тект ссылки, ``http://ya.ru``) 
+    DivsEnd:
+
+  LiEnd:
+
+UListEnd:
+
+
+
+-----------------
+
+{
+   "type": "Template",
+   "body": [
+      {
+         "type": "tag",
+         "name": "a",
+         "params": {
+            "class": "href = http",
+            "text": null,
+            "href": null
+         }
+      },
+      {
+         "type": "tag",
+         "name": "p",
+         "params": {
+            "class": "b-green",
+            "text": "Текс абзаца"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "p",
+         "params": {
+            "class": "b-green",
+            "text": "Текс абзаца"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "p",
+         "params": {
+            "text": "Привет! проверка",
+            "class": "big"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "img",
+         "params": {
+            "src": "/img/logo.png"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "img",
+         "params": {
+            "src": "http://egaas.org/logo.png",
+            "alt": "логотип",
+            "class": "b-small"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "img",
+         "params": {
+            "src": "http://egaas.org/logo.png",
+            "alt": "логотип",
+            "class": "b-small b-right data-title=test"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "a",
+         "params": {
+            "class": "b-big",
+            "text": "тект ссылки",
+            "href": "http://ya.ru"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "a",
+         "params": {
+            "text": "Искать в яндексе",
+            "href": "https://yandex.ru/search",
+            "class": "b-big b-info"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "div",
+         "params": {
+            "text": "kaka",
+            "class": "f"
+         }
+      },
+      {
+         "type": "tag",
+         "name": "divs",
+         "nestedClassList": [
+            "pull-left b-red",
+            "b-panel"
+         ],
+         "body": [
+            {
+               "type": "tag",
+               "name": "p",
+               "params": {
+                  "class": "b-green",
+                  "text": "Текс абзаца"
+               }
+            },
+            {
+               "type": "tag",
+               "name": "a",
+               "params": {
+                  "class": "b-big",
+                  "text": "тект ссылки",
+                  "href": "http://ya.ru"
+               }
+            }
+         ]
+      },
+      {
+         "type": "tag",
+         "name": "ul",
+         "params": {
+            "class": "b-big",
+            "ol": "ol",
+            "liClass": null
+         },
+         "body": [
+            {
+               "type": "tag",
+               "name": "li",
+               "params": {
+                  "text": "первый"
+               }
+            },
+            {
+               "type": "tag",
+               "name": "li",
+               "params": {
+                  "text": "второй"
+               }
+            },
+            {
+               "type": "tag",
+               "name": "li",
+               "params": {
+                  "text": "третий",
+                  "class": "b-underline"
+               }
+            }
+         ]
+      }
+   ]
+}
+
+----------
+Divs(row)
+Divs(col-xs-6)
+Divs(panel panel-default, panel-body)
+
+  P(``b-green``, Текст абзаца)
+  
+DivsEnd:
+
+DivsEnd:
+
+Divs(col-xs-6)
+  Image(https://www.vectorlogo.zone/logos/getbootstrap/getbootstrap-card.png, бутстрап)
+
+ UList(b-big, ol)
+  Li:первый
+  Li:второй
+  Li(третий, text-danger)
+  LiBegin:text-success
+    A{text=Искать в яндексе, href = "https://yaaandex.ru/search", class=pull-right}
+  LiEnd:
+  LiBegin(text-success)
+    A{text=Искать в google, href = "https://goooogle.com/search", class=b-big b-info}
+
+    Divs(pull-left b-red, b-panel)
+    P(``b-green``, Текс абзаца)
+    A(text-danger,тект ссылки, ``http://yaaa.ru``) 
+    DivsEnd:
+  LiEnd:
+
+Li:привет
+UListEnd:
+
+DivsEnd:
+
+DivsEnd:
+
+A(bg-success,поиск в яндекс, ``http://ya.ru``) 

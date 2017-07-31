@@ -6,8 +6,102 @@
 		padding-top: 0px !important;
 		margin-left: 0px !important;
 	}
+
+	.g-padding {
+		padding: 20px;
+	}
+
+	.g-red {
+		border: 1px solid red;
+	}
+
+	.b-tag {
+		position: relative;
+		-margin: 3px;
+	}
+
+	.b-container {
+		min-height: 300px;
+		position: relative;
+	}
+
+	.b-draggable-inside {
+		/*box-sizing: border-box !important;*/
+		/*border: 3px dashed #8AF;*/
+	}
+
+	.b-draggable-inside-2 {
+
+	}
+
+	.b-draggable-before-2 {
+		/*box-sizing: border-box !important;*/
+	}
+
+	.b-draggable-after-2 {
+		/*box-sizing: border-box !important;*/
+		border-left: none;
+		border-top: none;
+		border-bottom: 3px dashed #8AF;
+		border-right: 3px dashed #8AF;
+	}
+
+	/*.js-droppable:before {*/
+		/*-webkit-transition:  border 1s ease;*/
+		/*-moz-transition:  border 1s ease;*/
+		/*-o-transition:  border 1s ease;*/
+		/*-ms-transition: border 1s ease;*/
+		/*transition: border 1s ease;*/
+	/*}*/
+
+	.b-draggable-inside:before {
+		content: " ";
+		display: block;
+		position: absolute;
+		top: 0; right: 0;
+		bottom: 0; left: 0;
+		/*box-sizing: border-box !important;*/
+		border: 3px dashed rgba(136, 179, 255, 0.7);
+		-z-index: 1000;
+		background: rgba(100, 200, 255, 0.2);
+	}
+
+	.b-draggable-before:before {
+		content: " ";
+		display: block;
+		position: absolute;
+		top: 0; right: 0;
+		bottom: 0; left: 0;
+		-z-index: 1000;
+		border-right: none;
+		border-bottom: none;
+		border-top: 6px solid rgba(136, 179, 255, 0.7);
+		border-left: 6px solid rgba(136, 179, 255, 0.7);
+		/*background: rgba(100, 200, 255, 0.2);*/
+	}
+
+	.b-draggable-after:before {
+		content: " ";
+		display: block;
+		position: absolute;
+		top: 0; right: 0;
+		bottom: 0; left: 0;
+		-z-index: 1000;
+		border-left: none;
+		border-top: none;
+		border-bottom: 6px solid rgba(136, 179, 255, 0.7);
+		border-right: 6px solid rgba(136, 179, 255, 0.7);
+		/*background: rgba(100, 200, 255, 0.2);*/
+	}
+
+	.b-source-element {
+		cursor: move;
+	}
+
+
+
 </style>
- 
+
 <div id="eGaaSEditor" style="cursor: auto;" class="edit">
 	<nav class="navbar navbar-default navbar-fixed-top">
 		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-3">
@@ -24,361 +118,128 @@
 			<ul class="nav navbar-nav navbar-right">
 				<li>
 					<div class="btn-group">
-						<button class="btn btn-default navbar-btn" href="#clear" id="clear" color="#333;"><i class="fa fa-trash-o" style="color: #333;"></i>Clear</button>
-					</div>
-				</li>
-				<li>
-					<div class="btn-group" data-toggle="buttons-radio">
-						<button type="button" class="btn btn-default navbar-btn" id="sourcepreview"><i class="fa fa-eye"></i> Preview</button>
+						<button class="btn btn-default navbar-btn"><i class="fa fa-save"></i> Save</button>
 					</div>
 				</li>
 			</ul>
 		</div>
 	</nav>
 	<div id="LG" class="container-fluid changeDimension">
-		<div class="checkbox c-checkbox">
-			<label>
-				<input id="connect" class="hidden" type="checkbox">
-				<span class="fa fa-check"></span>
-				Connect column with other column
-			</label>
-		</div>
 		<div class="sidebar-nav">
 			<ul class="nav nav-list accordion-group">
 				<li class="nav-header">
-					<i class="fa fa-plus"></i> GRID SYSTEM
-				</li>
-				<li>
-					<div class="lyrow col-md-6">
-						<span class="configuration">
-							<div class="drag column"></div>
-							<span class="settings btn-group">
-								<a class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" href="#">Settings <span class="caret"></span></a>
-								<ul class="dropdown-menu">
-									<li><a class="editor" href="#" data-target="#editorModal" role="button" data-toggle="modal">Advanced editor</a></li>
-									<li><a class="remove" href="#">Remove</a></li>
-								</ul>
-							</span>
-						</span>
-						<div class="preview clearfix">
-							<div class="pull-left grid-system">
-								<select id="getColumnViewport" class="form-control selectbox">
-									<option value="xs">xs</option>
-									<option value="sm">sm</option>
-									<option value="md" selected>md</option>
-									<option value="lg">lg</option>
-								</select>
-							</div>
-							<div class="pull-left grid-system">
-								<select id="getColumnGrid" class="form-control selectbox">
-									<option value="1">1</option>
-									<option value="2">2</option>
-									<option value="3">3</option>
-									<option value="4">4</option>
-									<option value="5">5</option>
-									<option value="6" selected>6</option>
-									<option value="7">7</option>
-									<option value="8">8</option>
-									<option value="9">9</option>
-									<option value="10">10</option>
-									<option value="11">11</option>
-									<option value="12">12</option>
-								</select>
-							</div>
-						</div>
-						<div class="view">
-							<div class="column"></div>
-						</div>
-					</div>
+					Панель инструментов
 				</li>
 			</ul>
-			<ul class="nav nav-list accordion-group">
-				<li class="nav-header">
-					<i class="fa fa-plus"></i> BLOCKS
-				</li>
-				<li>
-					<div class="lyrow">
-						<span class="configuration" contenteditable="false">
-							<div class="drag">New Panel</div>
-							<span class="settings">
-								<ul class="dropdown-menu">
-									<li class="styles">
-										<a class="submenu" href="#">Classes</a>
-										<ul class="dropdown-menu">
-											<li class="styles">
-												<a class="submenu" href="#">Type</a>
-												<ul class="dropdown-menu">
-													<li class="active"><a href="#" rel="panel-default">Default</a></li>
-													<li><a href="#" rel="panel-primary">Primary</a></li>
-													<li><a href="#" rel="panel-success">Success</a></li>
-													<li><a href="#" rel="panel-info">Info</a></li>
-													<li><a href="#" rel="panel-warning">Warning</a></li>
-													<li><a href="#" rel="panel-danger">Danger</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Addons style</a>
-												<ul class="dropdown-menu">
-													<li><a class="toggle" href="#" rel="elastic">Elastic</a></li>
-													<li><a class="toggle" href="#" rel="center">Center</a></li>
-												</ul>
-											</li>
-										</ul>
-									</li>
-								</ul>
-							</span>
-						</span>
-						<div class="preview"></div>
-						<div class="view">
-							<div class="column">
-								<div class="panel panel-default" data-sweet-alert="">
-									<div class="panel-heading" contenteditable="true">Hello, world!</div>
-									<div class="panel-body">
-										<p>This is a template for a simple marketing or informational website.</p>
-										<p> It includes a large callout called the hero unit and three supporting pieces of content.</p>
-										<p>Use it as a starting point to create something more unique.</p>
-									</div>
-									<div class="panel-footer">
-										<div class="clearfix">
-											<div class="pull-right">
-												<button type="button" class="btn btn-primary" contenteditable="true">Button</button>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</li>
-			</ul>
-			<ul class="nav nav-list accordion-group">
-				<li class="nav-header">
-					<i class="fa fa-plus"></i> Elements
-				</li>
-				<li>
-					<div class="box" egaas-class="table">
-						<span class="configuration" contenteditable="false">
-							<div class="drag">New table</div>
-							<span class="settings btn-group">
-								<a class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" href="#">Settings <span class="caret"></span></a>
-								<ul class="dropdown-menu">
-									<li class="styles">
-										<a class="submenu" href="#">Classes</a>
-										<ul class="dropdown-menu">
-											<li class="styles">
-												<a class="submenu" href="#">Addons style</a>
-												<ul class="dropdown-menu">
-													<li><a class="toggle" href="#" rel="table-bordered">Bordered Table</a></li>
-													<li><a class="toggle" href="#" rel="table-hover">Hover Rows</a></li>
-													<li><a class="toggle" href="#" rel="table-striped">Striped Rows</a></li>
-												</ul>
-											</li>
-										</ul>
-									</li>
-									<li><a class="editor" href="#" data-target="#editorModal" role="button" data-toggle="modal">Advanced editor</a></li>
-									<li><a class="remove" href="#">Remove</a></li>
-								</ul>
-							</span>
-						</span>
-						<div class="preview clearfix">
-							<select id="getTableType" class="form-control selectbox">
-								<option value="0" selected>Default</option>
-								<option value="1">Advanced (with data)</option>
-							</select>
-							<div id="getTableData" class="dataMaster">
-								<label>Data configuration</label>
-								<input id="getTableDataName" class="form-control" type="text" placeholder="Name">
-								<input id="getTableDataOrder" class="form-control" type="text" placeholder="Order">
-								<input id="getTableDataWhere" class="form-control" type="text" placeholder="Where">
-								<label>Columns</label>
-								<div class="Columns">
-									<input class="form-control" type="text" placeholder="Column title">
-									<input class="form-control" type="text" placeholder="Column value">
-									<input class="form-control" type="text" placeholder="Column class">
-								</div>
-								<button id="AddColumn" class="btn btn-primary" type="button">Add column</button>
-							</div>
-						</div>
-						<div class="view">
-							<div class="column">
-								<div class="table-responsive"></div>
-							</div>
-						</div>
-					</div>
-				</li>
-				<li>
-					<div class="box" egaas-class="button">
-						<span class="configuration" contenteditable="false">
-							<div class="drag">New button</div>
-							<span class="settings btn-group">
-								<a class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" href="#">Settings <span class="caret"></span></a>
-								<ul class="dropdown-menu">
-									<li class="styles">
-										<a class="submenu" href="#">Classes</a>
-										<ul class="dropdown-menu">
-											<li class="styles">
-												<a class="submenu" href="#">Styles</a>
-												<ul class="dropdown-menu">
-													<li><a href="#" rel="">Default</a></li>
-													<li class="active"><a href="#" rel="btn-primary">Primary</a></li>
-													<li><a href="#" rel="btn-success">Success</a></li>
-													<li><a href="#" rel="btn-info">Info</a></li>
-													<li><a href="#" rel="btn-warning">Warning</a></li>
-													<li><a href="#" rel="btn-danger">Danger</a></li>
-													<li><a href="#" rel="btn-inverse">Inverse</a></li>
-													<li><a href="#" rel="btn-green">Green</a></li>
-													<li><a href="#" rel="btn-purple">Purple</a></li>
-													<li><a href="#" rel="btn-pink">Pink</a></li>
-													<li><a href="#" rel="btn-link">Link</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Types</a>
-												<ul class="dropdown-menu">
-													<li class="active"><a href="#" rel="">Default</a></li>
-													<li><a href="#" rel="btn-outline">Outline</a></li>
-													<li><a href="#" rel="btn-oval">Oval</a></li>
-													<li><a href="#" rel="btn-pill-left">Pill left</a></li>
-													<li><a href="#" rel="btn-pill-right">Pill right</a></li>
-													<li><a href="#" rel="btn-square">Square</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Size</a>
-												<ul class="dropdown-menu">
-													  <li class="active"><a href="#" rel="">Default</a></li>
-													  <li><a href="#" rel="btn-lg">Large</a></li>
-													  <li><a href="#" rel="btn-sm">Small</a></li>
-													  <li><a href="#" rel="btn-xs">Extra small</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Addons style</a>
-												<ul class="dropdown-menu">
-													<li><a class="toggle" href="#" rel="btn-block">Block</a></li>
-													<li><a class="toggle" href="#" rel="disabled">Disabled</a></li>
-												</ul>
-											</li>
-										</ul>
-									</li>
-									<li><a class="editor" href="#" data-target="#editorModal" role="button" data-toggle="modal">Advanced editor</a></li>
-									<li><a class="remove" href="#">Remove</a></li>
-								</ul>
-							</span>
-						</span>
-						<div class="preview"></div>
-						<div class="view">
-							<div class="column">
-								<button class="btn btn-primary" type="button" contenteditable="true">Button</button>
-							</div>
-						</div>
-					</div>
-				</li>
-				<li>
-					<div class="box" egaas-class="input">
-						<span class="configuration" contenteditable="false">
-							<div class="drag">New input</div>
-							<span class="settings btn-group">
-								<a class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" href="#">Settings <span class="caret"></span></a>
-								<ul class="dropdown-menu">
-									<li class="styles">
-										<a class="submenu" href="#">Classes</a>
-										<ul class="dropdown-menu">
-											<li class="styles">
-												<a class="submenu" href="#">Types</a>
-												<ul class="dropdown-menu">
-													<li class="active"><a href="#" rel="">Default</a></li>
-													<li><a href="#" rel="form-control-rounded">Rounded</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Size</a>
-												<ul class="dropdown-menu">
-													  <li class="active"><a href="#" rel="">Default</a></li>
-													  <li><a href="#" rel="input-lg">Large</a></li>
-													  <li><a href="#" rel="input-sm">Small</a></li>
-												</ul>
-											</li>
-											<li class="styles">
-												<a class="submenu" href="#">Addons style</a>
-												<ul class="dropdown-menu">
-													<li><a class="toggle" href="#" rel="disabled">Disabled</a></li>
-												</ul>
-											</li>
-										</ul>
-									</li>
-									<li><a class="editor" href="#" data-target="#editorModal" role="button" data-toggle="modal">Advanced editor</a></li>
-									<li><a class="remove" href="#">Remove</a></li>
-								</ul>
-							</span>
-						</span>
-						<div class="preview"></div>
-						<div class="view">
-							<div class="column">
-								<input class="form-control" type="text">
-							</div>
-						</div>
-					</div>
-				</li>
-			</ul>
+
+			<div class="js-source-elements">
+				<div class="js-source-element b-source-element">Ссылка</div>
+				<div class="js-source-element b-source-element">Текст</div>
+				<div class="js-source-element b-source-element">Изображение</div>
+				<div class="js-source-element b-source-element">Блок</div>
+				<div class="js-source-element b-source-element">Блоки</div>
+				<div class="js-source-element b-source-element">Список</div>
+				<div class="js-source-element b-source-element">Элемент списка</div>
+			</div>
+
+
 		</div>
-		<div class="row demo">
-			<div class="lyrow col-md-12">
-				<span class="configuration">
-					<div class="drag"></div>
-					<span class="settings btn-group">
-						<a class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" href="#">Settings <span class="caret"></span></a>
-						<ul class="dropdown-menu">
-							<li class="styles">
-								<a class="submenu" href="#">Classes</a>
-								<ul class="dropdown-menu">
-									<li class="styles">
-										<a class="submenu" href="#">Type</a>
-										<ul class="dropdown-menu">
-											<li><a href="#" rel="panel-default">Default</a></li>
-											<li><a href="#" rel="panel-primary">Primary</a></li>
-											<li><a href="#" rel="panel-success">Success</a></li>
-											<li class="active"><a href="#" rel="panel-info">Info</a></li>
-											<li><a href="#" rel="panel-warning">Warning</a></li>
-											<li><a href="#" rel="panel-danger">Danger</a></li>
-										</ul>
-									</li>
-									<li class="styles">
-										<a class="submenu" href="#">Addons style</a>
-										<ul class="dropdown-menu">
-											<li><a class="toggle" href="#" rel="elastic">Elastic</a></li>
-											<li><a class="toggle" href="#" rel="center">Center</a></li>
-										</ul>
-									</li>
-								</ul>
-							</li>
-							<li><a class="editor" href="#" data-target="#editorModal" role="button" data-toggle="modal">Advanced editor</a></li>
-							<li><a class="remove" href="#">Remove</a></li>
-						</ul>
-					</span>
-				</span>
-				<div class="view">
-					<div class="column">
-						<div class="panel panel-info" data-sweet-alert="">
-							<div class="panel-heading" contenteditable="true">Hello, world!</div>
-							<div class="panel-body">
-								<p>This is a template for a simple marketing or informational website.</p>
-								<p> It includes a large callout called the hero unit and three supporting pieces of content.</p>
-								<p>Use it as a starting point to create something more unique.</p>
+		<div class="b-container js-container js-tag">
+
+			<a class="b-tag js-tag" id="gen12412" href="https://ya.ru" >Поиск в Яндекс</a>
+			<a class="b-tag js-tag" id="gen12413" href="https://google.ru">Поиск в Гугл</a>
+			<a class="b-tag js-tag" id="gen12414" href="https://bing.ru">Поиск в Bing</a>
+			<div class="b-tag js-tag g-padding" id="gen668678">
+				<div class="g-red">
+					<p class="b-tag js-tag">p text here</p>
+					<div class="b-tag js-tag g-padding" id="gen668628">
+						<div class="g-red">
+							inner divs here
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="b-tag js-tag g-padding" id="gen668679">
+				<div class="g-red">
+					div here1
+					<div class="b-tag js-tag g-padding" id="gen668610">
+						<div class="g-red">
+							inner divs here1
+
+							<div class="b-tag js-tag" id="gen11">
+								div11
 							</div>
-							<div class="panel-footer">
-								<div class="clearfix">
-									<div class="pull-right">
-										<button type="button" class="btn btn-primary" contenteditable="true">Button</button>
-									</div>
-								</div>
+							<div class="b-tag js-tag" id="gen12">
+								div12
 							</div>
+							<div class="b-tag js-tag" id="gen13">
+								div13
+							</div>
+
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<hr>
+
+		<div class="b-container js-container2">
+			<div class="b-tag js-droppable">
+				<a class="b-tag js-droppable js-draggable" id="gen_12412" href="https://ya.ru" style="padding: 10px; border-radius: 5px; background-color: #2b957a; color: #FFF;">Поиск в Яндекс</a>
+				<a class="b-tag js-droppable js-draggable" id="gen_12413" href="https://google.ru">Поиск в Гугл</a>
+				<a class="b-tag js-droppable js-draggable" id="gen_12414" href="https://bing.ru">Поиск в Bing</a>
+				<div class="b-tag js-droppable js-draggable g-padding" id="gen_668678">
+					<div class="g-red">
+						<p class="b-tag js-droppable js-draggable">p text here</p>
+						<div class="b-tag js-droppable js-draggable g-padding" id="gen_668628">
+							<div class="g-red">
+								inner divs here
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<a class="b-tag js-droppable js-draggable" id="gen12412" href="https://ya.ru" >Поиск в Яндекс</a>
+				<a class="b-tag js-droppable js-draggable" id="gen12413" href="https://google.ru">Поиск в Гугл</a>
+				<a class="b-tag js-droppable js-draggable" id="gen12414" href="https://bing.ru">Поиск в Bing</a>
+				<div class="b-tag js-droppable js-draggable g-padding" id="gen668678">
+					<div class="g-red">
+						<p class="b-tag js-droppable js-draggable">p text here</p>
+						<div class="b-tag js-droppable js-draggable g-padding" id="gen668628">
+							<div class="g-red">
+								inner divs here
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="b-tag js-droppable js-draggable g-padding" id="gen668679">
+					<div class="g-red">
+						div here1
+						<div class="b-tag js-droppable js-draggable g-padding" id="gen668610">
+							<div class="g-red">
+								inner divs here1
+
+								<div class="b-tag js-droppable js-draggable" id="gen11">
+									div11
+								</div>
+								<div class="b-tag js-droppable js-draggable" id="gen12">
+									div12
+								</div>
+								<div class="b-tag js-droppable js-draggable" id="gen13">
+									div13
+								</div>
+
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+
 	</div>
 </div>
 
-<script type="text/javascript" src="static/generator/js/scripts.js"></script>
+<script type="text/javascript" src="static/generator/js/libs/js-class.js"></script>
+<script type="text/javascript" src="static/generator/js/main.js"></script>
