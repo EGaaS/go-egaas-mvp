@@ -7,6 +7,29 @@
 		margin-left: 0px !important;
 	}
 
+	.g-no-select {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		-webkit-tap-highlight-color:rgba(0,0,0,0);
+		-moz-tap-highlight-color: rgba(0,0,0,0);
+	}
+
+	.g-no-overflow-x {
+		overflow-x: hidden;
+	}
+
+	.js-draggable {
+		cursor: move;
+	}
+
+	.g-move {
+		cursor: move;
+	}
+
 	.g-padding {
 		padding: 20px;
 	}
@@ -30,31 +53,9 @@
 		/*border: 3px dashed #8AF;*/
 	}
 
-	.b-draggable-inside-2 {
 
-	}
 
-	.b-draggable-before-2 {
-		/*box-sizing: border-box !important;*/
-	}
-
-	.b-draggable-after-2 {
-		/*box-sizing: border-box !important;*/
-		border-left: none;
-		border-top: none;
-		border-bottom: 3px dashed #8AF;
-		border-right: 3px dashed #8AF;
-	}
-
-	/*.js-droppable:before {*/
-		/*-webkit-transition:  border 1s ease;*/
-		/*-moz-transition:  border 1s ease;*/
-		/*-o-transition:  border 1s ease;*/
-		/*-ms-transition: border 1s ease;*/
-		/*transition: border 1s ease;*/
-	/*}*/
-
-	.b-draggable-inside:before {
+	.b-droppable-inside:before {
 		content: " ";
 		display: block;
 		position: absolute;
@@ -66,7 +67,7 @@
 		background: rgba(100, 200, 255, 0.2);
 	}
 
-	.b-draggable-before:before {
+	.b-droppable-before:before {
 		content: " ";
 		display: block;
 		position: absolute;
@@ -80,7 +81,7 @@
 		/*background: rgba(100, 200, 255, 0.2);*/
 	}
 
-	.b-draggable-after:before {
+	.b-droppable-after:before {
 		content: " ";
 		display: block;
 		position: absolute;
@@ -96,6 +97,26 @@
 
 	.b-source-element {
 		cursor: move;
+	}
+
+	.b-draggable_dragging {
+		opacity: 0.3;
+	}
+
+	.b-draggable-bag {
+		position: absolute;
+		top: 0; left: 0;
+		z-index: 8000;
+		min-width: 100px;
+		min-height: 30px;
+		opacity: 0.7;
+		border: 3px dashed rgba(136, 179, 255, 0.7);
+		background: rgba(100, 200, 255, 0.2);
+	}
+
+	.b-draggable-bag__inner {
+		position: relative;
+		-padding: 10px;
 	}
 
 
@@ -133,58 +154,58 @@
 			</ul>
 
 			<div class="js-source-elements">
-				<div class="js-source-element b-source-element">Ссылка</div>
-				<div class="js-source-element b-source-element">Текст</div>
-				<div class="js-source-element b-source-element">Изображение</div>
-				<div class="js-source-element b-source-element">Блок</div>
-				<div class="js-source-element b-source-element">Блоки</div>
-				<div class="js-source-element b-source-element">Список</div>
-				<div class="js-source-element b-source-element">Элемент списка</div>
+				<div class="js-draggable b-source-element">Ссылка</div>
+				<div class="js-draggable b-source-element">Текст</div>
+				<div class="js-draggable b-source-element">Изображение</div>
+				<div class="js-draggable b-source-element">Блок</div>
+				<div class="js-draggable b-source-element">Блоки</div>
+				<div class="js-draggable b-source-element">Список</div>
+				<div class="js-draggable b-source-element">Элемент списка</div>
 			</div>
 
 
 		</div>
-		<div class="b-container js-container js-tag">
+		<!--<div class="b-container js-container js-tag">-->
 
-			<a class="b-tag js-tag" id="gen12412" href="https://ya.ru" >Поиск в Яндекс</a>
-			<a class="b-tag js-tag" id="gen12413" href="https://google.ru">Поиск в Гугл</a>
-			<a class="b-tag js-tag" id="gen12414" href="https://bing.ru">Поиск в Bing</a>
-			<div class="b-tag js-tag g-padding" id="gen668678">
-				<div class="g-red">
-					<p class="b-tag js-tag">p text here</p>
-					<div class="b-tag js-tag g-padding" id="gen668628">
-						<div class="g-red">
-							inner divs here
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="b-tag js-tag g-padding" id="gen668679">
-				<div class="g-red">
-					div here1
-					<div class="b-tag js-tag g-padding" id="gen668610">
-						<div class="g-red">
-							inner divs here1
+			<!--<a class="b-tag js-tag" id="gen12412" href="https://ya.ru" >Поиск в Яндекс</a>-->
+			<!--<a class="b-tag js-tag" id="gen12413" href="https://google.ru">Поиск в Гугл</a>-->
+			<!--<a class="b-tag js-tag" id="gen12414" href="https://bing.ru">Поиск в Bing</a>-->
+			<!--<div class="b-tag js-tag g-padding" id="gen668678">-->
+				<!--<div class="g-red">-->
+					<!--<p class="b-tag js-tag">p text here</p>-->
+					<!--<div class="b-tag js-tag g-padding" id="gen668628">-->
+						<!--<div class="g-red">-->
+							<!--inner divs here-->
+						<!--</div>-->
+					<!--</div>-->
+				<!--</div>-->
+			<!--</div>-->
+			<!--<div class="b-tag js-tag g-padding" id="gen668679">-->
+				<!--<div class="g-red">-->
+					<!--div here1-->
+					<!--<div class="b-tag js-tag g-padding" id="gen668610">-->
+						<!--<div class="g-red">-->
+							<!--inner divs here1-->
 
-							<div class="b-tag js-tag" id="gen11">
-								div11
-							</div>
-							<div class="b-tag js-tag" id="gen12">
-								div12
-							</div>
-							<div class="b-tag js-tag" id="gen13">
-								div13
-							</div>
+							<!--<div class="b-tag js-tag" id="gen11">-->
+								<!--div11-->
+							<!--</div>-->
+							<!--<div class="b-tag js-tag" id="gen12">-->
+								<!--div12-->
+							<!--</div>-->
+							<!--<div class="b-tag js-tag" id="gen13">-->
+								<!--div13-->
+							<!--</div>-->
 
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+						<!--</div>-->
+					<!--</div>-->
+				<!--</div>-->
+			<!--</div>-->
+		<!--</div>-->
 
-		<hr>
+		<!--<hr>-->
 
-		<div class="b-container js-container2">
+		<div class="b-container js-container">
 			<div class="b-tag js-droppable">
 				<a class="b-tag js-droppable js-draggable" id="gen_12412" href="https://ya.ru" style="padding: 10px; border-radius: 5px; background-color: #2b957a; color: #FFF;">Поиск в Яндекс</a>
 				<a class="b-tag js-droppable js-draggable" id="gen_12413" href="https://google.ru">Поиск в Гугл</a>
@@ -205,7 +226,7 @@
 				<a class="b-tag js-droppable js-draggable" id="gen12414" href="https://bing.ru">Поиск в Bing</a>
 				<div class="b-tag js-droppable js-draggable g-padding" id="gen668678">
 					<div class="g-red">
-						<p class="b-tag js-droppable js-draggable">p text here</p>
+						<p class="b-tag js-droppable js-draggable" style="cursor: default">p text here</p>
 						<div class="b-tag js-droppable js-draggable g-padding" id="gen668628">
 							<div class="g-red">
 								inner divs here
