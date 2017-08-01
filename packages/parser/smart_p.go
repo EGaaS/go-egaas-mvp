@@ -59,6 +59,7 @@ var (
 		"UpdateMenu":     struct{}{},
 		"UpdatePage":     struct{}{},
 		"DBInsertReport": struct{}{},
+		"UpdateSysParam": struct{}{},
 	}
 	extendCost = map[string]int64{
 		"AddressToId": 10,
@@ -111,6 +112,7 @@ func init() {
 		"UpdateMenu":         UpdateMenu,
 		"UpdatePage":         UpdatePage,
 		"DBInsertReport":     DBInsertReport,
+		"UpdateSysParam":     UpdateSysParam,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -968,4 +970,49 @@ func NewStateFunc(p *Parser, country, currency string) (err error) {
 	newStateParser := NewStateParser{p, nil}
 	_, err = newStateParser.Main(country, currency)
 	return
+}
+
+// UpdateSysParam updates the system parameter
+func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
+	var (
+		fields []string
+		values []interface{}
+	)
+
+	par, err := p.OneRow(`SELECT * FROM "system_parameters" WHERE name = ?`, name).String()
+	if err != nil {
+		return 0, err
+	}
+	if len(par) == 0 {
+		return 0, fmt.Errorf(`unknown parameter %s`, name)
+	}
+	cond := par[`conditions`]
+	if len(cond) > 0 {
+		ret, err := p.EvalIf(cond)
+		if err != nil {
+			return 0, err
+		}
+		if !ret {
+			return 0, fmt.Errorf(`Access denied`)
+		}
+	}
+	if len(value) > 0 {
+		fields = append(fields, "value")
+		values = append(values, value)
+	}
+	if len(conditions) > 0 {
+		if err := smart.CompileEval(conditions, 0); err != nil {
+			return 0, err
+		}
+		fields = append(fields, "conditions")
+		values = append(values, conditions)
+	}
+	if len(fields) == 0 {
+		return 0, fmt.Errorf(`empty value and condition`)
+	}
+	_, _, err = p.selectiveLoggingAndUpd(fields, values, "system_parameters", []string{"name"}, []string{name}, true)
+	if err != nil {
+		return 0, err
+	}
+	return 0, nil
 }
