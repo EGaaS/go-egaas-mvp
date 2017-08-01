@@ -1014,5 +1014,9 @@ func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	err = sql.SysUpdate()
+	if err != nil {
+		return 0, err
+	}
 	return 0, nil
 }

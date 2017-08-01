@@ -82,9 +82,7 @@ func SysUpdate() error {
 	}
 	mutex.Lock()
 	for _, item := range list {
-		for key, value := range item {
-			cache[string(key)] = value
-		}
+		cache[item[`name`]] = item[`value`]
 	}
 	mutex.Unlock()
 	return nil
