@@ -24,41 +24,39 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type sysParName string
-
 const (
 	// NumberNodes is the number of nodes
-	NumberNodes = sysParName(`number_of_dlt_nodes`)
+	NumberNodes = `number_of_dlt_nodes`
 	// FuelRate is the rate
-	FuelRate = sysParName(`fuel_rate`)
+	FuelRate = `fuel_rate`
 	// OpPrice is the costs of operations
-	OpPrice = sysParName(`op_price`)
+	OpPrice = `op_price`
 	// GapsBetweenBlocks is the time between blocks
-	GapsBetweenBlocks = sysParName(`gaps_between_blocks`)
+	GapsBetweenBlocks = `gaps_between_blocks`
 	// BlockchainURL is the address of the blockchain file.  For those who don't want to collect it from nodes
-	BlockchainURL = sysParName(`blockchain_url`)
+	BlockchainURL = `blockchain_url`
 	// MaxBlockSize is the maximum size of the block
-	MaxBlockSize = sysParName(`max_block_size`)
+	MaxBlockSize = `max_block_size`
 	// MaxTxSize is the maximum size of the transaction
-	MaxTxSize = sysParName(`max_tx_size`)
+	MaxTxSize = `max_tx_size`
 	// MaxTxCount is the maximum count of the transactions
-	MaxTxCount = sysParName(`max_tx_count`)
+	MaxTxCount = `max_tx_count`
 	// MaxColumns is the maximum columns in tables
-	MaxColumns = sysParName(`max_columns`)
+	MaxColumns = `max_columns`
 	// MaxIndexes is the maximum indexes in tables
-	MaxIndexes = sysParName(`max_indexes`)
+	MaxIndexes = `max_indexes`
 	// MaxBlockUserTx is the maximum number of user's transactions in one block
-	MaxBlockUserTx = sysParName(`max_block_user_tx`)
+	MaxBlockUserTx = `max_block_user_tx`
 	// UpdFullNodesPeriod is the maximum number of user's transactions in one block
-	UpdFullNodesPeriod = sysParName(`upd_full_nodes_period`)
+	UpdFullNodesPeriod = `upd_full_nodes_period`
 	// RecoveryAddress is the recovery address
-	RecoveryAddress = sysParName(`recovery_address`)
+	RecoveryAddress = `recovery_address`
 	// CommissionWallet is the address for commissions
-	CommissionWallet = sysParName(`commission_wallet`)
+	CommissionWallet = `commission_wallet`
 )
 
 var (
-	cache = map[sysParName]string{
+	cache = map[string]string{
 		BlockchainURL: "https://raw.githubusercontent.com/egaas-blockchain/egaas-blockchain.github.io/master/testnet_blockchain",
 		// For compatible of develop versions
 		// Remove later
@@ -85,7 +83,7 @@ func SysUpdate() error {
 	mutex.Lock()
 	for _, item := range list {
 		for key, value := range item {
-			cache[sysParName(key)] = value
+			cache[string(key)] = value
 		}
 	}
 	mutex.Unlock()
@@ -93,22 +91,22 @@ func SysUpdate() error {
 }
 
 // SysDecimal returns big integer value
-func SysDecimal(name sysParName) (decimal.Decimal, error) {
+func SysDecimal(name string) (decimal.Decimal, error) {
 	return decimal.NewFromString(string(name))
 }
 
 // SysInt64 returns int64 value of the system parameter
-func SysInt64(name sysParName) int64 {
+func SysInt64(name string) int64 {
 	return converter.StrToInt64(SysString(name))
 }
 
 // SysInt returns int64 value of the system parameter
-func SysInt(name sysParName) int {
+func SysInt(name string) int {
 	return converter.StrToInt(SysString(name))
 }
 
 // SysString returns string value of the system parameter
-func SysString(name sysParName) string {
+func SysString(name string) string {
 	mutex.Lock()
 	ret := cache[name]
 	mutex.Unlock()
