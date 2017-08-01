@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
-	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
@@ -700,7 +699,7 @@ func (p *Parser) payFPrice() error {
 		return err
 	}
 	if _, _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{commission}, `dlt_wallets`, []string{`wallet_id`},
-		[]string{converter.Int64ToStr(consts.COMMISSION_WALLET)}, true); err != nil {
+		[]string{converter.Int64ToStr(db.SysInt64(db.CommissionWallet))}, true); err != nil {
 		return err
 	}
 	fmt.Printf(" Paid commission %v\r\n", commission)
