@@ -226,6 +226,7 @@ window.parser = /*
               return {
                 type: "tag",
                 name: "A",
+                id: generateId(),
                 params: { "class": param }
               }
             },
@@ -243,6 +244,7 @@ window.parser = /*
             return {
                 type: "tag",
                 name: "A",
+                id: generateId(),
                 params: paramsObj      
             } 
           },
@@ -250,6 +252,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "A",
+                id: generateId(),
                 params: params    
             } 
           },
@@ -266,6 +269,7 @@ window.parser = /*
             return {
                 type: "tag",
                 name: "P",
+                id: generateId(),
                 params: paramsObj
               }
             },
@@ -273,6 +277,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "P",
+                id: generateId(),
                 params: params    
             } 
           },
@@ -282,6 +287,7 @@ window.parser = /*
               return {
                 type: "tag",
                 name: "Image",
+                id: generateId(),
                 params: { "src": param }
               }
             },
@@ -300,6 +306,7 @@ window.parser = /*
             return {
                 type: "tag",
                 name: "Image",
+                id: generateId(),
                 params: paramsObj
               }
           },
@@ -307,6 +314,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "Image",
+                id: generateId(),
                 params: params    
             } 
           },
@@ -324,6 +332,7 @@ window.parser = /*
             return {
                 type: "tag",
                 name: "Div",
+                id: generateId(),
                 params: paramsObj
               }
           },
@@ -331,6 +340,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "Div",
+                id: generateId(),
                 params: params    
             } 
           },
@@ -342,6 +352,7 @@ window.parser = /*
             return {
               type: "tag",
               name: "Divs",
+              id: generateId(),
               nestedClassList: params,
               body: optionalList(body)
             }       
@@ -362,6 +373,7 @@ window.parser = /*
             return {
               type: "tag",
               name: "UList",
+              id: generateId(),
               params: paramsObj,
               body: optionalList(body)
             }       
@@ -370,6 +382,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "UList",
+                id: generateId(),
                 params: params,
                 body: optionalList(body)
             }
@@ -380,6 +393,7 @@ window.parser = /*
               return {
                 type: "tag",
                 name: "Li",
+                id: generateId(),
                 params: { "text": param }
               }
             },
@@ -397,6 +411,7 @@ window.parser = /*
             return {
                 type: "tag",
                 name: "Li",
+                id: generateId(),
                 params: paramsObj
               }
           },
@@ -404,6 +419,7 @@ window.parser = /*
           	return {
                 type: "tag",
                 name: "Li",
+                id: generateId(),
                 params: params    
             } 
           },
@@ -421,6 +437,7 @@ window.parser = /*
             return {
               type: "tag",
               name: "LiBegin",
+              id: generateId(),
               params: paramsObj,
               body: optionalList(body)
             }       
@@ -430,6 +447,7 @@ window.parser = /*
             return {
               type: "tag",
               name: "LiBegin",
+              id: generateId(),
               params: params,
               body: optionalList(body)
             }       
@@ -441,6 +459,7 @@ window.parser = /*
             return {
               type: "tag",
               name: "LiBegin",
+              id: generateId(),
               params: { class: param },
               body: optionalList(body)
             }       
@@ -2761,6 +2780,10 @@ window.parser = /*
           }
         }
       	return obj;
+      }
+      
+      function generateId() {
+         return "tag_" + (10000000 + Math.floor(Math.random() * 89999999));
       }
 
 

@@ -36,6 +36,10 @@
     }
   	return obj;
   }
+  
+  function generateId() {
+     return "tag_" + (10000000 + Math.floor(Math.random() * 89999999));
+  }
 }
 
 Start
@@ -145,6 +149,7 @@ A
       return {
         type: "tag",
         name: "A",
+        id: generateId(),
         params: { "class": param }
       }
     }
@@ -160,6 +165,7 @@ A
     return {
         type: "tag",
         name: "A",
+        id: generateId(),
         params: paramsObj      
     } 
   } 
@@ -167,6 +173,7 @@ A
   	return {
         type: "tag",
         name: "A",
+        id: generateId(),
         params: params    
     } 
   }
@@ -183,6 +190,7 @@ P
     return {
         type: "tag",
         name: "P",
+        id: generateId(),
         params: paramsObj
       }
     } 
@@ -190,6 +198,7 @@ P
   	return {
         type: "tag",
         name: "P",
+        id: generateId(),
         params: params    
     } 
   }
@@ -199,6 +208,7 @@ Image
       return {
         type: "tag",
         name: "Image",
+        id: generateId(),
         params: { "src": param }
       }
     }
@@ -215,6 +225,7 @@ Image
     return {
         type: "tag",
         name: "Image",
+        id: generateId(),
         params: paramsObj
       }
   } 
@@ -222,6 +233,7 @@ Image
   	return {
         type: "tag",
         name: "Image",
+        id: generateId(),
         params: params    
     } 
   }
@@ -239,6 +251,7 @@ Div
     return {
         type: "tag",
         name: "Div",
+        id: generateId(),
         params: paramsObj
       }
   } 
@@ -246,6 +259,7 @@ Div
   	return {
         type: "tag",
         name: "Div",
+        id: generateId(),
         params: params    
     } 
   }  
@@ -255,6 +269,7 @@ Divs
     return {
       type: "tag",
       name: "Divs",
+      id: generateId(),
       nestedClassList: params,
       body: optionalList(body)
     }       
@@ -273,6 +288,7 @@ UList
     return {
       type: "tag",
       name: "UList",
+      id: generateId(),
       params: paramsObj,
       body: optionalList(body)
     }       
@@ -281,6 +297,7 @@ UList
   	return {
         type: "tag",
         name: "UList",
+        id: generateId(),
         params: params,
         body: optionalList(body)
     }
@@ -300,6 +317,7 @@ Li
       return {
         type: "tag",
         name: "Li",
+        id: generateId(),
         params: { "text": param }
       }
     }
@@ -315,6 +333,7 @@ Li
     return {
         type: "tag",
         name: "Li",
+        id: generateId(),
         params: paramsObj
       }
   } 
@@ -322,6 +341,7 @@ Li
   	return {
         type: "tag",
         name: "Li",
+        id: generateId(),
         params: params    
     } 
   }
@@ -337,6 +357,7 @@ LiBegin
     return {
       type: "tag",
       name: "LiBegin",
+      id: generateId(),
       params: paramsObj,
       body: optionalList(body)
     }       
@@ -346,6 +367,7 @@ LiBegin
     return {
       type: "tag",
       name: "LiBegin",
+      id: generateId(),
       params: params,
       body: optionalList(body)
     }       
@@ -355,10 +377,12 @@ LiBegin
     return {
       type: "tag",
       name: "LiBegin",
+      id: generateId(),
       params: { class: param },
       body: optionalList(body)
     }       
   }  
+
   ------------
 
 

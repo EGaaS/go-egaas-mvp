@@ -4,20 +4,32 @@ var DragAndDrop = JS_CLASS({
 
     constructor: function (param) {
         CP(this, param);
+
+        this.$over = $('<div class="b-over"></div>');
+        $(document.body).append(this.$over);
+
         this.events();
+        this.eventsDynamic();
+
+
+
     },
 
     createDraggableBag: function (html) {
         this.$bag = $('<div class="b-draggable-bag"><div class="b-draggable-bag__inner">'+html+'</div></div>');
+        this.$bag.hide();
         $(document.body).append(this.$bag);
+
     },
 
     removeDraggableBag: function () {
-        this.$bag.remove();
+        if(this.$bag)
+            this.$bag.remove();
     },
 
     moveDraggableBag: function (x, y) {
         this.$bag
+            .show()
             .css("top", y + 3)
             .css("left", x + 3);
     },
@@ -25,12 +37,66 @@ var DragAndDrop = JS_CLASS({
     events: function () {
         var self = this;
 
+        $(document.body)
+            .on("mouseup mouseleave", function (e) {
+                if(!self.dragging)
+                    return;
+                self.dragging = false;
+                $(document.body)
+                    .removeClass("g-no-select")
+                    .removeClass("g-no-overflow-x");
+                self.removeDraggableBag();
+                self.$container.find(".js-droppable")
+                    .removeClass("b-droppable-inside")
+                    .removeClass("b-droppable-before")
+                    .removeClass("b-droppable-after");
+
+                $(".js-draggable").removeClass("b-draggable_dragging");
+            })
+            .on("mousemove", function (e) {
+                if(!self.dragging)
+                    return;
+                self.moveDraggableBag(e.pageX, e.pageY);
+            });
+
+        // $(".b-over").on("mouseout", function () {
+        //     $(this).hide();
+        // });
+
+    },
+
+    eventsDynamic: function () {
+        var self = this;
+
         this.$container.find(".js-droppable")
+            .off("mouseover")
+            .on("mouseover", function (e) {
+                e.stopPropagation();
+                if(self.dragging)
+                    return;
+                //$(this)
+                //    .addClass("b-droppable-inside")
+                //    .removeClass("b-droppable-before")
+                //    .removeClass("b-droppable-after");
+
+                $(".b-over")
+                    .show()
+                    .css("left", $(this).offset().left)
+                    .css("top", $(this).offset().top)
+                    .css("width", $(this).outerWidth())
+                    .css("height", $(this).outerHeight());
+                //console.log($(this).offset().left, $(this).offset().top);
+
+            })
             .off("mouseout")
             .on("mouseout", function (e) {
                 e.stopPropagation();
-                if(!self.dragging)
+                if(!self.dragging) {
+                    //$(this)
+                    //    .removeClass("b-droppable-inside");
                     return;
+                }
+
                 $(this)
                     .removeClass("b-droppable-inside")
                     .removeClass("b-droppable-before")
@@ -68,9 +134,9 @@ var DragAndDrop = JS_CLASS({
                 else {
                     if (offsetX > width * (1 - 0.33) && offsetY > height * (1 - 0.33)) {
                         $(this)
-                            .addClass("b-draggable-after")
-                            .removeClass("b-draggable-inside")
-                            .removeClass("b-draggable-before");
+                            .addClass("b-droppable-after")
+                            .removeClass("b-droppable-inside")
+                            .removeClass("b-droppable-before");
                     }
                     else {
                         $(this)
@@ -96,33 +162,55 @@ var DragAndDrop = JS_CLASS({
                 self.createDraggableBag(this.outerHTML);
                 $(this).addClass("b-draggable_dragging");
             });
+    },
 
-        $(document.body)
-            .on("mouseup mouseleave", function (e) {
-                self.dragging = false;
-                $(document.body)
-                    .removeClass("g-no-select")
-                    .removeClass("g-no-overflow-x");
-                self.removeDraggableBag();
-                self.$container.find(".js-droppable")
-                    .removeClass("b-droppable-inside")
-                    .removeClass("b-droppable-before")
-                    .removeClass("b-droppable-after");
-                $(".js-draggable").removeClass("b-draggable_dragging");
-            })
-            .on("mousemove", function (e) {
-                if(!self.dragging)
-                    return;
-                self.moveDraggableBag(e.pageX, e.pageY);
-            });
+    setHTML: function (html) {
+        this.html = html;
+    },
 
+    render: function () {
+        this.$container.html(this.html);
     }
 });
 
 $(function() {
-    var dragAndDrop = new DragAndDrop({
-        $container: $(".js-container")
+
+    var codeGenerator = new CodeGenerator({
+        $container: $(".js-container"),
+        $containerWrapper: $(".js-container-wrapper")
     });
+
+    var $input = $(".js-input");
+    var $output = $(".js-output");
+    var $error = $(".js-error");
+    var $codeGenerated = $(".js-code-generated");
+
+    $input.on("change keyup", function() {
+        $error.html("");
+        try {
+            var result = parser.parse($input.val());
+            //console.log(result);
+
+            codeGenerator.setJsonData(result);
+            $codeGenerated.html(codeGenerator.generateCode());
+            codeGenerator.render();
+            codeGenerator.eventsDynamic();
+
+            $output.html(JSON.stringify(codeGenerator.json));
+
+        }
+        catch (e) {
+            $output.html("");
+            $error.html(e.message);
+        }
+    });
+
+    setTimeout(function () {
+        $input.trigger("change");
+    }, 300);
+
+
+
 });
 
 
