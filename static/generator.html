@@ -153,7 +153,8 @@
 	}
 
 	.b-draggable-bag {
-		position: absolute;
+		display: none;
+		position: fixed;
 		top: 0; left: 0;
 		z-index: 8000;
 		min-width: 100px;
@@ -255,6 +256,7 @@
 		<!--<hr>-->
 		<div class="b-container-wrapper js-container-wrapper">
 			<div class="b-over js-over"></div>
+			<div class="b-draggable-bag js-draggable-bag"><div class="b-draggable-bag__inner js-draggable-bag__inner">'+html+'</div></div>
 			<div class="b-container js-container">
 			<!--<div class="b-tag js-droppable">-->
 			<!--<a class="b-tag js-droppable js-draggable" id="gen_12412" href="https://ya.ru" style="padding: 10px; border-radius: 5px; background-color: #2b957a; color: #FFF;">Поиск в Яндекс</a>-->

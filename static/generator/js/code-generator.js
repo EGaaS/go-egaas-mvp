@@ -4,12 +4,15 @@ var CodeGenerator = JS_CLASS({
         this.json = null;
         CP(this, param);
 
-        this.$over = $(".js-over");
+        this.$over = this.$containerWrapper.find(".js-over");
         //$(document.body).append(this.$over);
         this.$over.hide();
 
+        this.$bag = this.$containerWrapper.find(".js-draggable-bag");
+        this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
+
         this.events();
-        this.eventsDynamic();
+        //this.eventsDynamic();
 
     },
 
@@ -26,15 +29,16 @@ var CodeGenerator = JS_CLASS({
     },
 
     createDraggableBag: function (html) {
-        this.$bag = $('<div class="b-draggable-bag"><div class="b-draggable-bag__inner">'+html+'</div></div>');
-        this.$bag.hide();
-        $(document.body).append(this.$bag);
+        //this.$bag = $('<div class="b-draggable-bag"><div class="b-draggable-bag__inner">'+html+'</div></div>');
+        //this.$bag.hide();
+        //$(document.body).append(this.$bag);
+        this.$bagInner.html(html);
 
     },
 
     removeDraggableBag: function () {
         if(this.$bag)
-            this.$bag.remove();
+            this.$bag.hide();
     },
 
     moveDraggableBag: function (x, y) {
@@ -60,25 +64,24 @@ var CodeGenerator = JS_CLASS({
                     self.findOverTagTimer = null;
                 }).bind(self), 100);
 
-                var overTag = self.findOverTag(
+                self.overTag = self.findOverTag(
                     e.pageX - self.containerOffset.left,
                     e.pageY - self.containerOffset.top
                 );
                 //console.log(e.pageX, e.pageY);
                 //console.log("overTag", overTag);
-                if(overTag) {
+                if(self.overTag) {
                     self.$over
                         .show()
-                        .css("left", overTag.coords.left)
-                        .css("top", overTag.coords.top)
-                        .css("width", overTag.coords.width)
-                        .css("height", overTag.coords.height);
+                        .css("left", self.overTag.coords.left)
+                        .css("top", self.overTag.coords.top)
+                        .css("width", self.overTag.coords.width)
+                        .css("height", self.overTag.coords.height)
+                        .removeClass("b-over_inside")
+                        .removeClass("b-over_before")
+                        .removeClass("b-over_after");
                     if(self.dragging) {
-                        self.$over
-                            .removeClass("b-over_inside")
-                            .removeClass("b-over_before")
-                            .removeClass("b-over_after")
-                            .addClass("b-over_" + self.overPosition);
+                        self.$over.addClass("b-over_" + self.overPosition);
                     }
                 }
             })
@@ -86,33 +89,82 @@ var CodeGenerator = JS_CLASS({
                 self.$over.hide();
             });
 
-
-        $(document.body)
-            .on("mouseup mouseleave", function (e) {
+        this.$over
+            .on("mousedown", function () {
+                if(self.overTag) {
+                    self.$draggingTag = $("*[tag-id=" + self.overTag.id + "]");
+                    //console.log("self.$draggingTag", self.$draggingTag);
+                    if(self.$draggingTag && self.$draggingTag.length) {
+                        self.dragging = true;
+                        self.$over.addClass("g-move");
+                        $(document.body)
+                            .addClass("g-no-select")
+                            .addClass("g-no-overflow-x");
+                        self.createDraggableBag(self.$draggingTag.get(0).outerHTML);
+                        self.$draggingTag.addClass("b-draggable_dragging");
+                    }
+                }
+            })
+            .on("mouseup", function () {
                 if(!self.dragging)
                     return;
                 self.dragging = false;
+                self.$over.removeClass("g-move");
                 $(document.body)
                     .removeClass("g-no-select")
                     .removeClass("g-no-overflow-x");
                 self.removeDraggableBag();
-                self.$container.find(".js-droppable")
-                    .removeClass("b-droppable-inside")
-                    .removeClass("b-droppable-before")
-                    .removeClass("b-droppable-after");
-
-                $(".js-draggable").removeClass("b-draggable_dragging");
-            })
-            .on("mousemove", function (e) {
-                if(!self.dragging)
-                    return;
-                self.moveDraggableBag(e.pageX, e.pageY);
+                $(".b-draggable_dragging").removeClass("b-draggable_dragging");
             });
+
+        if(!window.generatorEventsInited) {
+            window.generatorEventsInited = true;
+            $(document.body)
+                .on("mouseup mouseleave", function (e) {
+                    if(!self.dragging)
+                        return;
+                    self.dragging = false;
+                    self.$over.removeClass("g-move");
+                    $(document.body)
+                        .removeClass("g-no-select")
+                        .removeClass("g-no-overflow-x");
+                    self.removeDraggableBag();
+                    // self.$container.find(".js-droppable")
+                    //     .removeClass("b-droppable-inside")
+                    //     .removeClass("b-droppable-before")
+                    //     .removeClass("b-droppable-after");
+
+                    $(".b-draggable_dragging").removeClass("b-draggable_dragging");
+                })
+                .on("mousemove", function (e) {
+                    if(!self.dragging)
+                        return;
+                    self.moveDraggableBag(e.pageX, e.pageY);
+                });
+        }
+
 
 
         // $(".b-over").on("mouseout", function () {
         //     $(this).hide();
         // });
+
+        $(".js-draggable")
+            .off("dragstart")
+            .on("dragstart", function (e) {
+                e.preventDefault();
+            })
+            .off("mousedown")
+            .on("mousedown", function (e) {
+                e.stopPropagation();
+                self.dragging = true;
+                self.$over.addClass("g-move");
+                $(document.body)
+                    .addClass("g-no-select")
+                    .addClass("g-no-overflow-x");
+                self.createDraggableBag(this.outerHTML);
+                $(this).addClass("b-draggable_dragging");
+            });
 
     },
 
@@ -202,21 +254,7 @@ var CodeGenerator = JS_CLASS({
                 }
             });
 
-        $(".js-draggable")
-            .off("dragstart")
-            .on("dragstart", function (e) {
-                e.preventDefault();
-            })
-            .off("mousedown")
-            .on("mousedown", function (e) {
-                e.stopPropagation();
-                self.dragging = true;
-                $(document.body)
-                    .addClass("g-no-select")
-                    .addClass("g-no-overflow-x");
-                self.createDraggableBag(this.outerHTML);
-                $(this).addClass("b-draggable_dragging");
-            });
+
     },
 
     setHTML: function (html) {
