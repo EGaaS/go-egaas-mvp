@@ -496,7 +496,6 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     data {
         Recipient string
         Amount    string
-        Commission  string
         Comment     string "optional"
     }
 
@@ -505,31 +504,43 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         if $recipient == 0 {
             error Sprintf("Recipient %s is invalid", $Recipient)
         }
-        var total fuel cost money
-        fuel = Money(SysParamString(`fuel_rate`))
-        cost = Money(SysCost(`dlt_transfer`))
-        $commission = Money($Commission)
-        if $commission < cost*fuel {
-            error Sprintf("Commission %v < %v", $commission, cost*fuel)
-        }
+        var total money
         $amount = Money($Amount) 
         if $amount == 0 {
             error "Amount is zero"
         }
         total = Money(DBStringExt(`dlt_wallets`, `amount`, $wallet, "wallet_id"))
-        if $amount + $commission >= total {
-            error Sprintf("Money is not enough %v < %v",total, $amount + $commission)
+        if $amount >= total {
+            error Sprintf("Money is not enough %v < %v",total, $amount)
         }
     }
 
     action {
-        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`-amount`, $amount+$commission)
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`-amount`, $amount)
         DBUpdateExt(`dlt_wallets`, "wallet_id", $recipient,`+amount`, $amount)
-        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $recipient, $amount, $commission, $Comment, $block_time, $block)
-        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet_block,`+amount`, $commission)
-        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $wallet_block, $commission, 0, `Commission`, $block_time, $block)
+        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, comment, time, block_id`, $wallet, $recipient, $amount, $Comment, $block_time, $block)
     }
 }', '1','ContractAccess("@0UpdateDLTTranfer")');
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('DLTChangeHostVote',
+  'contract DLTChangeHostVote {
+    data {
+        Host        string
+	AddressVote string
+	FuelRate    string
+    }
+
+    conditions {
+        var lastUpd int
+	    lastUpd = DBIntExt(`dlt_wallets`, `last_forging_data_upd`, $wallet, `wallet_id`)
+	    if $time-lastUpd < 600 {
+		    warning "txTime - lastForgingDataUpd < 600 sec"
+	    }
+    }
+
+    action {
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`host,address_vote,fuel_rate,last_forging_data_upd`, $Host, $AddressVote, $FuelRate, $block_time)
+    }
+}', '1','ContractAccess("@0UpdateDLTChangeHostVote")');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -540,7 +551,11 @@ CREATE TABLE "global_tables" (
 ALTER TABLE ONLY "global_tables" ADD CONSTRAINT global_tables_pkey PRIMARY KEY (name);
 
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_wallets', 
-        '{"insert": "ContractAccess(\"@0NewWallet\")", "update": {"*": "false","amount": "ContractAccess(\"@0DLTTransfer\")"}, "new_column": "ContractAccess(\"@0NewWalletColumn\")", "general_update": "ContractAccess(\"@0UpdateDltWallet\")"}',
+        '{"insert": "ContractAccess(\"@0NewWallet\")", "update": {"*": "false","amount": "ContractAccess(\"@0DLTTransfer\")",
+        "host": "ContractAccess(\"@0DLTChangeHostVote\")","address_vote": "ContractAccess(\"@0DLTChangeHostVote\")",
+        "fuel_rate": "ContractAccess(\"@0DLTChangeHostVote\")","last_forging_data_upd": "ContractAccess(\"@0DLTChangeHostVote\")"
+        }, 
+        "new_column": "ContractAccess(\"@0NewWalletColumn\")", "general_update": "ContractAccess(\"@0UpdateDltWallet\")"}',
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_transactions', 
         '{"insert": "ContractAccess(\"@0DLTTransfer\")", "update": {"*": "false"}, "new_column": "ContractAccess(\"@0NewDLTColumn\")", "general_update": "ContractAccess(\"@0UpdateDltTransactions\")"}',
