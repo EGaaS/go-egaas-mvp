@@ -17,7 +17,7 @@ go get -u github.com/jteeuwen/go-bindata/...
 git clone -b 1.0 https://github.com/EGaaS/go-egaas-mvp.git
 cd go-egaas-mvp
 rm -rf packages/static/static.go
-$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/..
+$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/...
 go build
 ./go-egaas-mvp
 ```
@@ -32,7 +32,7 @@ Install git https://git-scm.com/
 go get -u github.com/jteeuwen/go-bindata/...
 go get -u github.com/EGaaS/go-egaas-mvp
 cd $GOPATH/src/github.com/EGaaS/go-egaas-mvp
-$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/..
+$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/...
 go build
 ./go-egaas-mvp
 ```

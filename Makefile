@@ -6,7 +6,7 @@ go-bindata:
 
 static:
 	rm -rf packages/static/static.go
-	$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/..
+	$GOPATH/bin/go-bindata -o="packages/static/static.go" -pkg="static" static/...
 
 build:
 	go build
