@@ -73,7 +73,7 @@ var (
 		CommissionWallet:   `8275283526439353759`,
 	}
 	cost  = make(map[string]int64)
-	mutex = &sync.Mutex{}
+	mutex = &sync.RWMutex{}
 )
 
 // SysUpdate reloads/updates values of system parameters
@@ -114,8 +114,8 @@ func SysCost(name string) int64 {
 
 // SysString returns string value of the system parameter
 func SysString(name string) string {
-	mutex.Lock()
+	mutex.RLock()
 	ret := cache[name]
-	mutex.Unlock()
+	mutex.RUnlock()
 	return ret
 }

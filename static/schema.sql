@@ -491,6 +491,46 @@ ALTER SEQUENCE "global_smart_contracts_id_seq" owned by "global_smart_contracts"
 ALTER TABLE ONLY "global_smart_contracts" ADD CONSTRAINT global_smart_contracts_pkey PRIMARY KEY (id);
 CREATE INDEX global_smart_contracts_index_name ON "global_smart_contracts" (name);
 
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('DLTTransfer',
+  'contract DLTTransfer {
+    data {
+        Recipient string
+        Amount    string
+        Commission  string
+        Comment     string "optional"
+    }
+
+    conditions {
+        $recipient = AddressToId($Recipient)
+        if $recipient == 0 {
+            error Sprintf("Recipient %s is invalid", $Recipient)
+        }
+        var total fuel cost money
+        fuel = Money(SysParamString(`fuel_rate`))
+        cost = Money(SysCost(`dlt_transfer`))
+        $commission = Money($Commission)
+        if $commission < cost*fuel {
+            error Sprintf("Commission %v < %v", $commission, cost*fuel)
+        }
+        $amount = Money($Amount) 
+        if $amount == 0 {
+            error "Amount is zero"
+        }
+        total = Money(DBStringExt(`dlt_wallets`, `amount`, $wallet, "wallet_id"))
+        if $amount + $commission >= total {
+            error Sprintf("Money is not enough %v < %v",total, $amount + $commission)
+        }
+    }
+
+    action {
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`-amount`, $amount+$commission)
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $recipient,`+amount`, $amount)
+        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $recipient, $amount, $commission, $Comment, $block_time, $block)
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet_block,`+amount`, $commission)
+        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $wallet_block, $commission, 0, `Commission`, $block_time, $block)
+    }
+}', '1','ContractAccess("@0UpdateDLTTranfer")');
+
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
 "columns_and_permissions" jsonb,
