@@ -62,14 +62,15 @@ var (
 		"UpdateSysParam": struct{}{},
 	}
 	extendCost = map[string]int64{
-		"AddressToId": 10,
-		"IdToAddress": 10,
-		"NewState":    1000, // ?? What cost must be?
-		"Sha256":      50,
-		"PubToID":     10,
-		"StateVal":    10,
-		"SysParam":    10,
-		"SysParamInt": 10,
+		"AddressToId":    10,
+		"IdToAddress":    10,
+		"NewState":       1000, // ?? What cost must be?
+		"Sha256":         50,
+		"PubToID":        10,
+		"StateVal":       10,
+		"SysParamString": 10,
+		"SysParamInt":    10,
+		"SysCost":        10,
 	}
 )
 
@@ -96,8 +97,9 @@ func init() {
 		"ContractConditions": ContractConditions,
 		"NewState":           NewStateFunc,
 		"StateVal":           StateVal,
-		"SysParam":           SysParam,
+		"SysParamString":     SysParamString,
 		"SysParamInt":        SysParamInt,
+		"SysCost":            SysCost,
 		"Int":                Int,
 		"Str":                Str,
 		"Money":              Money,
@@ -185,6 +187,13 @@ func (p *Parser) CallContract(flags int) (err error) {
 			//			fmt.Printf(`TXDATA %d %d\r\n`, len(data["public_key_0"]), len(public))
 			if len(data["public_key_0"]) == 0 {
 				if len(public) > 0 {
+					walletID, err := p.GetWalletIDByPublicKey(public)
+					if err != nil {
+						return err
+					}
+					if walletID != p.TxSmart.UserID {
+						return fmt.Errorf("incorrect wallet_id or public_key")
+					}
 					p.PublicKeys = append(p.PublicKeys, public)
 				} else {
 					return fmt.Errorf("unknown wallet id")
@@ -650,14 +659,19 @@ func StateVal(p *Parser, name string) string {
 	return val
 }
 
-// SysParam returns the value of the system parameter
-func SysParam(name string) string {
+// SysParamString returns the value of the system parameter
+func SysParamString(name string) string {
 	return sql.SysString(name)
 }
 
 // SysParamInt returns the value of the system parameter
 func SysParamInt(name string) int64 {
 	return sql.SysInt64(name)
+}
+
+// SysCost returns the cost of the transaction from the system parameter
+func SysCost(name string) int64 {
+	return sql.SysCost(name)
 }
 
 // Int converts a string to a number

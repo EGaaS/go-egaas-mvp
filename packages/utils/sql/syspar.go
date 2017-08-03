@@ -17,6 +17,7 @@
 package sql
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
@@ -71,6 +72,7 @@ var (
 		RecoveryAddress:    `8275283526439353759`,
 		CommissionWallet:   `8275283526439353759`,
 	}
+	cost  = make(map[string]int64)
 	mutex = &sync.Mutex{}
 )
 
@@ -81,11 +83,13 @@ func SysUpdate() error {
 		return err
 	}
 	mutex.Lock()
+	defer mutex.Unlock()
 	for _, item := range list {
 		cache[item[`name`]] = item[`value`]
 	}
-	mutex.Unlock()
-	return nil
+	cost = make(map[string]int64)
+	json.Unmarshal([]byte(cache[OpPrice]), &cost)
+	return err
 }
 
 // SysDecimal returns big integer value
@@ -101,6 +105,11 @@ func SysInt64(name string) int64 {
 // SysInt returns int64 value of the system parameter
 func SysInt(name string) int {
 	return converter.StrToInt(SysString(name))
+}
+
+// SysCost returns the cost of the transaction
+func SysCost(name string) int64 {
+	return cost[name]
 }
 
 // SysString returns string value of the system parameter

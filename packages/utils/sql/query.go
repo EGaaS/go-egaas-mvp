@@ -536,9 +536,8 @@ func (db *DCDB) GetFuel() decimal.Decimal {
 	/*	fuelMutex.Lock()
 		defer fuelMutex.Unlock()
 		if cacheFuel <= 0 {*/
-	fuel, _ := db.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").String()
 	//}
-	cacheFuel, _ := decimal.NewFromString(fuel)
+	cacheFuel, _ := decimal.NewFromString(SysString(FuelRate))
 	return cacheFuel
 }
 
@@ -580,7 +579,4 @@ func (db *DCDB) IsState(country string) (int64, error) {
 
 // UpdateFuel is reserved
 func (db *DCDB) UpdateFuel() {
-	/*	fuelMutex.Lock()
-		cacheFuel, _ = db.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").Int64()
-		fuelMutex.Unlock()*/
 }
