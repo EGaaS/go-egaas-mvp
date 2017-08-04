@@ -6,17 +6,18 @@ CodeGenerator.Controller = JS_CLASS({
 
         this.model = new CodeGenerator.Model();
         this.over = new CodeGenerator.Over({
-            $over: this.$containerWrapper.find(".js-over")
+            $over: this.$containerWrapper.find(".js-over"),
+            model: this.model,
+            owner: this
         });
 
-        this.$over = this.$containerWrapper.find(".js-over");
-        this.$overInner = this.$over.find(".b-over__inner");
+        //this.$over = this.$containerWrapper.find(".js-over");
+        //this.$overInner = this.$over.find(".b-over__inner");
         //$(document.body).append(this.$over);
         this.over.hide();
 
         this.$bag = this.$containerWrapper.find(".js-draggable-bag");
         this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
-        this.canDrop = false;
 
         this.events();
     },
@@ -74,100 +75,34 @@ CodeGenerator.Controller = JS_CLASS({
                     self.findOverTagTimer = null;
                 }).bind(self), 100);
 
-                self.overTag = self.findOverTag(
+                self.over.findOverTag(
                     e.pageX - self.containerOffset.left,
                     e.pageY - self.containerOffset.top
                 );
 
 
-                if(!self.overTag)
-                    self.overTag = {
-                        "type": "Template",
-                        "coords": {
-                            "left": 0,
-                            "top": 0,
-                            "width": "100%",
-                            "height": "100%"
-                        }
-                    };
 
-                console.log("overTag", self.overTag);
-                console.log("parentOverTag", self.parentOverTag);
+                console.log("overTag", self.over.tag);
+                console.log("parentOverTag", self.over.parentTag);
 
                 if(self.dragging) {
-
-                    if(self.overTag) {
-                        self.canDrop = false;
-                        //если пытаемся положить внутрь перетаскиваемого тега, не пускаем
-                        if (self.$container.find("*[tag-id=" + self.overTag.id + "]").closest(".b-draggable_dragging").length) {
-                            return;
-                        }
-
-
-                        self.$over
-                            .removeClass("b-droppable_inside")
-                            .removeClass("b-droppable_before")
-                            .removeClass("b-droppable_after");
-
-                        if (self.overPosition == "inside" && self.overTag.type != "Template") {
-                            var tag = constructTag(self.overTag);
-                            if (!tag.accept(self.draggingTag.name))
-                                self.overPosition = "after";
-                            //console.log("tag", tag);
-                        }
-
-                        //в основной контейнер - только внутрь
-                        if (self.overTag.type == "Template") {
-                            self.overPosition = "inside";
-                            var tag = constructTag(self.overTag);
-                            if (!tag.accept(self.draggingTag.name))
-                                return;
-                        }
-
-                        if (self.overPosition == "before" || self.overPosition == "after") {
-                            //before/after - проверка accept parent
-                            if (self.parentOverTag) {
-                                var parentTag = constructTag(self.parentOverTag);
-                                if (!parentTag   //в самый высокий уровень можно только класть внутрь, а не до/после
-                                    || !parentTag.accept(self.draggingTag.name)) {
-                                    return;
-                                }
-
-                            }
-                        }
-
-                        self.$over
-                            .show()
-                            .css("left", self.overTag.coords.left)
-                            .css("top", self.overTag.coords.top)
-                            .css("width", self.overTag.coords.width)
-                            .css("height", self.overTag.coords.height)
-                            .addClass("b-droppable_" + self.overPosition);
-
-                        self.canDrop = true;
-                    }
+                    self.over.mode = "drag";
                 }
                 else {
-                    if(self.overTag) {
-                        self.$over
-                            .show()
-                            .css("left", self.overTag.coords.left)
-                            .css("top", self.overTag.coords.top)
-                            .css("width", self.overTag.coords.width)
-                            .css("height", self.overTag.coords.height);
-                    }
+                    self.over.mode = "view";
                 }
+                self.over.draw();
 
             })
             .on("mouseleave", function () {
-                self.$over.hide();
+                self.over.hide();
             });
 
-        this.$over
+        this.over.$over
             .on("mousedown", function () {
-                if(self.overTag && self.overTag.type == "tag") {
-                    self.draggingTag = self.overTag;
-                    self.$draggingTag = self.$container.find("*[tag-id=" + self.overTag.id + "]");
+                if(self.over.tag && self.over.tag.type == "tag") {
+                    self.draggingTag = self.over.tag;
+                    self.$draggingTag = self.$container.find("*[tag-id=" + self.over.tag.id + "]");
                     //console.log("self.$draggingTag", self.$draggingTag);
                     if(self.$draggingTag && self.$draggingTag.length) {
                         self.startDragging();
@@ -177,7 +112,7 @@ CodeGenerator.Controller = JS_CLASS({
             })
             .on("mouseup", function () {
                 self.cancelDragging();
-                self.dropTo(self.overTag);
+                self.dropTo(self.over.tag);
             });
 
         $(document.body)
@@ -264,7 +199,7 @@ CodeGenerator.Controller = JS_CLASS({
     cancelDragging: function () {
         this.dragging = false;
         //this.$overInner.removeClass("g-move");
-        this.$over
+        this.over.$over
             .removeClass("b-droppable_inside")
             .removeClass("b-droppable_before")
             .removeClass("b-droppable_after");
@@ -278,16 +213,16 @@ CodeGenerator.Controller = JS_CLASS({
     },
 
     dropTo: function (overTag) {
-        //self.$draggingTag = $("*[tag-id=" + self.overTag.id + "]");
+        //self.$draggingTag = $("*[tag-id=" + self.over.tag.id + "]");
 
-        console.log("dropTo", overTag, this.overPosition, "what", this.draggingTag);
-        if(!this.canDrop)
+        console.log("dropTo", overTag, this.over.position, "what", this.draggingTag);
+        if(!this.over.canDrop)
             return;
-        //if(this.overPosition == "inside") {
+        //if(this.over.position == "inside") {
         //    this.json
         //}
 
-        this.model.appendToTree(this.draggingTag, overTag, this.overPosition);
+        this.model.appendToTree(this.draggingTag, overTag, this.over.position);
 
         this.generateCode();
         this.render();
@@ -332,6 +267,14 @@ CodeGenerator.Controller = JS_CLASS({
     },
 
     calcTagCoords: function (tag) {
+        if(tag.type == "Template") {
+            tag.coords = {
+                "left": 0,
+                "top": 0,
+                "width": "100%",
+                "height": "100%"
+            };
+        }
         if(tag.id) {
             var $tag = this.$container.find('*[tag-id="'+tag.id+'"]');
             var offset = $tag.offset();
@@ -350,47 +293,7 @@ CodeGenerator.Controller = JS_CLASS({
         }
     },
 
-    findOverTag: function (x, y) {
-        this.overTag = null;
-        this.parentOverTag = null;
-        this.tmpParentOverTag = null;
 
-        this.overPosition = "inside";
-        this.findNextOverTag(x, y, this.model.json);
-        return this.overTag;
-    },
-    findNextOverTag: function (x, y, tag) {
-        if(tag) {
-            if (tag.id && tag.coords) {
-                if (x >= tag.coords.left && x <= tag.coords.left + tag.coords.width
-                    && y >= tag.coords.top && y <= tag.coords.top + tag.coords.height) {
-
-                    if (!this.overTag || tag.coords.width < this.overTag.coords.width || tag.coords.height < this.overTag.coords.height) {
-                        this.overTag = tag;
-                        this.parentOverTag = this.tmpParentOverTag;
-
-                        this.overPosition = "inside";
-
-                        if (x < tag.coords.left + tag.coords.width * 0.33
-                            && y < tag.coords.top + tag.coords.height * 0.33) {
-                            this.overPosition = "before";
-                        }
-
-                        if (x > tag.coords.left + tag.coords.width * (1 - 0.33)
-                            && y > tag.coords.top + tag.coords.height * (1 - 0.33)) {
-                            this.overPosition = "after";
-                        }
-                    }
-                }
-            }
-            if (tag.body) {
-                for (var i = 0; i < tag.body.length; i++) {
-                    this.tmpParentOverTag = tag;
-                    this.findNextOverTag(x, y, tag.body[i]);
-                }
-            }
-        }
-    }
 });
 
 CodeGenerator.Model = JS_CLASS({
@@ -492,11 +395,157 @@ CodeGenerator.Model = JS_CLASS({
 CodeGenerator.Over = JS_CLASS({
     constructor: function (param) {
         CP(this, param);
-        this.$overInner = this.$over.find(".b-over__inner");
+        this.$info = this.$over.find(".js-over-info");
+        this.tag = null;
+        this.parentTag = null;
+        this.position = null; //inside, before, after
+        this.canDrop = false;
+        this.mode = "view"; //"drag"
     },
+
     hide: function () {
         this.$over.hide();
+    },
+
+    findOverTag: function (x, y) {
+        this.tag = null;
+        this.parentTag = null;
+        this.tmpParentOverTag = null;
+
+        this.position = "inside";
+        this.findNextOverTag(x, y, this.model.json);
+
+        if(!this.tag) {
+            this.tag = this.model.json;
+            // this.tag.coords = {
+            //     "left": 0,
+            //         "top": 0,
+            //         "width": "100%",
+            //         "height": "100%"
+            // };
+        }
+
+        //return this.tag;
+    },
+    findNextOverTag: function (x, y, tag) {
+        if(tag) {
+            if (tag.id && tag.coords) {
+                if (x >= tag.coords.left && x <= tag.coords.left + tag.coords.width
+                    && y >= tag.coords.top && y <= tag.coords.top + tag.coords.height) {
+
+                    if (!this.tag || tag.coords.width < this.tag.coords.width || tag.coords.height < this.tag.coords.height) {
+                        this.tag = tag;
+                        this.parentTag = this.tmpParentOverTag;
+
+                        this.position = "inside";
+
+                        if (x < tag.coords.left + tag.coords.width * 0.33
+                            && y < tag.coords.top + tag.coords.height * 0.33) {
+                            this.position = "before";
+                        }
+
+                        if (x > tag.coords.left + tag.coords.width * (1 - 0.33)
+                            && y > tag.coords.top + tag.coords.height * (1 - 0.33)) {
+                            this.position = "after";
+                        }
+                    }
+                }
+            }
+            if (tag.body) {
+                for (var i = 0; i < tag.body.length; i++) {
+                    this.tmpParentOverTag = tag;
+                    this.findNextOverTag(x, y, tag.body[i]);
+                }
+            }
+        }
+    },
+
+    draw: function () {
+        if(this.mode == "drag")
+            this.drawDrop();
+
+        if(this.mode == "view")
+            this.drawView();
+
+        if(this.tag) {
+            var name = "Контейнер";
+            if(this.tag.name)
+                name = this.tag.name;
+            this.$info
+                .show()
+                .html("<b>" + name + "</b>");
+        }
+        else
+            this.$info.hide();
+
+    },
+
+    drawDrop: function () {
+        if(this.tag) {
+            this.canDrop = false;
+            //если пытаемся положить внутрь перетаскиваемого тега, не пускаем
+            if (this.owner.$container.find("*[tag-id=" + this.tag.id + "]").closest(".b-draggable_dragging").length) {
+                return;
+            }
+
+            this.$over
+                .removeClass("b-droppable_inside")
+                .removeClass("b-droppable_before")
+                .removeClass("b-droppable_after");
+
+            if (this.position == "inside" && this.tag.type != "Template") {
+                var tag = constructTag(this.tag);
+                if (!tag.accept(this.owner.draggingTag.name))
+                    this.position = "after";
+                //console.log("tag", tag);
+            }
+
+            //в основной контейнер - только внутрь
+            if (this.tag.type == "Template") {
+                this.position = "inside";
+                var tag = constructTag(this.tag);
+                if (!tag.accept(this.owner.draggingTag.name))
+                    return;
+            }
+
+            if (this.position == "before" || this.position == "after") {
+                //before/after - проверка accept parent
+                if (this.parentTag) {
+                    var parentTag = constructTag(this.parentTag);
+                    if (!parentTag   //в самый высокий уровень можно только класть внутрь, а не до/после
+                        || !parentTag.accept(this.owner.draggingTag.name)) {
+                        return;
+                    }
+                }
+            }
+
+            if(this.tag.coords) {
+                this.$over
+                    .show()
+                    .css("left", this.tag.coords.left)
+                    .css("top", this.tag.coords.top)
+                    .css("width", this.tag.coords.width)
+                    .css("height", this.tag.coords.height)
+                    .addClass("b-droppable_" + this.position);
+            }
+
+            this.canDrop = true;
+        }
+    },
+
+    drawView: function () {
+        if(this.tag) {
+            if(this.tag.coords) {
+                this.$over
+                    .show()
+                    .css("left", this.tag.coords.left)
+                    .css("top", this.tag.coords.top)
+                    .css("width", this.tag.coords.width)
+                    .css("height", this.tag.coords.height);
+            }
+        }
     }
+
 });
 
 
