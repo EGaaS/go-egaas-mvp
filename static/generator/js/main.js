@@ -13,6 +13,9 @@ $(function() {
         $output: $output
     });
 
+    setInterval(function () {
+        codeGenerator.printJSON();
+    }, 1000);
 
     $input.on("change keyup", function() {
         $error.html("");
@@ -23,7 +26,6 @@ $(function() {
             codeGenerator.setJsonData(result);
             codeGenerator.generateCode();
             codeGenerator.render();
-            codeGenerator.printJSON();
 
 
         }
@@ -32,6 +34,8 @@ $(function() {
             $error.html(e.message);
         }
     });
+
+
 
     setTimeout(function () {
         $input.trigger("change");

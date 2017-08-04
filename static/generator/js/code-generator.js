@@ -79,7 +79,6 @@ CodeGenerator.Controller = JS_CLASS({
                 if(!self.overTag)
                     self.overTag = {
                         "type": "Template",
-                        "name": "",
                         "coords": {
                             "left": 0,
                             "top": 0,
@@ -96,7 +95,7 @@ CodeGenerator.Controller = JS_CLASS({
                     if(self.overTag) {
 
                         //если пытаемся положить внутрь перетаскиваемого тега, не пускаем
-                        if ($("*[tag-id=" + self.overTag.id + "]").closest(".b-draggable_dragging").length)
+                        if (self.$container.find("*[tag-id=" + self.overTag.id + "]").closest(".b-draggable_dragging").length)
                             return;
 
                         self.$over
@@ -160,7 +159,7 @@ CodeGenerator.Controller = JS_CLASS({
             .on("mousedown", function () {
                 if(self.overTag && self.overTag.type == "tag") {
                     self.draggingTag = self.overTag;
-                    self.$draggingTag = $("*[tag-id=" + self.overTag.id + "]");
+                    self.$draggingTag = self.$container.find("*[tag-id=" + self.overTag.id + "]");
                     //console.log("self.$draggingTag", self.$draggingTag);
                     if(self.$draggingTag && self.$draggingTag.length) {
                         self.startDragging();
@@ -212,7 +211,6 @@ CodeGenerator.Controller = JS_CLASS({
                 self.draggingTag = {
                     "type": "tag",
                     "name": $(this).attr("tag-name"),
-                    "id": self.model.generateId(),
                     "body": []
                 };
 
@@ -282,7 +280,8 @@ CodeGenerator.Controller = JS_CLASS({
 
         this.generateCode();
         this.render();
-        this.printJSON();
+
+
     },
 
     setHTML: function (html) {
@@ -292,7 +291,16 @@ CodeGenerator.Controller = JS_CLASS({
     render: function () {
         var self = this;
         this.$container.html(this.generateHTML());
+        //alert("rendered");
+        this.recalcTagsCoords();
+    },
 
+    recalcContainerOffset: function () {
+        this.containerOffset = this.$container.offset();
+    },
+
+    recalcTagsCoords: function () {
+        var self = this;
         var $imgs = this.$container.find("img");
         var loadCounter = 0;
         if($imgs.length == 0)
@@ -304,11 +312,6 @@ CodeGenerator.Controller = JS_CLASS({
                     self.calcTagsCoords();
             });
         });
-
-    },
-
-    recalcContainerOffset: function () {
-        this.containerOffset = this.$container.offset();
     },
 
     calcTagsCoords: function () {
@@ -319,8 +322,9 @@ CodeGenerator.Controller = JS_CLASS({
 
     calcTagCoords: function (tag) {
         if(tag.id) {
-            var $tag = $('[tag-id="'+tag.id+'"]');
+            var $tag = this.$container.find('*[tag-id="'+tag.id+'"]');
             var offset = $tag.offset();
+            //console.log(tag.name + " offset", '*[tag-id="'+tag.id+'"]', $tag, offset);
             tag.coords = {
                 left: offset.left - this.containerOffset.left,
                 top: offset.top - this.containerOffset.top,
@@ -369,8 +373,8 @@ CodeGenerator.Controller = JS_CLASS({
                 }
             }
             if (tag.body) {
-                this.tmpParentOverTag = tag;
                 for (var i = 0; i < tag.body.length; i++) {
+                    this.tmpParentOverTag = tag;
                     this.findNextOverTag(x, y, tag.body[i]);
                 }
             }
@@ -389,14 +393,55 @@ CodeGenerator.Model = JS_CLASS({
     },
 
     appendToTree: function (tag, toTag, position) {
+        var move = false;
+        var inserted = false;
         if(toTag) {
+
+            if(tag.id) {
+                console.log("move");
+                move = true;
+            }
+            else {
+                console.log("new");
+                move = false;
+                tag.id = this.generateId()
+            }
+
+            if(move) {
+                //удаляем из предыдущего пложения
+                this.findElementById(this.json, tag.id);
+                console.log("remove from prev pos", this.findInfo);
+
+                if (this.findInfo.el && this.findInfo.parent) {
+                    this.findInfo.parent.body.splice(this.findInfo.parentPosition, 1);
+                    console.log("this.findInfo.parent.body.splice(" + this.findInfo.parentPosition + ", 1)");
+                    console.log("parent: ", this.findInfo.parent);
+                }
+            }
+
+
             this.findElementById(this.json, toTag.id);
             if (this.findInfo.el) {
                 console.log("appendToTree found", this.findInfo);
                 if(position == "inside") {
                     this.findInfo.el.body.push(tag);
+                    //inserted = true;
+                }
+                if(position == "before") {
+                    var newPosition = this.findInfo.parentPosition - 1;
+                    if(newPosition < 0)
+                        newPosition = 0;
+                    this.findInfo.parent.body.splice(newPosition, 0, tag);
+                    //inserted = true;
+                }
+                if(position == "after") {
+                    var newPosition = this.findInfo.parentPosition + 1;
+                    this.findInfo.parent.body.splice(newPosition, 0, tag);
+                    //inserted = true;
                 }
             }
+
+
         }
     },
 
@@ -417,10 +462,11 @@ CodeGenerator.Model = JS_CLASS({
             return;
         }
         if (el.body) {
-            this.findInfo.parent = el;
+
             for (var i = 0; i < el.body.length; i++) {
                 if(this.findInfo.el)
                     break;
+                this.findInfo.parent = el;
                 this.findInfo.parentPosition = i;
                 this.findNextElementById(el.body[i], id);
             }
@@ -435,10 +481,10 @@ CodeGenerator.Model = JS_CLASS({
 
 function constructTag(item, offset) {
     var tagObj = null;
+    if(item.type == "Template") {
+        tagObj = new MainTemplate(item, offset);
+    }
     switch(item.name) {
-        case "":
-            tagObj = new MainTemplate(item, offset);
-            break;
         case "A":
             tagObj = new TagA(item, offset);
             break;
