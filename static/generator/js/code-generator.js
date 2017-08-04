@@ -5,14 +5,18 @@ CodeGenerator.Controller = JS_CLASS({
         CP(this, param);
 
         this.model = new CodeGenerator.Model();
+        this.over = new CodeGenerator.Over({
+            $over: this.$containerWrapper.find(".js-over")
+        });
 
         this.$over = this.$containerWrapper.find(".js-over");
         this.$overInner = this.$over.find(".b-over__inner");
         //$(document.body).append(this.$over);
-        this.$over.hide();
+        this.over.hide();
 
         this.$bag = this.$containerWrapper.find(".js-draggable-bag");
         this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
+        this.canDrop = false;
 
         this.events();
     },
@@ -93,10 +97,12 @@ CodeGenerator.Controller = JS_CLASS({
                 if(self.dragging) {
 
                     if(self.overTag) {
-
+                        self.canDrop = false;
                         //если пытаемся положить внутрь перетаскиваемого тега, не пускаем
-                        if (self.$container.find("*[tag-id=" + self.overTag.id + "]").closest(".b-draggable_dragging").length)
+                        if (self.$container.find("*[tag-id=" + self.overTag.id + "]").closest(".b-draggable_dragging").length) {
                             return;
+                        }
+
 
                         self.$over
                             .removeClass("b-droppable_inside")
@@ -137,6 +143,8 @@ CodeGenerator.Controller = JS_CLASS({
                             .css("width", self.overTag.coords.width)
                             .css("height", self.overTag.coords.height)
                             .addClass("b-droppable_" + self.overPosition);
+
+                        self.canDrop = true;
                     }
                 }
                 else {
@@ -271,7 +279,10 @@ CodeGenerator.Controller = JS_CLASS({
 
     dropTo: function (overTag) {
         //self.$draggingTag = $("*[tag-id=" + self.overTag.id + "]");
+
         console.log("dropTo", overTag, this.overPosition, "what", this.draggingTag);
+        if(!this.canDrop)
+            return;
         //if(this.overPosition == "inside") {
         //    this.json
         //}
@@ -475,6 +486,16 @@ CodeGenerator.Model = JS_CLASS({
 
     generateId: function() {
         return "tag_" + (10000000 + Math.floor(Math.random() * 89999999));
+    }
+});
+
+CodeGenerator.Over = JS_CLASS({
+    constructor: function (param) {
+        CP(this, param);
+        this.$overInner = this.$over.find(".b-over__inner");
+    },
+    hide: function () {
+        this.$over.hide();
     }
 });
 
