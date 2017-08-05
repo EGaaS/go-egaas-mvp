@@ -93,17 +93,15 @@ func (p *UpdFullNodesParser) Action() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-
-	log.Debug("data %v", data)
-	log.Debug("data %v", data[0])
-	log.Debug("data %v", data[0]["rb_id"])
+	var rbID string
 	// логируем их в одну запись JSON
 	// log them into the one record JSON
-	rbID, err := p.ExecSQLGetLastInsertID(`INSERT INTO rb_full_nodes (full_nodes_wallet_json, block_id, prev_rb_id) VALUES (?, ?, ?)`, "rb_full_nodes", string(jsonData), p.BlockData.BlockID, data[0]["rb_id"])
-	if err != nil {
-		return p.ErrInfo(err)
+	if len(data) > 0 {
+		rbID, err = p.ExecSQLGetLastInsertID(`INSERT INTO rb_full_nodes (full_nodes_wallet_json, block_id, prev_rb_id) VALUES (?, ?, ?)`, "rb_full_nodes", string(jsonData), p.BlockData.BlockID, data[0]["rb_id"])
+		if err != nil {
+			return p.ErrInfo(err)
+		}
 	}
-
 	// удаляем где wallet_id
 	// delete where the wallet_id is
 	err = p.ExecSQL(`DELETE FROM full_nodes WHERE wallet_id != 0`)

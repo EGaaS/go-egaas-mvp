@@ -1,4 +1,4 @@
-DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
+﻿DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
 CREATE SEQUENCE "dlt_transactions_id_seq" START WITH 1;
 DROP TABLE IF EXISTS "dlt_transactions"; CREATE TABLE "dlt_transactions" (
 "id" bigint NOT NULL  default nextval('dlt_transactions_id_seq'),
@@ -541,6 +541,51 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`host,address_vote,fuel_rate,last_forging_data_upd`, $Host, $AddressVote, $FuelRate, $block_time)
     }
 }', '1','ContractAccess("@0UpdateDLTChangeHostVote")');
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewMenu',
+  'contract NewMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBInsert(PrefixTable(`menu`, $Global), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractAccess("@0UpdateNewMenu")');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditMenu',
+  'contract EditMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(`menu`, $Name, `conditions`, $Global)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`menu`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractAccess("@0UpdateEditMenu")');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -559,6 +604,9 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_transactions', 
         '{"insert": "ContractAccess(\"@0DLTTransfer\")", "update": {"*": "false"}, "new_column": "ContractAccess(\"@0NewDLTColumn\")", "general_update": "ContractAccess(\"@0UpdateDltTransactions\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_menu', 
+        '{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "ContractAccess(\"@0UpdateNewMenu\")"}',
         'false');
 
 
