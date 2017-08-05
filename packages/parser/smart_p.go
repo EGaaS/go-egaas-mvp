@@ -62,15 +62,18 @@ var (
 		"UpdateSysParam": struct{}{},
 	}
 	extendCost = map[string]int64{
-		"AddressToId":    10,
-		"IdToAddress":    10,
-		"NewState":       1000, // ?? What cost must be?
-		"Sha256":         50,
-		"PubToID":        10,
-		"StateVal":       10,
-		"SysParamString": 10,
-		"SysParamInt":    10,
-		"SysCost":        10,
+		"AddressToId":       10,
+		"IdToAddress":       10,
+		"NewState":          1000, // ?? What cost must be?
+		"Sha256":            50,
+		"PubToID":           10,
+		"StateVal":          10,
+		"SysParamString":    10,
+		"SysParamInt":       10,
+		"SysCost":           10,
+		"ValidateCondition": 30,
+		"PrefixTable":       10,
+		"EvalCondition":     20,
 	}
 )
 
@@ -115,6 +118,9 @@ func init() {
 		"UpdatePage":         UpdatePage,
 		"DBInsertReport":     DBInsertReport,
 		"UpdateSysParam":     UpdateSysParam,
+		"ValidateCondition":  ValidateCondition,
+		"PrefixTable":        PrefixTable,
+		"EvalCondition":      EvalCondition,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -339,11 +345,9 @@ func DBUpdate(p *Parser, tblname string, id int64, params string, val ...interfa
 func DBUpdateExt(p *Parser, tblname string, column string, value interface{}, params string, val ...interface{}) (qcost int64, err error) { // map[string]interface{}) {
 	qcost = 0
 	var isIndex bool
-
 	if err = checkReport(tblname); err != nil {
 		return
 	}
-
 	columns := strings.Split(params, `,`)
 	if err = p.AccessColumns(tblname, columns); err != nil {
 		return
@@ -924,18 +928,19 @@ func DBGetList(tblname string, name string, offset, limit int64, order string,
 	if err := checkReport(tblname); err != nil {
 		return 0, nil, err
 	}
+	if !sql.IsSystemTable(tblname) {
+		re := regexp.MustCompile(`([a-z]+[\w_]*)\"?\s*[!><=]`)
+		ret := re.FindAllStringSubmatch(where, -1)
 
-	re := regexp.MustCompile(`([a-z]+[\w_]*)\"?\s*[><=]`)
-	ret := re.FindAllStringSubmatch(where, -1)
-
-	for _, iret := range ret {
-		if len(iret) != 2 {
-			continue
-		}
-		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
-			return 0, nil, err
-		} else if !isIndex {
-			return 0, nil, fmt.Errorf(`there is not index on %s`, iret[1])
+		for _, iret := range ret {
+			if len(iret) != 2 {
+				continue
+			}
+			if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
+				return 0, nil, err
+			} else if !isIndex {
+				return 0, nil, fmt.Errorf(`there is not index on %s`, iret[1])
+			}
 		}
 	}
 	if len(order) > 0 {
@@ -1033,4 +1038,41 @@ func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 		return 0, err
 	}
 	return 0, nil
+}
+
+// ValidateCondition checks if the condition can be compiled
+func ValidateCondition(condition string, state int64) error {
+	if len(condition) == 0 {
+		return fmt.Errorf("Conditions cannot be empty")
+	}
+	return smart.CompileEval(condition, uint32(state))
+}
+
+// PrefixTable returns table name with global or state prefix
+func PrefixTable(p *Parser, tablename string, global int64) string {
+	tablename = converter.Sanitize(tablename, ``)
+	if global == 1 {
+		return `global_` + tablename
+	}
+	return StateTable(p, tablename)
+}
+
+// EvalConditions gets the condition and check it
+func EvalCondition(p *Parser, table, name, condfield string, global int64) error {
+	conditions, err := p.Single(`SELECT `+converter.EscapeName(condfield)+` FROM "`+PrefixTable(p, table, global)+
+		`" WHERE name = ?`, name).String()
+	if err != nil {
+		return err
+	}
+	if len(conditions) == 0 {
+		return fmt.Errorf(`The condition is empty`)
+	}
+	ret, err := p.EvalIf(conditions)
+	if err != nil {
+		return err
+	}
+	if !ret {
+		return fmt.Errorf(`Access denied`)
+	}
+	return nil
 }

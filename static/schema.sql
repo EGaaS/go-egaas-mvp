@@ -1,4 +1,4 @@
-DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
+﻿DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
 CREATE SEQUENCE "dlt_transactions_id_seq" START WITH 1;
 DROP TABLE IF EXISTS "dlt_transactions"; CREATE TABLE "dlt_transactions" (
 "id" bigint NOT NULL  default nextval('dlt_transactions_id_seq'),
@@ -541,6 +541,51 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`host,address_vote,fuel_rate,last_forging_data_upd`, $Host, $AddressVote, $FuelRate, $block_time)
     }
 }', '1','ContractAccess("@0UpdateDLTChangeHostVote")');
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewMenu',
+  'contract NewMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBInsert(PrefixTable(`menu`, $Global), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractAccess("@0UpdateNewMenu")');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditMenu',
+  'contract EditMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(`menu`, $Name, `conditions`, $Global)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`menu`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractAccess("@0UpdateEditMenu")');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -560,6 +605,9 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_transactions', 
         '{"insert": "ContractAccess(\"@0DLTTransfer\")", "update": {"*": "false"}, "new_column": "ContractAccess(\"@0NewDLTColumn\")", "general_update": "ContractAccess(\"@0UpdateDltTransactions\")"}',
         'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_menu', 
+        '{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "ContractAccess(\"@0UpdateNewMenu\")"}',
+        'false');
 
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;
@@ -576,7 +624,7 @@ INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('number_of
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('fuel_rate', '1000000000000000', 'ContractAccess("@0SysPar")');
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('op_price', '{"edit_contract":100, "edit_column":100, "edit_menu":100, "edit_page":100, "edit_state_parameters":100,"edit_table":100,"new_column":100,"new_contract":100,"new_menu":100,"new_state_parameters":100,"new_page":100, "insert":100, "update":200, "change_node": 100, "edit_lang": 10, "edit_sign": 10, "change_host_vote": 100, "new_column":500, "new_lang": 10, "new_sign": 10, "new_column_w_index":1000, "add_table":5000,  "select":10, "new_state":1000000, "dlt_transfer":1, "system_restore_access_active":10000, "system_restore_access_close":100, "system_restore_access_request":100, "system_restore_access":100,"activate_cost":100}', 'ContractAccess("@0SysPar")');
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('gaps_between_blocks', '3', 'ContractAccess("@0SysPar")');
-INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('blockchain_url', 'https://raw.githubusercontent.com/egaas-blockchain/egaas-blockchain.github.io/master/testnet_blockchain', 'ContractAccess("@0SysPar")');
+INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('blockchain_url', '"https://raw.githubusercontent.com/egaas-blockchain/egaas-blockchain.github.io/master/testnet_blockchain"', 'ContractAccess("@0SysPar")');
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('max_block_size', '67108864', 'ContractAccess("@0SysPar")');
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('max_tx_size', '33554432', 'ContractAccess("@0SysPar")');
 INSERT INTO system_parameters ("name", "value", "conditions") VALUES ('max_tx_count', '100000', 'ContractAccess("@0SysPar")');
