@@ -157,7 +157,7 @@ func init() {
 		`Money`: Money, `Source`: Source, `Val`: Val, `Lang`: LangRes, `LangJS`: LangJS, `InputDate`: InputDate,
 		`MenuGroup`: MenuGroup, `MenuEnd`: MenuEnd, `MenuItem`: MenuItem, `MenuPage`: MenuPage, `MenuBack`: MenuBack,
 		`WhiteMobileBg`: WhiteMobileBg, `Bin2Hex`: Bin2Hex, `MessageBoard`: MessageBoard, `AutoUpdate`: AutoUpdate,
-		`AutoUpdateEnd`: AutoUpdateEnd, `Include`: Include,
+		`AutoUpdateEnd`: AutoUpdateEnd, `Include`: Include, `Upload`: Upload,
 	})
 }
 
@@ -2400,6 +2400,23 @@ func ChartPie(vars *map[string]string, pars *map[string]string) string {
     var pieChart = new Chart(piectx).Pie(pieData, pieOptions);
 	})();
 </script>`, id, strings.Join(out, ",\r\n"), id)
+}
+
+// Upload is a simple input[type='file'] wrapper to do the uploading
+func Upload(vars *map[string]string, pars ...string) string {
+	id := lib.Escape(pars[0])
+	title := lib.Escape(pars[1])
+
+	return fmt.Sprintf(`
+		<button type="button" class="btn btn-default" onclick="document.getElementById('%s').click();">
+			<em class="fa fa-upload fa-fw mr-sm"></em>
+			<span>%s</span>
+			<input type="file" id="%s" class="hidden" value="" onchange="load_file(this)"/>
+			<input class="hidden" type="text" id="%s_data"/>
+			<input class="hidden" type="text" id="%s_name"/>
+			<input class="hidden" type="text" id="%s_size"/>
+		</button>
+	`, id, title, id, id, id, id)
 }
 
 /*func AddressToId(vars *map[string]string, pars ...string) string {
