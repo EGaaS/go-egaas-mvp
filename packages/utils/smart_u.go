@@ -2162,7 +2162,7 @@ func MapPoint(vars *map[string]string, pars ...string) string {
 // MenuGroup returns a group of the menu items
 func MenuGroup(vars *map[string]string, pars ...string) string {
 	var (
-		idname, icon string
+		idname, icon, defaultPage string
 	)
 	/*	id = (*vars)[`menuid`]
 		if len(id) > 0 {
@@ -2177,10 +2177,13 @@ func MenuGroup(vars *map[string]string, pars ...string) string {
 	if len(pars) > 2 {
 		icon = fmt.Sprintf(`<em class="%s"></em>`, lib.Escape(pars[2]))
 	}
-	return fmt.Sprintf(`<li id="li%s"><span>%s
+	if len(pars) > 3 {
+		defaultPage = fmt.Sprintf(`onclick="load_template('%s',{});"`, lib.Escape(pars[3]))
+	}
+	return fmt.Sprintf(`<li id="li%s" %s><span>%s
      <span>%s</span></span>
 	 <ul id="ul%[1]s">`,
-		idname, icon, LangRes(vars, lib.Escape(pars[0])))
+		idname, defaultPage, icon, LangRes(vars, lib.Escape(pars[0])))
 }
 
 // MenuItem returns a menu item
