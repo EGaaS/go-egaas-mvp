@@ -1091,9 +1091,9 @@ func PrefixTable(p *Parser, tablename string, global int64) string {
 }
 
 // EvalConditions gets the condition and check it
-func EvalCondition(p *Parser, table, name, condfield string, global int64) error {
-	conditions, err := p.Single(`SELECT `+converter.EscapeName(condfield)+` FROM "`+PrefixTable(p, table, global)+
-		`" WHERE name = ?`, name).String()
+func EvalCondition(p *Parser, table, name, condfield string) error {
+	conditions, err := p.Single(`SELECT `+converter.EscapeName(condfield)+` FROM `+converter.EscapeName(table)+
+		` WHERE name = ?`, name).String()
 	if err != nil {
 		return err
 	}

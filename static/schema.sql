@@ -575,7 +575,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     conditions {
         var state int
         
-        EvalCondition(`menu`, $Name, `conditions`, $Global)
+        EvalCondition(PrefixTable(`menu`,$Global), $Name, `conditions`)
         if $Global == 0 {
             state = $state
         }
