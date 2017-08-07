@@ -41,9 +41,11 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 	"github.com/kardianos/osext"
 	"github.com/mcuadros/go-version"
 	"github.com/op/go-logging"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 var log = logging.MustGetLogger("daemons")
@@ -1053,20 +1055,30 @@ func FirstBlock(exit bool) {
 			Host = "127.0.0.1"
 		}
 
-		var block, tx []byte
+		var block, tr []byte
 		iAddress := int64(crypto.Address(PublicKeyBytes))
-		now := uint32(time.Now().Unix())
-		_, err := converter.BinMarshal(&block, &consts.BlockHeader{Type: 0, BlockID: 1, Time: now, WalletID: iAddress})
+		now := time.Now().Unix()
+		_, err := converter.BinMarshal(&block, &consts.BlockHeader{Type: 0, BlockID: 1, Time: uint32(now), WalletID: iAddress})
 		if err != nil {
 			log.Error("%v", ErrInfo(err))
 		}
-		_, err = converter.BinMarshal(&tx, &consts.FirstBlock{TxHeader: consts.TxHeader{Type: 1,
-			Time: now, WalletID: iAddress, CitizenID: 0},
-			PublicKey: PublicKeyBytes, NodePublicKey: NodePublicKeyBytes, Host: string(Host)})
+		firstBlock := &tx.FirstBlock{
+			Header: tx.Header{
+				Type:      1,
+				Time:      now,
+				UserID:    iAddress,
+				PublicKey: PublicKeyBytes,
+			},
+			PublicKey:     PublicKeyBytes,
+			NodePublicKey: NodePublicKeyBytes,
+			Host:          string(Host),
+		}
+		tr, err = msgpack.Marshal(&firstBlock)
+
 		if err != nil {
 			log.Error("%v", ErrInfo(err))
 		}
-		converter.EncodeLenByte(&block, tx)
+		converter.EncodeLenByte(&block, tr)
 
 		firstBlockDir := ""
 		if len(*FirstBlockDir) == 0 {

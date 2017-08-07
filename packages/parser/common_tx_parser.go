@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 
@@ -36,12 +35,8 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 	var fatalError string
 	var header *tx.Header
 	hashHex := converter.BinToHex(hash)
-	txType, walletID, citizenID := sql.GetTxTypeAndUserID(binaryTx)
-	/*	if txType > 127 || consts.IsStruct(int(txType)) {
-		if walletID == 0 && citizenID == 0 {
-			fatalError = "undefined walletId and citizenId"
-		}
-	}*/
+	txType := sql.GetTxType(binaryTx)
+
 	p.BinaryData = binaryTx
 	p.TxBinaryData = binaryTx
 	header, err = p.ParseDataGate(false)
@@ -73,13 +68,11 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 			}
 		}
 	} else {
-		if !( /*txType > 127 ||*/ consts.IsStruct(int(txType))) {
-			if header == nil {
-				return utils.ErrInfo(errors.New("header is nil"))
-			}
-			walletID = header.StateID
-			citizenID = header.UserID
+		if header == nil {
+			return utils.ErrInfo(errors.New("header is nil"))
 		}
+		walletID := header.StateID
+		citizenID := header.UserID
 
 		log.Debug("SELECT counter FROM transactions WHERE hex(hash) = ?", string(hashHex))
 		logging.WriteSelectiveLog("SELECT counter FROM transactions WHERE hex(hash) = " + string(hashHex))

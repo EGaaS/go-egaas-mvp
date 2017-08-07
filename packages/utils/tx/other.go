@@ -63,3 +63,10 @@ type UpdFullNodes struct {
 func (s UpdFullNodes) ForSign() string {
 	return fmt.Sprintf("%d,%d,%d,%d", s.Header.Type, s.Header.Time, s.Header.UserID, 0)
 }
+
+type FirstBlock struct {
+	Header
+	PublicKey     []byte
+	NodePublicKey []byte
+	Host          string
+}

@@ -68,7 +68,7 @@ func GetTablePrefix(global string, stateId int64) (string, error) {
 func GetParser(p *Parser, txType string) (ParserInterface, error) {
 	switch txType {
 	case "FirstBlock":
-		return &FirstBlockParser{p}, nil
+		return &FirstBlockParser{p, nil}, nil
 	case "DLTTransfer":
 		return &DLTTransferParser{p, nil}, nil
 	case "DLTChangeHostVote":

@@ -19,7 +19,6 @@ package parser
 import (
 	"encoding/hex"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
@@ -57,10 +56,8 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, *tx.
 		// первый байт - тип транзакции
 		// the first byte is type of the transaction
 		txType := converter.BinToDecBytesShift(transactionBinaryData, 1)
-		isStruct := consts.IsStruct(int(txType))
 		if txType > 127 { // транзакция с контрактом
 			// transaction with the contract
-			isStruct = false
 			smartTx := tx.SmartContract{}
 			if err := msgpack.Unmarshal(*transactionBinaryData, &smartTx); err != nil {
 				return nil, nil, err
@@ -163,34 +160,9 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, *tx.
 			}
 			p.TxData[`forsign`] = forsign
 			//fmt.Println(`Smart Forsign`, forsign)
-		} else if isStruct {
-			p.TxPtr = consts.MakeStruct(consts.TxTypes[int(txType)])
-			if err := converter.BinUnmarshal(&input, p.TxPtr); err != nil {
-				return nil, nil, err
-			}
-			p.TxVars = make(map[string]string)
-			head := consts.Header(p.TxPtr)
-			p.TxCitizenID = head.CitizenID
-			p.TxWalletID = head.WalletID
-			p.TxTime = int64(head.Time)
-			fmt.Println(`PARSED STRUCT %v`, p.TxPtr)
 		}
-		if isStruct {
-			transSlice = append(transSlice, converter.Int64ToByte(txType))
-			transSlice = append(transSlice, converter.Int64ToByte(p.TxTime))
-			t := reflect.ValueOf(p.TxPtr).Elem()
 
-			//walletId & citizenId
-			for i := 2; i < 4; i++ {
-				data := converter.FieldToBytes(t.Field(0).Interface(), i)
-				returnSlice = append(returnSlice, data)
-			}
-			for i := 1; i < t.NumField(); i++ {
-				data := converter.FieldToBytes(t.Interface(), i)
-				returnSlice = append(returnSlice, data)
-			}
-			*transactionBinaryData = (*transactionBinaryData)[len(*transactionBinaryData):]
-		} else if txType > 127 {
+		if txType > 127 {
 			transSlice = append(transSlice, converter.Int64ToByte(txType))
 			transSlice = append(transSlice, converter.Int64ToByte(p.TxTime))
 			// преобразуем бинарные данные транзакции в массив

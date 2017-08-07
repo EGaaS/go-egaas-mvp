@@ -23,13 +23,20 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 type FirstBlockParser struct {
 	*Parser
+	FirstBlock *tx.FirstBlock
 }
 
 func (p *FirstBlockParser) Init() error {
+	firstBlock := &tx.FirstBlock{}
+	if err := msgpack.Unmarshal(p.TxBinaryData, firstBlock); err != nil {
+		return p.ErrInfo(err)
+	}
+	p.FirstBlock = firstBlock
 	return nil
 }
 
@@ -38,18 +45,19 @@ func (p *FirstBlockParser) Validate() error {
 }
 
 func (p *FirstBlockParser) Action() error {
-	data := p.TxPtr.(*consts.FirstBlock)
+	//data := p.TxPtr.(*consts.FirstBlock)
 	//	myAddress := b58.Encode(lib.Address(data.PublicKey)) //utils.HashSha1Hex(p.TxMaps.Bytes["public_key"]);
-	myAddress := crypto.Address(data.PublicKey)
-	log.Debug("data.PublicKey %s", data.PublicKey)
-	log.Debug("data.PublicKey %x", data.PublicKey)
+	publicKey := p.FirstBlock.PublicKey
+	myAddress := crypto.Address(publicKey)
+	log.Debug("data.PublicKey %s", publicKey)
+	log.Debug("data.PublicKey %x", publicKey)
 	err := p.ExecSQL(`INSERT INTO dlt_wallets (wallet_id, host, address_vote, public_key_0, node_public_key, amount) VALUES (?, ?, ?, [hex], [hex], ?)`,
-		myAddress, data.Host, converter.AddressToString(myAddress), hex.EncodeToString(data.PublicKey), hex.EncodeToString(data.NodePublicKey), consts.FIRST_QDLT)
+		myAddress, p.FirstBlock.Host, converter.AddressToString(myAddress), hex.EncodeToString(publicKey), hex.EncodeToString(p.FirstBlock.NodePublicKey), consts.FIRST_QDLT)
 	//p.TxMaps.String["host"], myAddress, p.TxMaps.Bytes["public_key"], p.TxMaps.Bytes["node_public_key"], consts.FIRST_DLT)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	err = p.ExecSQL(`INSERT INTO full_nodes (wallet_id, host) VALUES (?,?)`, myAddress, data.Host) //p.TxMaps.String["host"])
+	err = p.ExecSQL(`INSERT INTO full_nodes (wallet_id, host) VALUES (?,?)`, myAddress, p.FirstBlock.Host) //p.TxMaps.String["host"])
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -62,5 +70,5 @@ func (p *FirstBlockParser) Rollback() error {
 }
 
 func (p FirstBlockParser) Header() *tx.Header {
-	return nil
+	return &p.FirstBlock.Header
 }

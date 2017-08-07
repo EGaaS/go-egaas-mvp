@@ -326,17 +326,9 @@ func (db *DCDB) GetBlockDataFromBlockChain(blockID int64) (*utils.BlockData, err
 	return BlockData, nil
 }
 
-// GetTxTypeAndUserID returns tx type, wallet and citizen id from the block data
-func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citizenID int64) {
-	tmp := binaryBlock[:]
-	txType = converter.BinToDecBytesShift(&binaryBlock, 1)
-	if consts.IsStruct(int(txType)) {
-		var txHead consts.TxHeader
-		converter.BinUnmarshal(&tmp, &txHead)
-		walletID = txHead.WalletID
-		citizenID = txHead.CitizenID
-	}
-	return
+// GetTxType returns tx type
+func GetTxType(binaryBlock []byte) int64 {
+	return converter.BinToDecBytesShift(&binaryBlock, 1)
 }
 
 // DecryptData decrypts tx data
