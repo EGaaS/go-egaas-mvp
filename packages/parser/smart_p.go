@@ -48,6 +48,7 @@ var (
 		"DBGetTable":     struct{}{},
 		"DBString":       struct{}{},
 		"DBInt":          struct{}{},
+		"DBRowExt":       struct{}{},
 		"DBStringExt":    struct{}{},
 		"DBIntExt":       struct{}{},
 		"DBFreeRequest":  struct{}{},
@@ -86,6 +87,7 @@ func init() {
 		"DBGetTable":         DBGetTable,
 		"DBString":           DBString,
 		"DBInt":              DBInt,
+		"DBRowExt":           DBRowExt,
 		"DBStringExt":        DBStringExt,
 		"DBFreeRequest":      DBFreeRequest,
 		"DBIntExt":           DBIntExt,
@@ -533,7 +535,7 @@ func StateTable(p *Parser, tblname string) string {
 	return fmt.Sprintf("%d_%s", p.TxStateID, tblname)
 }
 
-// StateTable adds a prefix with the state number to the table name
+// StateTableEx adds a prefix with the state number to the table name
 func StateTableTx(p *Parser, tblname string) string {
 	return fmt.Sprintf("%v_%s", p.TxData[`StateId`], tblname)
 }
@@ -989,6 +991,37 @@ func NewStateFunc(p *Parser, country, currency string) (err error) {
 	newStateParser := NewStateParser{p, nil}
 	_, err = newStateParser.Main(country, currency)
 	return
+}
+
+// DBRowExt returns one row from the table StringExt
+func DBRowExt(tblname string, columns string, id interface{}, idname string) (int64, map[string]string, error) {
+
+	if err := checkReport(tblname); err != nil {
+		return 0, nil, err
+	}
+
+	isBytea := getBytea(tblname)
+	if isBytea[idname] {
+		switch id.(type) {
+		case string:
+			if vbyte, err := hex.DecodeString(id.(string)); err == nil {
+				id = vbyte
+			}
+		}
+	}
+	if isIndex, err := sql.DB.IsIndex(tblname, idname); err != nil {
+		return 0, nil, err
+	} else if !isIndex {
+		return 0, nil, fmt.Errorf(`there is not index on %s`, idname)
+	}
+	query := `select ` + converter.Sanitize(columns, ` ,()`) + ` from ` + converter.EscapeName(tblname) + ` where ` + converter.EscapeName(idname) + `=?`
+	cost, err := sql.DB.GetQueryTotalCost(query, id)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := sql.DB.OneRow(query, id).String()
+
+	return cost, res, err
 }
 
 // UpdateSysParam updates the system parameter
