@@ -585,7 +585,103 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     action {
         DBUpdateExt(PrefixTable(`menu`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
     }
-}', '1','ContractAccess("@0UpdateEditMenu")');
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('AppendMenu',
+  'contract AppendMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    }
+
+    conditions {
+        EvalCondition(PrefixTable(`menu`,$Global), $Name, `conditions`)
+    }
+
+    action {
+        var table string
+        table = PrefixTable(`menu`, $Global)
+        DBUpdateExt(table, `name`, $Name, `value`, DBStringExt(table, `value`, $Name, `name`) + "\r\n" + $Value )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewPage',
+  'contract NewPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Menu       string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,$state)
+       	if HasPrefix($Name, `sys-`) || HasPrefix($Name, `app-`) {
+	    	error `The name cannot start with sys- or app-`
+	    }
+    }
+
+    action {
+        DBInsert(PrefixTable(`pages`, $Global), `name,value,menu,conditions`, $Name, $Value, $Menu, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditPage',
+  'contract EditPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Menu      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(PrefixTable(`pages`,$Global), $Name, `conditions`)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`pages`, $Global), `name`, $Name, `value,menu,conditions`, $Value, $Menu, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('AppendPage',
+  'contract AppendPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    }
+
+    conditions {
+        EvalCondition(PrefixTable(`pages`,$Global), $Name, `conditions`)
+    }
+
+    action {
+        var value, table string
+        table = PrefixTable(`pages`, $Global)
+        value = DBStringExt(table, `value`, $Name, `name`)
+       	if Contains(value, `PageEnd:`) {
+		   value = Replace(value, "PageEnd:", $Value) + "\r\nPageEnd:"
+    	} else {
+    		value = value + "\r\n" + $Value
+    	}
+        DBUpdateExt(table, `name`, $Name, `value`,  value )
+    }
+}', '1','ContractConditions(`MainCondition`)');
 
 INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('UpdFullNodes',
   'contract UpdFullNodes {
@@ -644,7 +740,10 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         '{"insert": "ContractAccess(\"@0DLTTransfer\")", "update": {"*": "false"}, "new_column": "ContractAccess(\"@0NewDLTColumn\")", "general_update": "ContractAccess(\"@0UpdateDltTransactions\")"}',
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_menu', 
-        '{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "ContractAccess(\"@0UpdateNewMenu\")"}',
+        '{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\", \"@0AppendMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "ContractAccess(\"@0UpdateNewMenu\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_pages', 
+        '{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\", \"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "ContractAccess(\"@0UpdateNewPage\")"}',
         'false');
 
 

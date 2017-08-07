@@ -75,6 +75,9 @@ var (
 		"ValidateCondition": 30,
 		"PrefixTable":       10,
 		"EvalCondition":     20,
+		"HasPrefix":         10,
+		"Contains":          10,
+		"Replace":           10,
 	}
 )
 
@@ -123,6 +126,9 @@ func init() {
 		"ValidateCondition":  ValidateCondition,
 		"PrefixTable":        PrefixTable,
 		"EvalCondition":      EvalCondition,
+		"HasPrefix":          HasPrefix,
+		"Contains":           Contains,
+		"Replace":            Replace,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -421,7 +427,7 @@ func getBytea(table string) map[string]bool {
 		return isBytea
 	}
 	for _, icol := range colTypes {
-		isBytea[icol[`column_name`]] = icol[`data_type`] == `bytea`
+		isBytea[icol[`column_name`]] = icol[`column_name`] != `conditions` && icol[`data_type`] == `bytea`
 	}
 	return isBytea
 }
@@ -1090,7 +1096,7 @@ func PrefixTable(p *Parser, tablename string, global int64) string {
 	return StateTable(p, tablename)
 }
 
-// EvalConditions gets the condition and check it
+// EvalCondition gets the condition and check it
 func EvalCondition(p *Parser, table, name, condfield string) error {
 	conditions, err := p.Single(`SELECT `+converter.EscapeName(condfield)+` FROM `+converter.EscapeName(table)+
 		` WHERE name = ?`, name).String()
@@ -1108,4 +1114,19 @@ func EvalCondition(p *Parser, table, name, condfield string) error {
 		return fmt.Errorf(`Access denied`)
 	}
 	return nil
+}
+
+// HasPrefix returns true if the string has the specified prefix
+func HasPrefix(input, prefix string) bool {
+	return strings.HasPrefix(input, prefix)
+}
+
+// Contains returns true if the string contains the specified string
+func Contains(s, substr string) bool {
+	return strings.Contains(s, substr)
+}
+
+// Replace replaces old substrings to new substrings
+func Replace(s, old, new string) string {
+	return strings.Replace(s, old, new, -1)
 }

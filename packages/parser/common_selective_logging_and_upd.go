@@ -44,7 +44,6 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 	if isCustom, pref, err = p.IsCustomTable(table); err != nil && pref != `notcustom` {
 		return 0, ``, err
 	}
-
 	for i, v := range ivalues {
 		if len(fields) > i && isBytea[fields[i]] {
 			var vlen int
