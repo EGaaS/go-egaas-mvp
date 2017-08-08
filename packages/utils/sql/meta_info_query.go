@@ -125,6 +125,7 @@ func IsSystemTable(table string) bool {
 		`global_pages`:           true,
 		`global_signatures`:      true,
 		`global_smart_contracts`: true,
+		`system_restore_access`:  true,
 	}
 	return sys[table]
 }

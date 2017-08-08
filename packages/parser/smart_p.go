@@ -80,6 +80,8 @@ var (
 		"Contains":          10,
 		"Replace":           10,
 		"UpdateLang":        10,
+		"Size":              10,
+		"Substr":            10,
 	}
 )
 
@@ -133,6 +135,8 @@ func init() {
 		"Replace":            Replace,
 		"FindEcosystem":      FindEcosystem,
 		"UpdateLang":         UpdateLang,
+		"Size":               Size,
+		"Substr":             Substr,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1024,7 +1028,7 @@ func DBRowExt(tblname string, columns string, id interface{}, idname string) (in
 	} else if !isIndex {
 		return 0, nil, fmt.Errorf(`there is not index on %s`, idname)
 	}
-	query := `select ` + converter.Sanitize(columns, ` ,()`) + ` from ` + converter.EscapeName(tblname) + ` where ` + converter.EscapeName(idname) + `=?`
+	query := `select ` + converter.Sanitize(columns, ` ,()*`) + ` from ` + converter.EscapeName(tblname) + ` where ` + converter.EscapeName(idname) + `=?`
 	cost, err := sql.DB.GetQueryTotalCost(query, id)
 	if err != nil {
 		return 0, nil, err
@@ -1167,4 +1171,18 @@ func FindEcosystem(p *Parser, country string) (int64, int64, error) {
 // UpdateLang updates language resource
 func UpdateLang(p *Parser, name, trans string) {
 	language.UpdateLang(int(p.TxStateID), name, trans)
+}
+
+// Size returns the length of the string
+func Size(s string) int64 {
+	return int64(len(s))
+}
+
+// Substr returns the substring of the string
+func Substr(s string, off int64, slen int64) string {
+	ilen := int64(len(s))
+	if off < 0 || slen < 0 || off > ilen || off+slen > ilen {
+		return ``
+	}
+	return s[off : off+slen]
 }

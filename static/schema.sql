@@ -850,6 +850,118 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractAccess("@0UpdateUpdFullNodes")');
 
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccess',
+  'contract RestoreAccess {
+    data {
+        State int
+    }
+
+    conditions {
+        if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+	    var adata map
+	    adata = DBRowExt("system_restore_access", "*", $State, `state_id`)
+    	if !adata[`state_id`] {
+	    	error "incorrect system_restore_access"
+	    }
+	    if adata["active"] == `0` {
+		    error "active = 0"
+	    }
+	    if adata["close"] == `1` {
+		    error "close = 1"
+	    }
+    	if $time-Int(adata["time"]) < 86400 * 7 {
+		        error "CHANGE_KEY_PERIOD"
+	    }
+    }
+
+    action {
+        var value string
+    	value = `$citizen=` + DBStringExt(`system_restore_access`,`citizen_id`, $State, `state_id`)
+
+        DBUpdateExt(Str($State)+`_state_parameters`, `name`,  "changing_tables", "value,conditions", value, value)
+        DBUpdateExt(Str($State)+`_state_parameters`, `name`,  "changing_smart_contracts", "value,conditions", value, value)
+        DBUpdateExt(`system_restore_access`, `state_id`,  $State, "close", 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessActive',
+  'contract RestoreAccessActive {
+    data {
+        Secret string
+    }
+
+    conditions {
+        $active = 1
+        if Substr($Secret,0, 1) == `0`  { // 30
+            $active = 0
+        }
+       	if Size($Secret) > 2048 {
+		   error "len secret > 2048"
+	    }
+	    var active int
+        active = DBIntExt(`system_restore_access`, `active`, $state, `state_id`)
+		if active == $active {
+	    	error "active"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "active,secret", $active, $Secret)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessClose',
+  'contract RestoreAccessClose {
+    data {
+
+    }
+
+    conditions {
+	    if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+		if DBIntExt(`system_restore_access`, `close`, $state, `state_id`) == 1 {
+	    	error "close"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "close", 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessRequest',
+  'contract RestoreAccessRequest {
+    data {
+
+    }
+
+    conditions {
+	    if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+	    var adata map
+	    adata = DBRowExt("system_restore_access", "*", $state, `state_id`)
+    	if !adata[`state_id`] {
+	    	error "incorrect system_restore_access"
+	    }
+	    if adata["active"] == `0` {
+		    error "active = 0"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "time,close,citizen_id", $block_time, 1, $wallet)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
 "columns_and_permissions" jsonb,
@@ -876,6 +988,9 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_signatures', 
         '{"insert": "ContractAccess(\"@0NewSign\")", "update": {"*": "ContractAccess(\"@0EditSign\")"}, "new_column": "ContractAccess(\"@0NewSignColumn\")", "general_update": "ContractAccess(\"@0UpdateNewSign\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('system_restore_access', 
+        '{"insert": "ContractAccess(\"@0RestoreAccess\")", "update": {"*": "ContractAccess(\"@0RestoreAccess\", \"@0RestoreAccessActive\", \"@0RestoreAccessClose\", \"@0RestoreAccessRequest\")"}, "new_column": "ContractAccess(\"@0NewRestoreAccessColumn\")", "general_update": "ContractAccess(\"@0UpdateRestoreAccess\")"}',
         'false');
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;
@@ -918,3 +1033,4 @@ DROP TABLE IF EXISTS "system_restore_access"; CREATE TABLE "system_restore_acces
 );
 ALTER SEQUENCE system_restore_access_id_seq owned by system_restore_access.id;
 ALTER TABLE ONLY "system_restore_access" ADD CONSTRAINT system_restore_access_pkey PRIMARY KEY (id);
+CREATE INDEX "system_restore_access_state" ON "system_restore_access" (state_id);

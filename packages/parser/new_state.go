@@ -250,7 +250,7 @@ func (p *NewStateParser) Main(country, currency string) (id string, err error) {
 	}
 	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
 		(?, ?, ?)`,
-		id+`_state_parameters`, `{"insert": "ContractAccess(\"@0NewStateParameters\")", "update": {"*": "ContractAccess(\"@0EditStateParameters\")"}, "new_column": "ContractAccess(\"@0NewStateParametersColumn\")", "general_update":  "`+sid+`"}`,
+		id+`_state_parameters`, `{"insert": "ContractAccess(\"@0NewStateParameters\")", "update": {"*": "ContractAccess(\"@0EditStateParameters\",\"@0RestoreAccess\")"}, "new_column": "ContractAccess(\"@0NewStateParametersColumn\")", "general_update":  "`+sid+`"}`,
 		psid)
 	if err != nil {
 		return
