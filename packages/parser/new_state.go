@@ -255,6 +255,13 @@ func (p *NewStateParser) Main(country, currency string) (id string, err error) {
 	if err != nil {
 		return
 	}
+	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
+		(?, ?, ?)`,
+		id+`_signatures`, `{"insert": "ContractAccess(\"@0NewSign\")", "update": {"*": "ContractAccess(\"@0EditSign\")"}, "new_column": "ContractAccess(\"@0NewSignColumn\")", "general_update":  "`+sid+`"}`,
+		psid)
+	if err != nil {
+		return
+	}
 
 	err = p.ExecSQL(`CREATE TABLE "` + id + `_pages" (
 				"name" varchar(255)  NOT NULL DEFAULT '',

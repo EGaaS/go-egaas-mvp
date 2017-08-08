@@ -760,6 +760,58 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewSign',
+  'contract NewSign {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,$state)
+        var exist string
+        exist = DBStringExt(PrefixTable(`signatures`, $Global), `name`, $Name, `name`)
+        if exist {
+            error Sprintf("The signature %s already exists", $Name)
+        }
+    }
+
+    action {
+        DBInsert(PrefixTable(`signatures`, $Global), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditSign',
+  'contract EditSign {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(PrefixTable(`signatures`,$Global), $Name, `conditions`)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`signatures`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
 INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('UpdFullNodes',
   'contract UpdFullNodes {
     data {
@@ -821,6 +873,9 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_pages', 
         '{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\", \"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "ContractAccess(\"@0UpdateNewPage\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_signatures', 
+        '{"insert": "ContractAccess(\"@0NewSign\")", "update": {"*": "ContractAccess(\"@0EditSign\")"}, "new_column": "ContractAccess(\"@0NewSignColumn\")", "general_update": "ContractAccess(\"@0UpdateNewSign\")"}',
         'false');
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;
