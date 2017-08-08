@@ -19,6 +19,8 @@ CodeGenerator.Controller = JS_CLASS({
         this.$bag = this.$containerWrapper.find(".js-draggable-bag");
         this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
 
+        this.$trash = $(".js-trash");
+
         this.events();
     },
 
@@ -168,6 +170,24 @@ CodeGenerator.Controller = JS_CLASS({
                 self.startDragging();
             });
 
+        this.$trash
+            .on("mouseover", function (e) {
+                if(self.dragging && self.draggingTag && self.draggingTag.id) {
+                    $(this).addClass("b-trash_over");
+                }
+            })
+            .on("mouseout", function (e) {
+                $(this).removeClass("b-trash_over");
+            })
+            .on("mouseup", function (e) {
+                if(self.dragging && self.draggingTag && self.draggingTag.id) {
+                    self.cancelDragging();
+                    self.model.remove(self.draggingTag);
+                    self.generateCode();
+                    self.render();
+                }
+            });
+
     },
 
     onBodyMouseMove: function (e) {
@@ -226,8 +246,6 @@ CodeGenerator.Controller = JS_CLASS({
 
         this.generateCode();
         this.render();
-
-
     },
 
     setHTML: function (html) {
@@ -356,6 +374,14 @@ CodeGenerator.Model = JS_CLASS({
             }
 
 
+        }
+    },
+
+    remove: function (tag) {
+        this.findElementById(this.json, tag.id);
+        console.log("remove tag", this.findInfo);
+        if (this.findInfo.el && this.findInfo.parent) {
+            this.findInfo.parent.body.splice(this.findInfo.parentPosition, 1);
         }
     },
 
