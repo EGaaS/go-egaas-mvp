@@ -683,6 +683,44 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewStateParameters',
+  'contract NewStateParameters {
+    data {
+        Name string
+        Value string
+        Conditions string
+    }
+    conditions {
+        ValidateCondition($Conditions, $state)
+    }
+    action {
+        DBInsert(Table(`state_parameters`), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditStateParameters',
+  'contract EditStateParameters {
+    data {
+        Name string
+        Value string
+        Conditions string
+    }
+    conditions {
+        EvalCondition(Table(`state_parameters`), $Name, `conditions`)
+        ValidateCondition($Conditions, $state)
+        var exist int
+       	if $Name == `state_name` {
+    		exist = FindEcosystem($Value)
+    		if exist > 0 && exist != $state {
+    			warning Sprintf(`State %s already exists`, $Value)
+    		}
+    	}
+    }
+    action {
+        DBUpdateExt(Table(`state_parameters`), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
 INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('UpdFullNodes',
   'contract UpdFullNodes {
     data {
@@ -745,7 +783,6 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_pages', 
         '{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\", \"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "ContractAccess(\"@0UpdateNewPage\")"}',
         'false');
-
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;
 CREATE SEQUENCE system_states_id_seq START WITH 1;

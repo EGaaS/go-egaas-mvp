@@ -61,6 +61,7 @@ var (
 		"UpdatePage":     struct{}{},
 		"DBInsertReport": struct{}{},
 		"UpdateSysParam": struct{}{},
+		"FindEcosystem":  struct{}{},
 	}
 	extendCost = map[string]int64{
 		"AddressToId":       10,
@@ -129,6 +130,7 @@ func init() {
 		"HasPrefix":          HasPrefix,
 		"Contains":           Contains,
 		"Replace":            Replace,
+		"FindEcosystem":      FindEcosystem,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1129,4 +1131,33 @@ func Contains(s, substr string) bool {
 // Replace replaces old substrings to new substrings
 func Replace(s, old, new string) string {
 	return strings.Replace(s, old, new, -1)
+}
+
+// FindEcosystem checks if there is an ecosystem with the specified name
+func FindEcosystem(p *Parser, country string) (int64, int64, error) {
+	query := `SELECT id FROM system_states`
+	cost, err := p.GetQueryTotalCost(query)
+	if err != nil {
+		return 0, 0, err
+	}
+	data, err := p.GetList(`SELECT id FROM system_states`).Int64()
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, id := range data {
+		query = fmt.Sprintf(`SELECT value FROM "%d_state_parameters" WHERE name = 'state_name'`, id)
+		idcost, err := p.GetQueryTotalCost(query)
+		if err != nil {
+			return cost, 0, err
+		}
+		cost += idcost
+		stateName, err := p.Single(query).String()
+		if err != nil {
+			return cost, 0, err
+		}
+		if strings.ToLower(stateName) == strings.ToLower(country) {
+			return cost, id, nil
+		}
+	}
+	return cost, 0, nil
 }
