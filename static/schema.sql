@@ -721,6 +721,45 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewLang',
+  'contract NewLang {
+    data {
+        Name  string
+        Trans string
+    }
+
+    conditions {
+        EvalCondition(Table(`state_parameters`), `changing_language`, `value`)
+        var exist string
+        exist = DBStringExt(Table(`languages`), `name`, $Name, `name`)
+        if exist {
+            error Sprintf("The language resource %s already exists", $Name)
+        }
+    }
+
+    action {
+        DBInsert(Table(`languages`), `name,res`, $Name, $Trans )
+        UpdateLang($Name, $Trans)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditLang',
+  'contract EditLang {
+    data {
+        Name  string
+        Trans string
+    }
+
+    conditions {
+        EvalCondition(Table(`state_parameters`), `changing_language`, `value`)
+    }
+
+    action {
+        DBUpdateExt(Table(`languages`), `name`, $Name, `res`, $Trans )
+        UpdateLang($Name, $Trans)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
 INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('UpdFullNodes',
   'contract UpdFullNodes {
     data {

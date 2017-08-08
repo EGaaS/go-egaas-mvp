@@ -79,6 +79,7 @@ var (
 		"HasPrefix":         10,
 		"Contains":          10,
 		"Replace":           10,
+		"UpdateLang":        10,
 	}
 )
 
@@ -131,6 +132,7 @@ func init() {
 		"Contains":           Contains,
 		"Replace":            Replace,
 		"FindEcosystem":      FindEcosystem,
+		"UpdateLang":         UpdateLang,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1160,4 +1162,9 @@ func FindEcosystem(p *Parser, country string) (int64, int64, error) {
 		}
 	}
 	return cost, 0, nil
+}
+
+// UpdateLang updates language resource
+func UpdateLang(p *Parser, name, trans string) {
+	language.UpdateLang(int(p.TxStateID), name, trans)
 }
