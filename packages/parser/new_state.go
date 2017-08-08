@@ -227,6 +227,34 @@ func (p *NewStateParser) Main(country, currency string) (id string, err error) {
 	if err != nil {
 		return
 	}
+	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
+		(?, ?, ?)`,
+		id+`_menu`, `{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\",\"@0AppendMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "`+sid+`"}`,
+		psid)
+	if err != nil {
+		return
+	}
+	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
+		(?, ?, ?)`,
+		id+`_pages`, `{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\",\"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "`+sid+`"}`,
+		psid)
+	if err != nil {
+		return
+	}
+	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
+		(?, ?, ?)`,
+		id+`_languages`, `{"insert": "ContractAccess(\"@0NewLang\")", "update": {"*": "ContractAccess(\"@0EditLang\")"}, "new_column": "ContractAccess(\"@0NewLangColumn\")", "general_update": "`+sid+`"}`,
+		psid)
+	if err != nil {
+		return
+	}
+	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
+		(?, ?, ?)`,
+		id+`_state_parameters`, `{"insert": "ContractAccess(\"@0NewStateParameters\")", "update": {"*": "ContractAccess(\"@0EditStateParameters\")"}, "new_column": "ContractAccess(\"@0NewStateParametersColumn\")", "general_update":  "`+sid+`"}`,
+		psid)
+	if err != nil {
+		return
+	}
 
 	err = p.ExecSQL(`CREATE TABLE "` + id + `_pages" (
 				"name" varchar(255)  NOT NULL DEFAULT '',
