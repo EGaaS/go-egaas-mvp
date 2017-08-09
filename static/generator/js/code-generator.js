@@ -20,8 +20,11 @@ CodeGenerator.Controller = JS_CLASS({
         this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
 
         this.$trash = $(".js-trash");
+        this.$undo = $(".js-undo");
+        this.$redo = $(".js-redo");
 
         this.events();
+
     },
 
     setJsonData: function (json) {
@@ -188,6 +191,20 @@ CodeGenerator.Controller = JS_CLASS({
                 }
             });
 
+        this.$undo.on("click", function () {
+            if(self.model.undo()) {
+                self.generateCode();
+                self.render();
+            }
+        });
+
+        this.$redo.on("click", function () {
+            if(self.model.redo()) {
+                self.generateCode();
+                self.render();
+            }
+        });
+
     },
 
     onBodyMouseMove: function (e) {
@@ -241,7 +258,9 @@ CodeGenerator.Controller = JS_CLASS({
         //if(this.over.position == "inside") {
         //    this.json
         //}
-
+        if(overTag && this.draggingTag && overTag.id && overTag.id === this.draggingTag.id)
+            return;
+        //console.log("drop", overTag, this.draggingTag, overTag.id, this.draggingTag.id, overTag.id === this.draggingTag.id);
         this.model.appendToTree(this.draggingTag, overTag, this.over.position);
 
         this.generateCode();
@@ -316,12 +335,46 @@ CodeGenerator.Controller = JS_CLASS({
 
 CodeGenerator.Model = JS_CLASS({
     constructor: function (param) {
+        this.history = [];
+        this.currentHistoryPos = -1;
         this.json = null;
         CP(this, param);
     },
 
+    saveHistory: function () {
+        if(this.currentHistoryPos < this.history.length - 1) {
+
+            this.history.splice(this.currentHistoryPos + 1, 10000);
+            console.log("history this.history.splice(" + (this.currentHistoryPos + 1) + ", 10000)");
+        }
+        this.history.push($.extend(true, {}, this.json));
+        this.currentHistoryPos = this.history.length - 1;
+        console.log("history", this.history, this.currentHistoryPos);
+    },
+
+    undo: function () {
+        if(this.currentHistoryPos > 0) {
+            this.currentHistoryPos--;
+            this.json = $.extend(true, {}, this.history[this.currentHistoryPos]);
+            console.log("history undo", this.history, this.currentHistoryPos);
+            return true;
+        }
+        return false;
+    },
+
+    redo: function () {
+        if(this.currentHistoryPos < this.history.length - 1) {
+            this.currentHistoryPos++;
+            this.json = $.extend(true, {}, this.history[this.currentHistoryPos]);
+            console.log("history redo", this.history, this.currentHistoryPos);
+            return true;
+        }
+        return false;
+    },
+
     setJsonData: function (json) {
         this.json = json;
+        this.saveHistory();
     },
 
     appendToTree: function (tag, toTag, position) {
@@ -373,6 +426,8 @@ CodeGenerator.Model = JS_CLASS({
                 }
             }
 
+            this.saveHistory();
+
 
         }
     },
@@ -382,6 +437,7 @@ CodeGenerator.Model = JS_CLASS({
         console.log("remove tag", this.findInfo);
         if (this.findInfo.el && this.findInfo.parent) {
             this.findInfo.parent.body.splice(this.findInfo.parentPosition, 1);
+            this.saveHistory();
         }
     },
 
