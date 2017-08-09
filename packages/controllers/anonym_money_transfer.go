@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"strconv"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/shopspring/decimal"
 )
 
@@ -44,8 +46,19 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 	txTypeID := utils.TypeInt(txType)
 	timeNow := time.Now().Unix()
 
-	fPrice := sql.SysCost(`dlt_transfer`)
-	fuelRate := c.GetFuel()
+	systemParameters := &model.SystemParameter{}
+	value, err := systemParameters.GetJSONField(`value->'dlt_transfer'`, "op_price")
+	fPrice, _ := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
+
+	err = systemParameters.Get("fuel_rate")
+	if err != nil {
+		return "", utils.ErrInfo(err)
+	}
+
+	fuelRate, _ := decimal.NewFromString(systemParameters.Value)
 	if fuelRate.Cmp(decimal.New(0, 0)) <= 0 {
 		return ``, fmt.Errorf(`fuel rate must be greater than 0`)
 	}
@@ -53,17 +66,15 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 	commission := decimal.New(fPrice, 0).Mul(fuelRate)
 
 	log.Debug("sessCitizenID %d SessWalletID %d SessStateID %d", c.SessCitizenID, c.SessWalletID, c.SessStateID)
-	amount, err := c.Single("select amount from dlt_wallets where wallet_id = ?", c.SessWalletID).String()
+	dltWallet := &model.DltWallet{}
+	err = dltWallet.GetWallet(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
-	}
-	if amount == "" {
-		amount = "0"
 	}
 	TemplateStr, err := makeTemplate("anonym_money_transfer", "anonymMoneyTransfer", &anonymMoneyTransferPage{
 		Lang:       c.Lang,
 		Title:      "anonymMoneyTransfer",
-		Amount:     amount,
+		Amount:     dltWallet.Amount.String(),
 		WalletID:   c.SessWalletID,
 		CitizenID:  c.SessCitizenID,
 		Commission: commission.String(),

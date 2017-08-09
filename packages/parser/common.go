@@ -23,15 +23,17 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/config"
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/template"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	db "github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 	"github.com/op/go-logging"
 	"github.com/shopspring/decimal"
@@ -40,6 +42,109 @@ import (
 var (
 	log = logging.MustGetLogger("daemons")
 )
+
+// GetTxTypeAndUserID returns tx type, wallet and citizen id from the block data
+func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citizenID int64) {
+	tmp := binaryBlock[:]
+	txType = converter.BinToDecBytesShift(&binaryBlock, 1)
+	if consts.IsStruct(int(txType)) {
+		var txHead consts.TxHeader
+		converter.BinUnmarshal(&tmp, &txHead)
+		walletID = txHead.WalletID
+		citizenID = txHead.CitizenID
+	}
+	return
+}
+
+func GetBlockDataFromBlockChain(blockID int64) (*utils.BlockData, error) {
+	BlockData := new(utils.BlockData)
+	block := &model.Block{}
+	err := block.GetBlock(blockID)
+	if err != nil {
+		return BlockData, utils.ErrInfo(err)
+	}
+	log.Debug("data: %x\n", block.Data)
+	if len(block.Data) > 0 {
+		binaryData := block.Data
+		converter.BytesShift(&binaryData, 1) // не нужно. 0 - блок, >0 - тр-ии
+		BlockData = utils.ParseBlockHeader(&binaryData)
+		BlockData.Hash = converter.BinToHex(block.Hash)
+	}
+	return BlockData, nil
+}
+
+func GetNodePublicKeyWalletOrCB(walletID, stateID int64) ([]byte, error) {
+	var result []byte
+	var err error
+	if walletID != 0 {
+		log.Debug("wallet_id %v state_id %v", walletID, stateID)
+		wallet := &model.DltWallet{}
+		err = wallet.GetWallet(walletID)
+		if err != nil {
+			return []byte(""), err
+		}
+		result = wallet.NodePublicKey
+	} else {
+		srs := &model.SystemRecognizedState{}
+		err = srs.GetState(stateID)
+		if err != nil {
+			return []byte(""), err
+		}
+		result = srs.NodePublicKey
+	}
+	return result, nil
+}
+
+func InsertInLogTx(binaryTx []byte, time int64) error {
+	txHash, err := crypto.Hash(binaryTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	txHash = converter.BinToHex(txHash)
+	ltx := &model.LogTransaction{Hash: txHash, Time: time}
+	err = ltx.Create()
+	if err != nil {
+		return utils.ErrInfo(err)
+	}
+	return nil
+}
+
+func IsCustomTable(table string) (isCustom bool, err error) {
+	if (table[0] >= '0' && table[0] <= '9') || strings.HasPrefix(table, `global_`) {
+		if off := strings.IndexByte(table, '_'); off > 0 {
+			prefix := table[:off]
+			tables := &model.Table{}
+			tables.SetTablePrefix(prefix)
+			err := tables.Get(table)
+			if err != nil {
+				return false, err
+			}
+			if len(tables.Name) > 0 {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func IsState(country string) (int64, error) {
+	ids, err := model.GetAllSystemStatesIDs()
+	if err != nil {
+		return 0, err
+	}
+	for _, id := range ids {
+		sp := &model.StateParameter{}
+		sp.SetTablePrefix(converter.Int64ToStr(id))
+		err = sp.GetByName("state_name")
+		if err != nil {
+			return 0, err
+		}
+		if strings.ToLower(sp.Name) == strings.ToLower(country) {
+			return id, nil
+		}
+	}
+	return 0, nil
+}
 
 func init() {
 	flag.Parse()
@@ -146,7 +251,6 @@ type txMapsType struct {
 
 // Parser is a structure for parsing transactions
 type Parser struct {
-	*db.DCDB
 	TxMaps           *txMapsType
 	TxMap            map[string][]byte
 	TxMapS           map[string]string
@@ -200,43 +304,6 @@ func (p *Parser) GetBlockInfo() *utils.BlockData {
 	return &utils.BlockData{Hash: p.BlockData.Hash, Time: p.BlockData.Time, WalletID: p.BlockData.WalletID, StateID: p.BlockData.StateID, BlockID: p.BlockData.BlockID}
 }
 
-/*
-func (p *Parser) limitRequest(vimit interface{}, txType string, vperiod interface{}) error {
-
-	var limit int
-	switch vimit.(type) {
-	case string:
-		limit = utils.StrToInt(vimit.(string))
-	case int:
-		limit = vimit.(int)
-	case int64:
-		limit = int(vimit.(int64))
-	}
-
-	var period int
-	switch vperiod.(type) {
-	case string:
-		period = utils.StrToInt(vperiod.(string))
-	case int:
-		period = vperiod.(int)
-	}
-
-	time := utils.BytesToInt(p.TxMap["time"])
-	num, err := p.Single("SELECT count(time) FROM rb_time_"+txType+" WHERE user_id = ? AND time > ?", p.TxUserID, (time - period)).Int()
-	if err != nil {
-		return err
-	}
-	if num >= limit {
-		return utils.ErrInfo(fmt.Errorf("[limit_requests] rb_time_%v %v >= %v", txType, num, limit))
-	} else {
-		err := p.ExecSQL("INSERT INTO rb_time_"+txType+" (user_id, time) VALUES (?, ?)", p.TxUserID, time)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
 func (p *Parser) dataPre() {
 	hash, err := crypto.DoubleHash(p.BinaryData)
 	if err != nil {
@@ -262,26 +329,27 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 		log.Fatal(err)
 	}
 	searchedHash = converter.BinToHex(searchedHash)
-	hash, err := p.Single(`SELECT hash FROM log_transactions WHERE hex(hash) = ?`, searchedHash).String()
-	log.Debug("SELECT hash FROM log_transactions WHERE hex(hash) = %s", searchedHash)
+	logTx := &model.LogTransaction{}
+	err = logTx.GetByHash(searchedHash)
 	if err != nil {
 		log.Error("%s", utils.ErrInfo(err))
 		return utils.ErrInfo(err)
 	}
-	log.Debug("hash %x", hash)
-	if len(hash) > 0 {
+	log.Debug("hash %x", logTx.Hash)
+	if len(logTx.Hash) > 0 {
 		return utils.ErrInfo(fmt.Errorf("double tx in log_transactions %s", searchedHash))
 	}
 
 	if transactions {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM transactions WHERE hex(hash) = ? and verified = 1", searchedHash).Int64()
+		tx := &model.Transaction{}
+		err := tx.GetVerified(searchedHash)
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
-		if exists > 0 {
+		if len(tx.Hash) > 0 {
 			return utils.ErrInfo(fmt.Errorf("double tx in transactions %s", searchedHash))
 		}
 	}
@@ -289,12 +357,13 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	if txQueue {
 		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
-		exists, err := p.Single("SELECT count(hash) FROM queue_tx WHERE hex(hash) = ?", searchedHash).Int64()
+		qtx := &model.QueueTx{}
+		err := qtx.GetByHash(searchedHash)
 		if err != nil {
 			log.Error("%s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
-		if exists > 0 {
+		if len(qtx.Hash) > 0 {
 			return utils.ErrInfo(fmt.Errorf("double tx in queue_tx %s", searchedHash))
 		}
 	}
@@ -304,21 +373,17 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 
 // GetInfoBlock returns the latest block
 func (p *Parser) GetInfoBlock() error {
-
 	// последний успешно записанный блок
 	// the last successfully recorded block
 	p.PrevBlock = new(utils.BlockData)
-	var q string
-	if config.ConfigIni["db_type"] == "mysql" || config.ConfigIni["db_type"] == "sqlite" {
-		q = "SELECT LOWER(HEX(hash)) as hash, block_id, time FROM info_block"
-	} else if config.ConfigIni["db_type"] == "postgresql" {
-		q = "SELECT encode(hash, 'HEX')  as hash, block_id, time FROM info_block"
-	}
-	err := p.QueryRow(q).Scan(&p.PrevBlock.Hash, &p.PrevBlock.BlockID, &p.PrevBlock.Time)
-
+	ib := &model.InfoBlock{}
+	err := ib.GetInfoBlock()
 	if err != nil && err != sql.ErrNoRows {
 		return p.ErrInfo(err)
 	}
+	p.PrevBlock.Hash = ib.Hash
+	p.PrevBlock.BlockID = ib.BlockID
+	p.PrevBlock.Time = ib.Time
 	return nil
 }
 
@@ -335,42 +400,27 @@ func (p *Parser) InsertIntoBlockchain() error {
 	//mutex.Lock()
 	// пишем в цепочку блоков
 	// record into the block chain
-	err := p.ExecSQL("DELETE FROM block_chain WHERE id = ?", p.BlockData.BlockID)
+	block := &model.Block{}
+	err := block.DeleteById(p.BlockData.BlockID)
 	if err != nil {
 		return err
 	}
-	err = p.ExecSQL("INSERT INTO block_chain (id, hash, data, state_id, wallet_id, time, tx) VALUES (?, [hex], [hex], ?, ?, ?, ?)",
-		p.BlockData.BlockID, p.BlockData.Hash, p.blockHex, p.BlockData.StateID, p.BlockData.WalletID, p.BlockData.Time, p.TxIds)
+	b := &model.Block{
+		ID:       p.BlockData.BlockID,
+		Hash:     p.BlockData.Hash,
+		Data:     p.blockHex,
+		StateID:  p.BlockData.StateID,
+		WalletID: p.BlockData.WalletID,
+		Time:     p.BlockData.Time,
+		Tx:       int32(p.TxIds),
+	}
+	err = b.Create()
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	//mutex.Unlock()
 	return nil
 }
-
-// старое
-// the old
-/*func (p *Parser) GetTxMap(fields []string) (map[string][]byte, error) {
-	if len(p.TxSlice) != len(fields)+4 {
-		return nil, fmt.Errorf("bad transaction_array %d != %d (type=%d)", len(p.TxSlice), len(fields)+4, p.TxSlice[0])
-	}
-	TxMap := make(map[string][]byte)
-	TxMap["hash"] = p.TxSlice[0]
-	TxMap["type"] = p.TxSlice[1]
-	TxMap["time"] = p.TxSlice[2]
-	TxMap["user_id"] = p.TxSlice[3]
-	for i, field := range fields {
-		TxMap[field] = p.TxSlice[i+4]
-	}
-	p.TxUserID = utils.BytesToInt64(TxMap["user_id"])
-	p.TxTime = utils.BytesToInt64(TxMap["time"])
-	p.PublicKeys = nil
-	//log.Debug("TxMap", TxMap)
-	//log.Debug("TxMap[hash]", TxMap["hash"])
-	//log.Debug("p.TxSlice[0]", p.TxSlice[0])
-	return TxMap, nil
-}*/
 
 func (p *Parser) CheckInputData(data map[string][]interface{}) error {
 	for k, list := range data {
@@ -435,46 +485,23 @@ func (p *Parser) ErrInfo(verr interface{}) error {
 }
 
 func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
-	wallet := p.TxWalletID
-	if wallet == 0 {
-		wallet = p.TxCitizenID
+	walletID := p.TxWalletID
+	if walletID == 0 {
+		walletID = p.TxCitizenID
 	}
 	// получим сумму на кошельке юзера
 	// recieve the amount on the user's wallet
-	strAmount, err := p.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
+	wallet := &model.DltWallet{}
+	err := wallet.GetWallet(walletID)
 	if err != nil {
 		return err
 	}
-	totalAmount, _ := decimal.NewFromString(strAmount)
-
 	amountAndCommission := amount
 	amountAndCommission.Add(commission)
-	if totalAmount.Cmp(amountAndCommission) < 0 {
-		return fmt.Errorf("%v < %v)", totalAmount, amountAndCommission)
+	if wallet.Amount.Cmp(amountAndCommission) < 0 {
+		return fmt.Errorf("%v < %v)", wallet.Amount, amountAndCommission)
 	}
 	return nil
-}
-
-// CheckTableExists checks if the table exists
-func (p *Parser) CheckTableExists(table string) (bool, error) {
-	var q string
-	switch config.ConfigIni["db_type"] {
-	case "sqlite":
-		q = `SELECT name FROM sqlite_master WHERE type='table' AND name='` + table + `';`
-	case "postgresql":
-		q = `SELECT relname FROM pg_class WHERE relname = '` + table + `';`
-	case "mysql":
-		q = `SHOW TABLES LIKE '` + table + `'`
-	}
-	exists, err := p.Single(q).Int64()
-	if err != nil {
-		return false, err
-	}
-	if exists > 0 {
-		return true, nil
-	}
-
-	return false, nil
 }
 
 // BlockError writes the error of the transaction in the transactions_status table
@@ -487,20 +514,21 @@ func (p *Parser) BlockError(err error) {
 		errText = errText[:255]
 	}
 	p.DeleteQueueTx([]byte(p.TxHash))
-	log.Debug("UPDATE transactions_status SET error = %s WHERE hex(hash) = %x", errText, p.TxHash)
-	p.ExecSQL("UPDATE transactions_status SET error = ? WHERE hex(hash) = ?", errText, p.TxHash)
+	ts := &model.TransactionStatus{}
+	ts.SetError(errText, []byte(p.TxHash))
 }
 
 // AccessRights checks the access right by executing the condition value
 func (p *Parser) AccessRights(condition string, iscondition bool) error {
-	param := `value`
-	if iscondition {
-		param = `conditions`
-	}
-	conditions, err := p.Single(`SELECT `+param+` FROM "`+converter.Int64ToStr(int64(p.TxStateID))+`_state_parameters" WHERE name = ?`,
-		condition).String()
+	sp := &model.StateParameter{}
+	sp.SetTablePrefix(p.TxStateIDStr)
+	err := sp.GetByName(condition)
 	if err != nil {
 		return err
+	}
+	conditions := sp.Value
+	if iscondition {
+		conditions = sp.Conditions
 	}
 	if len(conditions) > 0 {
 		ret, err := p.EvalIf(conditions)
@@ -518,19 +546,21 @@ func (p *Parser) AccessRights(condition string, iscondition bool) error {
 
 // AccessTable checks the access right to the table
 func (p *Parser) AccessTable(table, action string) error {
-
-	//	prefix := utils.Int64ToStr(int64(p.TxStateID))
 	govAccount, _ := template.StateParam(int64(p.TxStateID), `gov_account`)
 	if table == `dlt_wallets` && p.TxContract != nil && p.TxCitizenID == converter.StrToInt64(govAccount) {
 		return nil
 	}
 
-	_, prefix, err := p.IsCustomTable(table)
-	if err != nil {
-		return err
+	if isCustom, err := IsCustomTable(table); err != nil {
+		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать
+		// table != ... is left for compatibility temporarily. Remove new_state after rebuilding.
+	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
+		return fmt.Errorf(table + ` is not a custom table`)
 	}
-
-	tablePermission, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", table)
+	prefix := table[:strings.IndexByte(table, '_')]
+	tables := &model.Table{}
+	tables.SetTablePrefix(prefix)
+	tablePermission, err := tables.GetPermissions(table, "")
 	if err != nil {
 		return err
 	}
@@ -548,13 +578,18 @@ func (p *Parser) AccessTable(table, action string) error {
 
 // AccessColumns checks access rights to the columns
 func (p *Parser) AccessColumns(table string, columns []string) error {
-	_, prefix, err := p.IsCustomTable(table)
+	if isCustom, err := IsCustomTable(table); err != nil {
+		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать // table != ... is left for compatibility temporarily. Remove new_state after rebuilding
+	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
+		return fmt.Errorf(table + ` is not a custom table`)
+	}
+	prefix := table[:strings.IndexByte(table, '_')]
+	tables := &model.Table{}
+	tables.SetTablePrefix(prefix)
+	columnsAndPermissions, err := tables.GetPermissions(table, "update")
 	if err != nil {
 		return err
 	}
-
-	columnsAndPermissions, err := p.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`,
-		"key", "value", table)
 	if err != nil {
 		return err
 	}
@@ -585,9 +620,22 @@ func (p *Parser) AccessChange(table, name, global string, stateId int64) error {
 	if err != nil {
 		return err
 	}
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_`+table+`" WHERE name = ?`, name).String()
-	if err != nil {
-		return err
+	var conditions string
+	switch table {
+	case "pages":
+		page := &model.Page{}
+		page.SetTablePrefix(prefix)
+		if err := page.Get(name); err != nil {
+			return err
+		}
+		conditions = page.Conditions
+	case "menus":
+		menu := &model.Menu{}
+		menu.SetTablePrefix(prefix)
+		if err := menu.Get(name); err != nil {
+			return err
+		}
+		conditions = menu.Conditions
 	}
 
 	if len(conditions) > 0 {
@@ -605,9 +653,22 @@ func (p *Parser) AccessChange(table, name, global string, stateId int64) error {
 }
 
 func (p *Parser) getEGSPrice(name string) (decimal.Decimal, error) {
+	syspar := &model.SystemParameter{}
+	fPrice, err := syspar.GetValueParameterByName("op_price", name)
+	if err != nil {
+		return decimal.New(0, 0), p.ErrInfo(err)
+	}
 	p.TxCost = 0
-	p.TxUsedCost = decimal.New(db.SysCost(name), 0)
-	fuelRate := p.GetFuel()
+	p.TxUsedCost, _ = decimal.NewFromString(fPrice)
+	systemParam := &model.SystemParameter{}
+	err = systemParam.Get("fuel_rate")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fuelRate, err := decimal.NewFromString(systemParam.Value)
+	if err != nil {
+		return decimal.New(0, 0), p.ErrInfo(err)
+	}
 	if fuelRate.Cmp(decimal.New(0, 0)) <= 0 {
 		return decimal.New(0, 0), fmt.Errorf(`fuel rate must be greater than 0`)
 	}
@@ -641,7 +702,15 @@ func (p *Parser) payFPrice() error {
 	)
 	//return nil
 	toID := p.BlockData.WalletID // account of node
-	fuel := p.GetFuel()
+	systemParam := &model.SystemParameter{}
+	err = systemParam.Get("fuel_rate")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fuel, err := decimal.NewFromString(systemParam.Value)
+	if err != nil {
+		return err
+	}
 	if fuel.Cmp(decimal.New(0, 0)) <= 0 {
 		return fmt.Errorf(`fuel rate must be greater than 0`)
 	}
@@ -666,16 +735,12 @@ func (p *Parser) payFPrice() error {
 	if egs.Cmp(decimal.New(0, 0)) == 0 { // Is it possible to pay nothing?
 		return nil
 	}
-	var amount string
-	if amount, err = p.Single(`select amount from dlt_wallets where wallet_id=?`, fromID).String(); err != nil {
+	wallet := &model.DltWallet{}
+	if err := wallet.GetWallet(fromID); err != nil {
 		return err
 	}
-	damount, err := decimal.NewFromString(amount)
-	if err != nil {
-		return err
-	}
-	if damount.Cmp(egs) < 0 {
-		egs = damount
+	if wallet.Amount.Cmp(egs) < 0 {
+		egs = wallet.Amount
 	}
 	commission := egs.Mul(decimal.New(3, 0)).Div(decimal.New(100, 0)).Floor()
 	if _, _, err := p.selectiveLoggingAndUpd([]string{`-amount`}, []interface{}{egs}, `dlt_wallets`, []string{`wallet_id`},
@@ -687,9 +752,13 @@ func (p *Parser) payFPrice() error {
 		return err
 	}
 	if _, _, err := p.selectiveLoggingAndUpd([]string{`+amount`}, []interface{}{commission}, `dlt_wallets`, []string{`wallet_id`},
-		[]string{converter.Int64ToStr(db.SysInt64(db.CommissionWallet))}, true); err != nil {
+		[]string{converter.Int64ToStr(syspar.GetCommissionWallet())}, true); err != nil {
 		return err
 	}
 	fmt.Printf(" Paid commission %v\r\n", commission)
 	return nil
+}
+
+func (p *Parser) UpdDaemonTime(goroutineName string) {
+	// TODO:
 }

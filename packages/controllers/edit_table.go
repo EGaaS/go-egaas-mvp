@@ -19,22 +19,22 @@ package controllers
 import (
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 type editTablePage struct {
-	Alert      string
-	Lang       map[string]string
-	WalletID   int64
-	CitizenID  int64
-	TableName  string
-	TxType     string
-	TxTypeID   int64
-	TimeNow    int64
-	CanColumns bool
-	TableData  map[string]string
-	//	Columns               map[string]string
+	Alert                 string
+	Lang                  map[string]string
+	WalletID              int64
+	CitizenID             int64
+	TableName             string
+	TxType                string
+	TxTypeID              int64
+	TimeNow               int64
+	CanColumns            bool
+	TableData             map[string]string
 	ColumnsAndPermissions []map[string]string
 	StateID               int64
 	TablePermission       map[string]string
@@ -63,26 +63,31 @@ func (c *Controller) EditTable() (string, error) {
 		global = "1"
 	}
 
-	tableData, err := c.OneRow(`SELECT * FROM "`+prefix+`_tables" WHERE name = ?`, tableName).String()
+	table := &model.Table{}
+	table.SetTablePrefix(prefix)
+	err = table.Get(tableName)
+
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	tablePermission, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`, "key", "value", tableName)
+	tableData := table.ToMap()
+
+	tablePermission, err := table.GetTablePermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	columnsAndPermissions, err := c.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`, "key", "value", tableName)
+	columnsAndPermissions, err := table.GetColumnsAndPermissions(prefix, tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 	list := make([]map[string]string, 0)
 	for key, value := range columnsAndPermissions {
-		list = append(list, map[string]string{`name`: key, `perm`: value, `type`: sql.GetColumnType(tableName, key)})
+		list = append(list, map[string]string{`name`: key, `perm`: value, `type`: model.GetColumnType(tableName, key)})
 	}
 
-	count, err := c.Single("SELECT count(column_name) FROM information_schema.columns WHERE table_name=?", tableName).Int64()
+	count, err := model.GetColumnsCount(tableName)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
@@ -97,7 +102,7 @@ func (c *Controller) EditTable() (string, error) {
 		TxType:                txType,
 		TxTypeID:              utils.TypeInt(txType),
 		StateID:               c.SessStateID,
-		CanColumns:            count < sql.SysInt64(sql.MaxColumns)+2,
+		CanColumns:            count < int64(syspar.GetMaxColumns()+2),
 		Global:                global,
 		TablePermission:       tablePermission,
 		ColumnsAndPermissions: list,

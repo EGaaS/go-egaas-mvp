@@ -23,10 +23,11 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/boltdb/bolt"
 	"github.com/shopspring/decimal"
 )
@@ -81,8 +82,16 @@ func send(r *http.Request) interface{} {
 		return result
 	}
 
-	fPrice := sql.SysCost(`dlt_transfer`)
-	fuelRate := sql.DB.GetFuel()
+	fPrice := syspar.SysCost(`dlt_transfer`)
+	systemParam := &model.SystemParameter{}
+	err = systemParam.Get("fuel_rate")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fuelRate, err := decimal.NewFromString(systemParam.Value)
+	if err != nil {
+		return err
+	}
 	if fuelRate.Cmp(decimal.New(0, 0)) <= 0 {
 		result.Error = `fuel rate must be greater than 0`
 		return result
@@ -90,7 +99,7 @@ func send(r *http.Request) interface{} {
 	fPriceDecimal := decimal.New(fPrice, 0)
 	commission := fPriceDecimal.Mul(fuelRate)
 
-	total, err := sql.DB.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, sender).String()
+	total, err := model.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, sender).String()
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -133,7 +142,7 @@ func send(r *http.Request) interface{} {
 	}
 	data = append(data, converter.EncodeLengthPlusData(pub)...)
 	data = append(data, binsign...)
-	_, err = sql.DB.SendTx(txType, sender, data)
+	_, err = model.SendTx(txType, sender, data)
 	if err != nil {
 		result.Error = err.Error()
 		return result

@@ -25,15 +25,15 @@ import (
 	"strings"
 	"time"
 
+	msgpack "gopkg.in/vmihailenco/msgpack.v2"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
-	"github.com/EGaaS/go-egaas-mvp/packages/template"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
-	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 const aNewKey = `ajax_new_key`
@@ -87,7 +87,9 @@ func (c *Controller) AjaxNewKey() interface{} {
 		log.Fatal(err)
 	}
 	idkey := crypto.Address(pubkey)
-	govAccount, _ := template.StateParam(stateID, `govAccount`)
+	stateParameter := &model.StateParameter{}
+	stateParameter.GetByName("govAccount")
+	govAccount := stateParameter.Value
 	if len(govAccount) == 0 {
 		result.Error = `unknown govAccount`
 		return result
@@ -123,12 +125,14 @@ func (c *Controller) AjaxNewKey() interface{} {
 	}
 	idnew := crypto.Address(pub)
 
-	exist, err := c.Single(`select wallet_id from dlt_wallets where wallet_id=?`, idnew).Int64()
+	wallet := &model.DltWallet{}
+	wallet.WalletID = idnew
+	exist, err := wallet.IsExists()
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	if exist != 0 {
+	if exist != false {
 		result.Error = `key already exists`
 		return result
 	}
@@ -159,12 +163,20 @@ func (c *Controller) AjaxNewKey() interface{} {
 	toSerialize.Data = converter.EncodeLengthPlusData(data)
 
 	serializedData, err := msgpack.Marshal(toSerialize)
+	hash, err := crypto.Hash(serializedData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hash = converter.BinToHex(serializedData)
+	transactionStatus := &model.TransactionStatus{Hash: hash, Time: time.Now().Unix(), Type: int64(info.ID),
+		WalletID: int64(idkey), CitizenID: int64(idkey)}
+	err = transactionStatus.Create()
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	if _, err = sql.DB.SendTx(int64(info.ID), c.SessCitizenID,
-		append([]byte{128}, serializedData...)); err != nil {
+	queueTx := &model.QueueTx{Hash: hash, Data: serializedData}
+	if err = queueTx.Create(); err != nil {
 		result.Error = err.Error()
 		return result
 	}

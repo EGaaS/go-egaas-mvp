@@ -21,9 +21,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/system"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/op/go-logging"
 )
 
@@ -33,33 +33,31 @@ var log = logging.MustGetLogger("stop_daemons")
 func WaitStopTime() {
 	var first bool
 	for {
-		if sql.DB == nil || sql.DB.DB == nil {
+		if model.DBConn == nil {
 			time.Sleep(time.Second * 3)
 			continue
 		}
 		if !first {
-			err := sql.DB.ExecSQL(`DELETE FROM stop_daemons`)
+			err := model.Delete("stop_daemons", "")
 			if err != nil {
 				log.Error(utils.ErrInfo(err).Error())
 			}
 			first = true
 		}
-		dExists, err := sql.DB.Single(`SELECT stop_time FROM stop_daemons`).Int64()
+		dExists, err := model.Single(`SELECT stop_time FROM stop_daemons`).Int64()
 		if err != nil {
 			log.Error(utils.ErrInfo(err).Error())
 		}
 		log.Debug("dExtit: %d", dExists)
 		if dExists > 0 {
 			fmt.Println("Stop_daemons from DB!")
-			for _, ch := range utils.DaemonsChans {
-				fmt.Println("ch.ChBreaker<-true")
-				ch.ChBreaker <- true
-			}
-			for _, ch := range utils.DaemonsChans {
-				fmt.Println(<-ch.ChAnswer)
+			utils.CancelFunc()
+			for i := 0; i < utils.DaemonsCount; i++ {
+				name := <-utils.ReturnCh
+				log.Debugf("daemon %s stopped", name)
 			}
 			fmt.Println("Daemons killed")
-			err := sql.DB.Close()
+			err := model.DBConn.Close()
 			if err != nil {
 				log.Error(utils.ErrInfo(err).Error())
 			}

@@ -17,12 +17,12 @@
 package controllers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
-	"github.com/EGaaS/go-egaas-mvp/packages/template"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/shopspring/decimal"
 )
 
 const nAccounts = `accounts`
@@ -47,51 +47,55 @@ func init() {
 	newPage(nAccounts)
 }
 
+func formatAmount(digit int, amount decimal.Decimal) string {
+	amountStr := amount.String()
+	if digit > 0 {
+		if len(amountStr) < digit+1 {
+			amountStr = strings.Repeat(`0`, digit+1-len(amountStr)) + amountStr
+		}
+		amountStr = amountStr[:len(amountStr)-digit] + `.` + amountStr[len(amountStr)-digit:]
+	}
+	return amountStr
+}
+
 // Accounts is a controller for accounts page
 func (c *Controller) Accounts() (string, error) {
 
 	data := make([]AccountInfo, 0)
 
-	cents, _ := template.StateParam(c.SessStateID, `money_digit`)
-	digit := converter.StrToInt(cents)
+	stateParameter := &model.StateParameter{}
+	if err := stateParameter.GetByName("money_digit"); err != nil {
+		return ``, err
+	}
+	digit := converter.StrToInt(stateParameter.Value)
 
-	currency, _ := template.StateParam(c.SessStateID, `currency_name`)
+	if err := stateParameter.GetByName("currency_name"); err != nil {
+		return ``, err
+	}
+	currency := stateParameter.Value
 
-	newAccount := func(account int64, amount string) {
-		if amount == `NULL` {
-			amount = ``
-		} else if len(amount) > 0 {
-			if digit > 0 {
-				if len(amount) < digit+1 {
-					amount = strings.Repeat(`0`, digit+1-len(amount)) + amount
-				}
-				amount = amount[:len(amount)-digit] + `.` + amount[len(amount)-digit:]
-			}
-		}
+	newAccount := func(account int64, amount decimal.Decimal) {
+		strAmount := formatAmount(digit, amount)
 		data = append(data, AccountInfo{AccountID: account, Address: converter.AddressToString(account),
-			Amount: amount})
+			Amount: strAmount})
 	}
 
-	amount, err := c.Single(fmt.Sprintf(`select amount from "%d_accounts" where citizen_id=?`,
-		c.SessStateID), c.SessCitizenID).String()
+	account := &model.Account{}
+	account.SetTablePrefix(c.SessCitizenID)
+	err := account.Get(c.SessStateID)
 	if err != nil {
 		return ``, err
 	}
-	if len(amount) > 0 {
-		newAccount(c.SessCitizenID, amount)
-	} else {
-		newAccount(c.SessCitizenID, `NULL`)
-	}
+	newAccount(c.SessCitizenID, account.Amount)
 
-	list, err := c.GetAll(fmt.Sprintf(`select anon.*, acc.amount from "%d_anonyms" as anon
-	left join "%[1]d_accounts" as acc on acc.citizen_id=anon.id_anonym
-	where anon.id_citizen=?`, c.SessStateID), -1, c.SessCitizenID)
+	aa := &model.AnonAmount{}
+	amounts, err := aa.Get(c.SessStateID, c.SessCitizenID)
 	if err != nil {
 		return ``, err
 	}
 
-	for _, item := range list {
-		newAccount(converter.StrToInt64(item[`id_anonym`]), item[`amount`])
+	for _, item := range amounts {
+		newAccount(item.IDAnonym, item.Amount)
 	}
 	txType := "NewAccount"
 	pageData := accountsPage{Data: c.Data, List: data, Currency: currency, TxType: txType,

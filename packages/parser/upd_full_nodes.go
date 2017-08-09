@@ -19,12 +19,12 @@ package parser
 import (
 	"encoding/json"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/config"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
@@ -49,7 +49,8 @@ func (p *UpdFullNodesParser) Validate() error {
 	}
 
 	// We check to see if the time elapsed since the last update
-	updFullNodes, err := p.Single("SELECT time FROM upd_full_nodes").Int64()
+	ufn := &model.UpdFullNode{}
+	err = ufn.Read()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -57,11 +58,16 @@ func (p *UpdFullNodesParser) Validate() error {
 	if p.BlockData != nil {
 		txTime = p.BlockData.Time
 	}
-	if txTime-updFullNodes <= sql.SysInt64(sql.UpdFullNodesPeriod) {
-		return utils.ErrInfoFmt("txTime - upd_full_nodes <= UPD_FULL_NODES_PERIOD")
+	if txTime-ufn.Time <= syspar.GetUpdFullNodesPeriod() {
+		return utils.ErrInfoFmt("txTime - upd_full_nodes <= consts.UPD_FULL_NODES_PERIOD")
 	}
 
-	p.nodePublicKey, err = p.GetNodePublicKey(p.UpdFullNodes.UserID)
+	wallet := &model.DltWallet{}
+	err = wallet.GetWallet(p.UpdFullNodes.UserID)
+	if err != nil {
+		return p.ErrInfo(err)
+	}
+	p.nodePublicKey = wallet.PublicKey
 	if len(p.nodePublicKey) == 0 {
 		return utils.ErrInfoFmt("len(nodePublicKey) = 0")
 	}
@@ -72,7 +78,6 @@ func (p *UpdFullNodesParser) Validate() error {
 	if !CheckSignResult {
 		return p.ErrInfo("incorrect sign")
 	}
-
 	return nil
 }
 
@@ -85,72 +90,84 @@ func (p *UpdFullNodesParser) Action() error {
 
 	// выбирем ноды, где wallet_id
 	// choose nodes where wallet_id is
-	data, err := p.GetAll(`SELECT * FROM full_nodes WHERE wallet_id != 0`, -1)
+	fns := &model.FullNode{}
+	nodes, err := fns.GetAllFullNodesHasWalletID()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+
+	data := make([]map[string]string, 0)
+	for _, node := range nodes {
+		data = append(data, node.ToMap())
+	}
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	log.Debug("data %v", data)
-	log.Debug("data %v", data[0])
-	log.Debug("data %v", data[0]["rb_id"])
-	// логируем их в одну запись JSON
 	// log them into the one record JSON
-	rbID, err := p.ExecSQLGetLastInsertID(`INSERT INTO rb_full_nodes (full_nodes_wallet_json, block_id, prev_rb_id) VALUES (?, ?, ?)`, "rb_full_nodes", string(jsonData), p.BlockData.BlockID, data[0]["rb_id"])
+	rbFN := &model.RbFullNode{
+		FullNodesWalletJson: jsonData,
+		BlockID:             p.BlockData.BlockID,
+		PrevRbID:            converter.StrToInt64(data[0]["rb_id"]),
+	}
+	err = rbFN.Create()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
 	// удаляем где wallet_id
 	// delete where the wallet_id is
-	err = p.ExecSQL(`DELETE FROM full_nodes WHERE wallet_id != 0`)
+	fn := &model.FullNode{}
+	err = fn.DeleteNodesWithWallets()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	maxID, err := p.Single(`SELECT max(id) FROM full_nodes`).Int64()
+	maxID, err := fn.GetMaxID()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
 	// обновляем AI
 	// update the AI
-	err = p.SetAI("full_nodes", maxID+1)
+	err = model.SetAI("full_nodes", int64(maxID+1))
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
 	// получаем новые данные по wallet-нодам
 	// obtain new data on wallet-nodes
-	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' AND amount > 10000000000000000000000 GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 100`).String()
+	dw := &model.DltWallet{}
+	all, err := dw.GetAddressVotes()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	for _, addressVote := range all {
-		dltWallets, err := p.OneRow(`SELECT host, wallet_id FROM dlt_wallets WHERE wallet_id = ?`, int64(converter.StringToAddress(addressVote))).String()
+		wallet := &model.DltWallet{}
+		err := wallet.GetWallet(int64(converter.StringToAddress(addressVote)))
 		if err != nil {
 			return p.ErrInfo(err)
 		}
 		// вставляем новые данные по wallet-нодам с указанием общего rb_id
 		// insert new data on wallet-nodes with the indication of the common rb_id
-		err = p.ExecSQL(`INSERT INTO full_nodes (wallet_id, host, rb_id) VALUES (?, ?, ?)`, dltWallets["wallet_id"], dltWallets["host"], rbID)
+		fn := &model.FullNode{WalletID: wallet.WalletID, Host: wallet.Host, RbID: rbFN.RbID}
+		err = fn.Create()
 		if err != nil {
 			return p.ErrInfo(err)
 		}
 	}
 
-	newRate, err := p.Single(`SELECT fuel_rate FROM dlt_wallets WHERE fuel_rate !=0 GROUP BY fuel_rate ORDER BY sum(amount) DESC LIMIT 1`).String()
-	if err != nil {
+	w := &model.DltWallet{}
+	if err := w.GetNewFuelRate(); err != nil {
 		return p.ErrInfo(err)
 	}
+	newRate := string(w.FuelRate)
 	if len(newRate) > 0 {
 		_, _, err = p.selectiveLoggingAndUpd([]string{"value"}, []interface{}{newRate}, "system_parameters", []string{"name"}, []string{"fuel_rate"}, true)
 		if err != nil {
 			return p.ErrInfo(err)
 		}
-		p.UpdateFuel() // update fuel
 	}
 	return nil
 }
@@ -163,57 +180,56 @@ func (p *UpdFullNodesParser) Rollback() error {
 
 	// получим rb_id чтобы восстановить оттуда данные
 	// get rb_id to restore the data from there
-	rbID, err := p.Single(`SELECT rb_id FROM full_nodes WHERE wallet_id != 0`).Int64()
-	if err != nil {
+	fnRB := &model.FullNode{}
+	if err := fnRB.GetRbIDFullNodesWithWallet(); err != nil {
 		return p.ErrInfo(err)
 	}
 
-	fullNodesWalletJSON, err := p.Single(`SELECT full_nodes_wallet_json FROM rb_full_nodes WHERE rb_id = ?`, rbID).Bytes()
+	rbFN := &model.RbFullNode{}
+	err = rbFN.GetByRbID(int64(fnRB.ID)) // TODO: change rb_id type
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	fullNodesWallet := []map[string]string{{}}
-	err = json.Unmarshal(fullNodesWalletJSON, &fullNodesWallet)
+	err = json.Unmarshal(rbFN.FullNodesWalletJson, &fullNodesWallet)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
 	// удаляем новые данные
 	// delete new data
-	err = p.ExecSQL(`DELETE FROM full_nodes WHERE wallet_id != 0`)
+	fn := &model.FullNode{}
+	err = fn.DeleteNodesWithWallets()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	maxID, err := p.Single(`SELECT max(id) FROM full_nodes`).Int64()
+	maxID, err := fn.GetMaxID()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// обновляем AI
 	// update the AI
-	if config.ConfigIni["db_type"] == "sqlite" {
-		err = p.SetAI("full_nodes", maxID)
-	} else {
-		err = p.SetAI("full_nodes", maxID+1)
-	}
+	err = model.SetAI("full_nodes", int64(maxID+1))
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// удаляем новые данные
-	// delete new data
-	err = p.ExecSQL(`DELETE FROM rb_full_nodes WHERE rb_id = ?`, rbID)
-	if err != nil {
-		return p.ErrInfo(err)
-	}
 	p.rollbackAI("rb_full_nodes", 1)
 
 	for _, data := range fullNodesWallet {
 		// вставляем новые данные по wallet-нодам с указанием общего rb_id
 		// insert new data on wallet-nodes with the indication of the common rb_id
-		err = p.ExecSQL(`INSERT INTO full_nodes (id, host, wallet_id, state_id, final_delegate_wallet_id, final_delegate_state_id, rb_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			data["id"], data["host"], data["wallet_id"], data["state_id"], data["final_delegate_wallet_id"], data["final_delegate_state_id"], data["rb_id"])
+		fn := &model.FullNode{
+			ID:                    int32(converter.StrToInt64(data["id"])),
+			Host:                  data["host"],
+			WalletID:              converter.StrToInt64(data["wallet_id"]),
+			StateID:               converter.StrToInt64(data["state_id"]),
+			FinalDelegateWalletID: converter.StrToInt64(data["final_delegate_wallet_id"]),
+			FinalDelegateStateID:  converter.StrToInt64(data["final_delegate_state_id"]),
+			RbID:                  converter.StrToInt64(data["rb_id"]),
+		}
+		err = fn.Create()
 		if err != nil {
 			return p.ErrInfo(err)
 		}

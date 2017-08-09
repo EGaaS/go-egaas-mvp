@@ -17,6 +17,7 @@
 package controllers
 
 import (
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -35,7 +36,6 @@ func init() {
 
 // AjaxGetMenu is a controller of ajax_get_menu
 func (c *Controller) AjaxGetMenu() interface{} {
-
 	var menu InterfaceMenu
 	name := c.r.FormValue("name")
 
@@ -45,14 +45,16 @@ func (c *Controller) AjaxGetMenu() interface{} {
 		prefix = c.StateIDStr
 	}
 
-	dataMenu, err := c.OneRow(`SELECT * FROM "`+prefix+`_menu" WHERE name = ?`, name).String()
+	dataMenu := &model.Menu{}
+	dataMenu.SetTablePrefix(prefix)
+	err := dataMenu.Get(name)
 	if err != nil {
 		return utils.ErrInfo(err)
 	}
 
-	menu.Name = dataMenu["name"]
-	menu.Value = dataMenu["value"]
-	menu.Conditions = dataMenu["conditions"]
+	menu.Name = dataMenu.Name
+	menu.Value = dataMenu.Value
+	menu.Conditions = dataMenu.Conditions
 
 	return menu
 }

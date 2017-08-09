@@ -17,76 +17,121 @@
 package tcpserver
 
 import (
-	"io"
+	crand "crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
-/*
- * от disseminator
-// from disseminator
-*/
-
-func (t *TCPServer) Type2() {
-	// размер данных
-	// data size
-	buf := make([]byte, 4)
-	_, err := t.Conn.Read(buf)
+// Type2 serves requests from disseminator
+func Type2(r *DisRequest) (*DisTrResponse, error) {
+	binaryData := r.Data
+	// take the transactions from usual users but not nodes.
+	_, _, decryptedBinData, err := DecryptData(&binaryData)
 	if err != nil {
-		log.Error("%v", utils.ErrInfo(err))
-		return
+		return nil, utils.ErrInfo(err)
 	}
-	size := converter.BinToDec(buf)
-	log.Debug("size: %d", size)
-	if size < sql.SysInt64(sql.MaxTxSize) {
-		// сами данные
-		// data size
-		binaryData := make([]byte, size)
-		//binaryData, err = ioutil.ReadAll(t.Conn)
-		_, err = io.ReadFull(t.Conn, binaryData)
-		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
-			return
-		}
-		/*
-					 * Прием тр-ий от простых юзеров, а не нодов. Вызывается демоном disseminator
-			// take the transactions from usual users but not nodes. It's called by 'disseminator' daemon
-					 * */
-		_, _, decryptedBinData, err := t.DecryptData(&binaryData)
-		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
-			return
-		}
-		log.Debug("decryptedBinData: %x", decryptedBinData)
-		// проверим размер
-		// check the size
-		if int64(len(binaryData)) > sql.SysInt64(sql.MaxTxSize) {
-			log.Debug("%v", utils.ErrInfo("len(txBinData) > max_tx_size"))
-			return
-		}
-		if len(binaryData) < 5 {
-			log.Debug("%v", utils.ErrInfo("len(binaryData) < 5"))
-			return
-		}
-		decryptedBinDataFull := decryptedBinData
-		hash, err := crypto.Hash(decryptedBinDataFull)
-		if err != nil {
-			log.Fatal(err)
-		}
-		hash = converter.BinToHex(hash)
-		err = t.ExecSQL(`DELETE FROM queue_tx WHERE hex(hash) = ?`, hash)
-		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
-			return
-		}
-		log.Debug("INSERT INTO queue_tx (hash, data) (%s, %s)", hash, converter.BinToHex(decryptedBinDataFull))
-		err = t.ExecSQL(`INSERT INTO queue_tx (hash, data) VALUES ([hex], ?, [hex])`, hash, converter.BinToHex(decryptedBinDataFull))
-		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
-			return
-		}
+
+	if int64(len(binaryData)) > consts.MAX_TX_SIZE {
+		return nil, utils.ErrInfo("len(txBinData) > max_tx_size")
 	}
+
+	if len(binaryData) < 5 {
+		return nil, utils.ErrInfo("len(binaryData) < 5")
+	}
+
+	decryptedBinDataFull := decryptedBinData
+	hash, err := crypto.Hash(decryptedBinDataFull)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hash = converter.BinToHex(hash)
+	err = model.DeleteQueuedTransaction(hash)
+	if err != nil {
+		return nil, utils.ErrInfo(err)
+	}
+
+	//hexBinData := converter.BinToHex(decryptedBinDataFull)
+	log.Debug("INSERT INTO queue_tx (hash, data) (%s, %s)", hash, decryptedBinData)
+	queueTx := &model.QueueTx{Hash: hash, Data: decryptedBinData, FromGate: 0}
+	err = queueTx.Create()
+	if err != nil {
+		return nil, utils.ErrInfo(err)
+	}
+
+	return &DisTrResponse{}, nil
+}
+
+func DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
+	if len(*binaryTx) == 0 {
+		return nil, nil, nil, utils.ErrInfo("len(binaryTx) == 0")
+	}
+
+	myUserID := converter.BinToDecBytesShift(&*binaryTx, 5)
+	log.Debug("myUserId: %d", myUserID)
+
+	// remove the encrypted key, and all that stay in $binary_tx will be encrypted keys of the transactions/blocks
+	length, err := converter.DecodeLength(&*binaryTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	encryptedKey := converter.BytesShift(&*binaryTx, length)
+	log.Debug("encryptedKey: %x", encryptedKey)
+	log.Debug("encryptedKey: %s", encryptedKey)
+
+	iv := converter.BytesShift(&*binaryTx, 16)
+	log.Debug("iv: %s", iv)
+	log.Debug("iv: %x", iv)
+
+	if len(encryptedKey) == 0 {
+		return nil, nil, nil, utils.ErrInfo("len(encryptedKey) == 0")
+	}
+
+	if len(*binaryTx) == 0 {
+		return nil, nil, nil, utils.ErrInfo("len(*binaryTx) == 0")
+	}
+
+	nodeKey := &model.MyNodeKey{}
+	err = nodeKey.GetNodeWithMaxBlockID()
+	if err != nil {
+		return nil, nil, nil, utils.ErrInfo(err)
+	}
+	if len(nodeKey.PrivateKey) == 0 {
+		return nil, nil, nil, utils.ErrInfo("len(nodePrivateKey) == 0")
+	}
+
+	block, _ := pem.Decode([]byte(nodeKey.PrivateKey))
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return nil, nil, nil, utils.ErrInfo("No valid PEM data found")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, nil, nil, utils.ErrInfo(err)
+	}
+
+	decKey, err := rsa.DecryptPKCS1v15(crand.Reader, privateKey, encryptedKey)
+	if err != nil {
+		return nil, nil, nil, utils.ErrInfo(err)
+	}
+	log.Debug("decrypted Key: %s", decKey)
+	if len(decKey) == 0 {
+		return nil, nil, nil, utils.ErrInfo("len(decKey)")
+	}
+
+	log.Debug("binaryTx %x", *binaryTx)
+	log.Debug("iv %s", iv)
+	decrypted, err := crypto.Decrypt(iv, *binaryTx, decKey)
+	if err != nil {
+		return nil, nil, nil, utils.ErrInfo(err)
+	}
+
+	return decKey, iv, decrypted, nil
 }

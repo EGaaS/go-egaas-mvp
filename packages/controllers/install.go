@@ -22,14 +22,12 @@ import (
 	"io/ioutil"
 	"os"
 
-	"strings"
-
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
-	"github.com/EGaaS/go-egaas-mvp/packages/static"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 // Install is a controller for the installation
@@ -75,7 +73,7 @@ func (c *Controller) Install() (string, error) {
 	}
 
 	if len(firstLoadBlockchainURL) == 0 {
-		firstLoadBlockchainURL = sql.SysString(sql.BlockchainURL)
+		firstLoadBlockchainURL = syspar.GetBlockchainURL()
 	}
 	dbConfig := config.DBConfig{
 		Type:     dbType,
@@ -96,59 +94,37 @@ func (c *Controller) Install() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	var DB *sql.DCDB
-	DB, err = sql.NewDbConnect()
-	if err != nil {
-		log.Error("%v", utils.ErrInfo(err))
-		config.Drop()
-		return "", utils.ErrInfo(err)
-	}
-	sql.DB = DB
-	c.DCDB = DB
-	if c.DCDB == nil {
+	if model.DBConn == nil {
 		err = fmt.Errorf("utils.DB == nil")
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL(`
-	DO $$ DECLARE
-	    r RECORD;
-	BEGIN
-	    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
-		EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-	    END LOOP;
-	END $$;
-	`)
+	err = model.DropTables()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
 		return "", utils.ErrInfo(err)
 	}
 
-	schema, err := static.Asset("static/schema.sql")
+	err = model.ExecSchema()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL(string(schema))
+	conf := &model.Config{FirstLoadBlockchain: firstLoad, FirstLoadBlockchainURL: firstLoadBlockchainURL, AutoReload: 259200}
+	err = conf.Create()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
 		return "", utils.ErrInfo(err)
 	}
 
-	err = c.DCDB.ExecSQL("INSERT INTO config (first_load_blockchain, first_load_blockchain_url, auto_reload) VALUES (?, ?, ?)", firstLoad, firstLoadBlockchainURL, 259200)
-	if err != nil {
-		log.Error("%v", utils.ErrInfo(err))
-		config.Drop()
-		return "", utils.ErrInfo(err)
-	}
-
-	err = c.DCDB.ExecSQL(`INSERT INTO install (progress) VALUES ('complete')`)
+	install := &model.Install{Progress: "complete"}
+	err = install.Create()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
@@ -190,12 +166,12 @@ func (c *Controller) Install() (string, error) {
 	log.Debug("1block")
 
 	NodePrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/NodePrivateKey")
-	NodePrivateKeyStr := strings.TrimSpace(string(NodePrivateKey))
-	npubkey, err := crypto.PrivateToPublicHex(NodePrivateKeyStr)
+	npubkey, err := crypto.PrivateToPublic(NodePrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = c.DCDB.ExecSQL(`INSERT INTO my_node_keys (private_key, public_key, block_id) VALUES (?, [hex], ?)`, NodePrivateKeyStr, npubkey, 1)
+	nodeKeys := &model.MyNodeKey{PrivateKey: NodePrivateKey, PublicKey: npubkey, BlockID: 1}
+	err = nodeKeys.Create()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()
@@ -213,7 +189,8 @@ func (c *Controller) Install() (string, error) {
 		*utils.DltWalletID = crypto.Address(PublicKeyBytes2)
 	}
 
-	err = c.DCDB.ExecSQL(`UPDATE config SET dlt_wallet_id = ?`, *utils.DltWalletID)
+	conf.DltWalletID = *utils.DltWalletID
+	err = conf.Save()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 		config.Drop()

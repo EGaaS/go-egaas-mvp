@@ -18,11 +18,14 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
+	"github.com/shopspring/decimal"
 )
 
 const aSmartFields = `ajax_smart_fields`
@@ -45,29 +48,30 @@ func (c *Controller) AjaxSmartFields() interface{} {
 	var (
 		result SmartFieldsJSON
 		err    error
-		amount int64
-		req    map[string]int64
 	)
 	stateID := converter.StrToInt64(c.r.FormValue(`state_id`))
 	stateStr := converter.Int64ToStr(stateID)
-	if !c.IsTable(stateStr+`_citizens`) || !c.IsTable(stateStr+`_citizenship_requests`) {
+	if !model.IsTable(stateStr+`_citizens`) || !model.IsTable(stateStr+`_citizenship_requests`) {
 		result.Error = `Basic app is not installed`
 		return result
 	}
-	//	_, err = c.GetStateName(stateID)
-	//	if err == nil {
-	if exist, err := c.Single(`select id from "`+stateStr+`_citizens" where id=?`, c.SessWalletID).Int64(); err != nil {
+
+	citizen := &model.Citizen{ID: c.SessWalletID}
+	citizen.SetTablePrefix(stateStr)
+	if exist, err := citizen.IsExists(); err != nil {
 		result.Error = err.Error()
 		return result
-	} else if exist > 0 {
+	} else if exist == true {
 		result.Approved = 2
 		return result
 	}
 
-	if req, err = c.OneRow(`select id, approved from "`+stateStr+`_citizenship_requests" where dlt_wallet_id=? order by id desc`,
-		c.SessWalletID).Int64(); err == nil {
-		if len(req) > 0 && req[`id`] > 0 {
-			result.Approved = req[`approved`]
+	request := &model.CitizenshipRequest{}
+	request.SetTablePrefix(stateStr)
+	err = request.GetByWalletOrdered(c.SessWalletID)
+	if err == nil {
+		if request.ID > 0 {
+			result.Approved = request.Approved
 		} else {
 			cntname := c.r.FormValue(`contract_name`)
 			contract := smart.GetContract(cntname, uint32(stateID))
@@ -91,18 +95,19 @@ func (c *Controller) AjaxSmartFields() interface{} {
 						fields = append(fields, fmt.Sprintf(`{"name":"%s", "htmlType":"textinput", "txType":"%s", "title":"%s"}`,
 							fitem.Name, fitem.Type.String(), fitem.Name))
 					}
-					/*					if fitem.Type.String() == `string` || fitem.Type.String() == `int64` || fitem.Type.String() == script.Decimal {
-										fields = append(fields, fmt.Sprintf(`{"name":"%s", "htmlType":"textinput", "txType":"%s", "title":"%s"}`,
-											fitem.Name, fitem.Type.String(), fitem.Name))
-									}*/
 				}
 				result.Fields = fmt.Sprintf(`[%s]`, strings.Join(fields, `,`))
 
 				if err == nil {
-					result.Price, err = c.Single(`SELECT value FROM "` + converter.Int64ToStr(stateID) + `_state_parameters" where name='citizenship_price'`).Int64()
+					stateParameter := &model.StateParameter{}
+					stateParameter.SetTablePrefix(stateStr)
+					err := stateParameter.GetByName("citizenship_price")
 					if err == nil {
-						amount, err = c.Single("select amount from dlt_wallets where wallet_id=?", c.SessWalletID).Int64()
-						result.Valid = (err == nil && amount >= result.Price)
+						result.Price, _ = strconv.ParseInt(stateParameter.Value, 10, 64)
+						dltWallet := &model.DltWallet{}
+						err = dltWallet.GetWallet(c.SessWalletID)
+						dPrice, _ := decimal.NewFromString(stateParameter.Value)
+						result.Valid = (err == nil && dltWallet.Amount.Cmp(dPrice) >= 0)
 					}
 				}
 

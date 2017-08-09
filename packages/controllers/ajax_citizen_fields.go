@@ -17,9 +17,10 @@
 package controllers
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 )
 
 const aCitizenFields = `ajax_citizen_fields`
@@ -47,29 +48,34 @@ func (c *Controller) AjaxCitizenFields() interface{} {
 	stateID := int64(1) // utils.StrToInt64(c.r.FormValue(`state_id`))
 	//	_, err = c.GetStateName(stateId)
 	//	if err == nil {
-	if req, err := c.OneRow(`select id, approved from "`+converter.Int64ToStr(stateID)+`_citizenship_requests" where dlt_wallet_id=? order by id desc`,
-		c.SessWalletID).Int64(); err == nil {
-		if len(req) > 0 && req[`id`] > 0 {
-			result.Approved = req[`approved`]
+	request := &model.CitizenshipRequest{}
+	request.SetTablePrefix(converter.Int64ToStr(stateID))
+	err = request.GetByWallet(c.SessWalletID)
+	if err == nil {
+		if request.ID > 0 {
+			result.Approved = request.Approved
 		} else {
 			result.Fields, err = `[{"name":"name", "htmlType":"textinput", "txType":"string", "title":"First Name"},
 {"name":"lastname", "htmlType":"textinput", "txType":"string", "title":"Last Name"},
 {"name":"birthday", "htmlType":"calendar", "txType":"string", "title":"Birthday"},
 {"name":"photo", "htmlType":"file", "txType":"binary", "title":"Photo"}
 ]`, nil
-			//				c.Single(`SELECT value FROM ` + utils.Int64ToStr(stateId) + `_state_parameters where parameter='citizen_fields'`).String()
+			stateParameter := &model.StateParameter{}
+			stateParameter.SetTablePrefix(converter.Int64ToStr(stateID))
+			err = stateParameter.GetByName("citizenship_price")
 			if err == nil {
-				result.Price, err = c.Single(`SELECT value FROM "` + converter.Int64ToStr(stateID) + `_state_parameters" where name='citizenship_price'`).Int64()
-				if err == nil {
-					amount, err = c.Single("select amount from dlt_wallets where wallet_id=?", c.SessWalletID).Int64()
+				price, err := strconv.ParseInt(stateParameter.Value, 10, 64)
+				if err != nil {
+					result.Error = err.Error()
+				} else {
+					result.Price = price
+					wallet := &model.DltWallet{}
+					err = wallet.GetWallet(c.SessWalletID)
 					result.Valid = (err == nil && amount >= result.Price)
 				}
 			}
 		}
-	}
-	fmt.Println(`Error`, err)
-	//	}
-	if err != nil {
+	} else {
 		result.Error = err.Error()
 	}
 	return result

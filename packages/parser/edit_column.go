@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 
@@ -48,16 +49,17 @@ func (p *EditColumnParser) Validate() error {
 	}
 
 	stateIdStr := converter.Int64ToStr(p.EditColumn.Header.StateID)
-	table := stateIdStr + `_tables`
-	if strings.HasPrefix(p.EditColumn.TableName, `global`) {
-		table = `global_tables`
+	prefix := stateIdStr
+	if strings.HasPrefix(stateIdStr, `global`) {
+		prefix = `global`
 	}
-	exists, err := p.Single(`select count(*) from "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`,
-		p.EditColumn.ColumnName, p.EditColumn.TableName).Int64()
+	tEx := &model.Table{}
+	tEx.SetTablePrefix(prefix)
+	exists, err := tEx.IsExistsByPermissionsAndTableName(p.EditColumn.ColumnName, p.EditColumn.TableName)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	if exists == 0 {
+	if !exists {
 		return p.ErrInfo(`column not exists`)
 	}
 
@@ -81,8 +83,7 @@ func (p *EditColumnParser) Action() error {
 	if strings.HasPrefix(p.EditColumn.TableName, `global`) {
 		table = `global_tables`
 	}
-	logData, err := p.OneRow(`SELECT columns_and_permissions, rb_id FROM "`+table+`" where (columns_and_permissions->'update'-> ? ) is not null AND name = ?`,
-		p.EditColumn.ColumnName, p.EditColumn.TableName).String()
+	logData, err := model.GetTableWhereUpdatePermissionAndTableName(p.EditColumn.ColumnName, p.EditColumn.TableName)
 	if err != nil {
 		return err
 	}
@@ -101,17 +102,26 @@ func (p *EditColumnParser) Action() error {
 	if err != nil {
 		return err
 	}
-	rbID, err := p.ExecSQLGetLastInsertID("INSERT INTO rollback ( data, block_id ) VALUES ( ?, ? )", "rollback", string(jsonData), p.BlockData.BlockID)
+	rb := &model.Rollback{
+		Data:    string(jsonData),
+		BlockID: p.BlockData.BlockID}
+	err = rb.Create()
 	if err != nil {
 		return err
 	}
-	err = p.ExecSQL(`UPDATE "`+table+`" SET columns_and_permissions = jsonb_set(columns_and_permissions, '{update, `+p.EditColumn.ColumnName+`}', ?, true), rb_id = ? WHERE name = ?`,
-		`"`+converter.EscapeForJSON(p.EditColumn.Permissions)+`"`, rbID, p.EditColumn.TableName)
+	tableM := &model.Table{}
+	_, err = tableM.SetActionByName(table, p.EditColumn.TableName, "update, "+p.EditColumn.ColumnName, `"`+converter.EscapeForJSON(p.EditColumn.Permissions)+`"`, rb.RbID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	err = p.ExecSQL("INSERT INTO rollback_tx ( block_id, tx_hash, table_name, table_id ) VALUES (?, [hex], ?, ?)", p.BlockData.BlockID, p.TxHash, table, p.EditColumn.TableName)
+	rbTx := &model.RollbackTx{
+		ID:        p.BlockData.BlockID,
+		TxHash:    []byte(p.TxHash),
+		TableName: table,
+		TableID:   p.EditColumn.TableName,
+	}
+	err = rbTx.Create()
 	if err != nil {
 		return err
 	}

@@ -24,11 +24,12 @@ import (
 	"time"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 type updatingBlockchainStruct struct {
@@ -57,22 +58,20 @@ func (c *Controller) UpdatingBlockchain() (string, error) {
 	var restartDb, standardInstall bool
 
 	if c.dbInit {
-		ConfirmedBlockID, err := c.DCDB.GetConfirmedBlockID()
+		confirmation := &model.Confirmation{}
+		err := confirmation.GetMaxGoodBlock()
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
-		if ConfirmedBlockID == 0 {
-			firstLoadBlockchain, err := c.DCDB.Single("SELECT first_load_blockchain FROM config").String()
-			if err != nil {
-				return "", utils.ErrInfo(err)
-			}
-			if firstLoadBlockchain == "file" {
+		if confirmation.BlockID == 0 {
+			if c.NodeConfig.FirstLoadBlockchain == "file" {
 				waitText = c.Lang["loading_blockchain_please_wait"]
 			} else {
 				waitText = c.Lang["is_synchronized_with_the_dc_network"]
 			}
 		} else {
-			LastBlockData, err := c.DCDB.GetLastBlockData()
+			b := &model.Block{}
+			LastBlockData, err := b.GetLastBlockData()
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -80,20 +79,10 @@ func (c *Controller) UpdatingBlockchain() (string, error) {
 			blockID = LastBlockData["blockId"]
 		}
 
-		nodeConfig, err := c.GetNodeConfig()
-		blockchainURL := nodeConfig["first_load_blockchain_url"]
+		blockchainURL := c.NodeConfig.FirstLoadBlockchainURL
 		if len(blockchainURL) == 0 {
-			blockchainURL = sql.SysString(sql.BlockchainURL)
+			blockchainURL = syspar.GetBlockchainURL()
 		}
-		/*resp, err := http.Get(blockchainURL)
-		if err != nil {
-			return "", utils.ErrInfo(err)
-		}
-		blockChainSize := resp.ContentLength
-		if blockChainSize == 0 {
-			blockChainSize = consts.BLOCKCHAIN_SIZE
-		}
-		defer resp.Body.Close()*/
 
 		blockMeter = int64(converter.RoundWithPrecision(float64((blockID/consts.LAST_BLOCK)*100), 0))
 		if blockMeter > 0 {

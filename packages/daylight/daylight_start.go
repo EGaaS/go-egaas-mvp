@@ -32,12 +32,14 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/api"
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/controllers"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/daemons"
 	"github.com/EGaaS/go-egaas-mvp/packages/exchangeapi"
 	"github.com/EGaaS/go-egaas-mvp/packages/language"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/schema"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
@@ -45,7 +47,6 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/system"
 	"github.com/EGaaS/go-egaas-mvp/packages/template"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/go-bindata-assetfs"
 	"github.com/go-thrust/lib/bindings/window"
 	"github.com/go-thrust/lib/commands"
@@ -109,7 +110,6 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 	// read the config.ini
 	config.Read()
-
 	if *utils.TCPHost == "" {
 		*utils.TCPHost = config.ConfigIni["tcp_host"]
 	}
@@ -143,8 +143,6 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 			}
 			fmt.Println("old PID ("+*utils.Dir+"/daylight.pid"+"):", pidMap["pid"])
 
-			sql.DB, err = sql.NewDbConnect()
-
 			err = KillPid(pidMap["pid"])
 			if nil != err {
 				fmt.Println(err)
@@ -168,17 +166,23 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 	controllers.SessInit()
 	config.MonitorChanges()
+
+	err = model.GormInit(config.ConfigIni["db_user"], config.ConfigIni["db_password"], config.ConfigIni["db_name"])
+	if err != nil {
+		log.Fatalf("gorm init error: %s", err)
+	}
+
 	go func() {
 		var err error
-		sql.DB, err = sql.NewDbConnect()
-		log.Debug("%v", sql.DB)
-		IosLog("utils.DB:" + fmt.Sprintf("%v", sql.DB))
+		log.Debug("%v", model.DBConn)
+		IosLog("utils.DB:" + fmt.Sprintf("%v", model.DBConn))
 		if err != nil {
 			IosLog("err:" + fmt.Sprintf("%s", utils.ErrInfo(err)))
 			log.Error("%v", utils.ErrInfo(err))
 			Exit(1)
 		}
-		err = sql.SysUpdate()
+
+		err = syspar.SysUpdate()
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			Exit(1)
@@ -242,20 +246,20 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		}
 		// waiting for connection to the database
 		for {
-			if sql.DB == nil || sql.DB.DB == nil {
+			if model.DBConn == nil {
 				time.Sleep(time.Second)
 				continue
 			}
 			break
 		}
 		schema.Migration()
-		err = sql.SysUpdate()
+		err = syspar.SysUpdate()
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			Exit(1)
 		}
 		if *utils.OldFileName != "" {
-			err = sql.DB.Close()
+			err = model.DBConn.Close()
 			if err != nil {
 				log.Error("%v", utils.ErrInfo(err))
 			}
@@ -293,13 +297,10 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 	// database rollback to the specified block
 	if *utils.RollbackToBlockID > 0 {
-		sql.DB, err = sql.NewDbConnect()
-
 		if err := template.LoadContracts(); err != nil {
 			log.Error(`Load Contracts`, err)
 		}
 		parser := new(parser.Parser)
-		parser.DCDB = sql.DB
 		err = parser.RollbackToBlockID(*utils.RollbackToBlockID)
 		if err != nil {
 			fmt.Println(err)
@@ -307,7 +308,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		}
 		fmt.Println("complete")
 		// we recieve the statistics of all tables
-		allTable, err := sql.DB.GetAllTables()
+		allTable, err := model.GetAllTables()
 		if err != nil {
 			fmt.Println(err)
 			panic(err)
@@ -315,7 +316,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 		startData := map[string]int64{"install": 1, "config": 1, "queue_tx": 99999, "log_transactions": 1, "transactions_status": 99999, "block_chain": 1, "info_block": 1, "dlt_wallets": 1, "confirmations": 9999999, "full_nodes": 1, "system_parameters": 4, "my_node_keys": 99999, "transactions": 999999}
 		for _, table := range allTable {
-			count, err := sql.DB.Single(`SELECT count(*) FROM ` + converter.EscapeName(table)).Int64()
+			count, err := model.Single(`SELECT count(*) FROM ` + converter.EscapeName(table)).Int64()
 			if err != nil {
 				fmt.Println(err)
 				panic(err)
@@ -373,7 +374,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		if len(config.ConfigIni["db_type"]) > 0 {
 			for {
 				// wait while connection to a DB in other gourutina takes place
-				if sql.DB == nil || sql.DB.DB == nil {
+				if model.DBConn != nil {
 					time.Sleep(time.Second)
 					fmt.Println("wait DB")
 				} else {

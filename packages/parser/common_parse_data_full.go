@@ -19,13 +19,14 @@ package parser
 import (
 	"fmt"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/logging"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/shopspring/decimal"
 )
 
@@ -64,7 +65,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 	}
 
 	logging.WriteSelectiveLog("DELETE FROM transactions WHERE used = 1")
-	afect, err := p.ExecSQLGetAffect("DELETE FROM transactions WHERE used = 1")
+	afect, err := model.DeleteUsedTransactions()
 	if err != nil {
 		logging.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
@@ -78,7 +79,6 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 		for {
 			// обработка тр-ий может занять много времени, нужно отметиться
 			// transactions processing can take a lot of time, you need to be marked
-			p.UpdDaemonTime(p.GoroutineName)
 			log.Debug("&p.BinaryData", p.BinaryData)
 			transactionSize, err := converter.DecodeLength(&p.BinaryData)
 			if err != nil {
@@ -117,7 +117,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			hashFull = converter.BinToHex(hashFull)
 			logging.WriteSelectiveLog("UPDATE transactions SET used=1 WHERE hex(hash) = " + string(hashFull))
-			affect, err := p.ExecSQLGetAffect("UPDATE transactions SET used=1 WHERE hex(hash) = ?", hashFull)
+			affect, err := model.DeleteUsedTransactions()
 			if err != nil {
 				logging.WriteSelectiveLog(err)
 				logging.WriteSelectiveLog("RollbackTo")
@@ -167,7 +167,7 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 
 				// чтобы 1 юзер не смог прислать дос-блок размером в 10гб, который заполнит своими же транзакциями
 				// to prevent the possibility when 1 user can send a 10-gigabyte dos-block which will fill with his own transactions
-				if txCounter[userID] > sql.SysInt64(sql.MaxBlockUserTx) {
+				if txCounter[userID] > int64(syspar.GetMaxBlockUserTx()) {
 					err0 := p.RollbackTo(txForRollbackTo, true)
 					if err0 != nil {
 						log.Error("error: %v", err0)
@@ -258,12 +258,13 @@ func (p *Parser) ParseDataFull(blockGenerator bool) error {
 			}
 			// даем юзеру понять, что его тр-ия попала в блок
 			// let user know that his transaction  is added in the block
-			p.ExecSQL("UPDATE transactions_status SET block_id = ? WHERE hex(hash) = ?", p.BlockData.BlockID, hashFull)
+			ts := &model.TransactionStatus{}
+			ts.UpdateBlockID(p.BlockData.BlockID, hashFull)
 			log.Debug("UPDATE transactions_status SET block_id = %d WHERE hex(hash) = %s", p.BlockData.BlockID, hashFull)
 
 			// Тут было time(). А значит если бы в цепочке блоков были блоки в которых были бы одинаковые хэши тр-ий, то ParseDataFull вернул бы error
 			// here was a time(). That means if blocks with the same hashes of transactions were in the chain of blocks, ParseDataFull would return the error
-			err = p.InsertInLogTx(transactionBinaryDataFull, converter.BytesToInt64(p.TxMap["time"]))
+			err = InsertInLogTx(transactionBinaryDataFull, converter.BytesToInt64(p.TxMap["time"]))
 			if err != nil {
 				return utils.ErrInfo(err)
 			}

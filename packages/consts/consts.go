@@ -27,6 +27,8 @@ const EGS_DIGIT = 18 //money_digit for EGS 1000000000000000000
 // is used in confirmations
 const COUNT_CONFIRMED_NODES = 5
 const WAIT_CONFIRMED_NODES = 10
+const MAX_TX_SIZE = 32 << 20
+const GAPS_BETWEEN_BLOCKS = 3
 
 // У скольких нодов должен быть такой же блок как и у нас, чтобы считать, что блок у большей части DC-сети. для get_confirmed_block_id()
 // The number of nodes which should have the same block as we have for regarding this block belongs to the major part of DC-net. For get_confirmed_block_id()
@@ -39,6 +41,7 @@ const LAST_BLOCK = 330000
 // примерный размер блокчейна
 // Approximate blockchain size
 const BLOCKCHAIN_SIZE = 1000
+const DOWNLOAD_CHAIN_TRY_COUNT = 10
 
 // на сколько может бежать время в тр-ии
 // How fast could the time of transaction pass

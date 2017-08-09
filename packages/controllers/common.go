@@ -35,18 +35,17 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	bconf "github.com/astaxie/beego/config"
 	"github.com/astaxie/beego/session"
 	"github.com/op/go-logging"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 )
 
 var log = logging.MustGetLogger("controllers")
 
 // Controller is the main controller's structure
 type Controller struct {
-	dbInit bool
-	*sql.DCDB
+	dbInit           bool
 	r                *http.Request
 	w                http.ResponseWriter
 	sess             session.SessionStore
@@ -67,7 +66,7 @@ type Controller struct {
 	Parameters       map[string]string
 	TimeFormat       string
 	NodeAdmin        bool
-	NodeConfig       map[string]string
+	NodeConfig       model.Config
 	CurrencyList     map[int64]string
 	ConfirmedBlockID int64
 	Data             *CommonPage
@@ -75,7 +74,6 @@ type Controller struct {
 
 var (
 	globalSessions *session.Manager
-	// в гоурутинах используется только для чтения
 	// In gourutin is used only for reading
 	globalLangReadOnly map[int]map[string]string
 )
@@ -83,11 +81,7 @@ var (
 // SessInit initializes sessions
 func SessInit() {
 	var err error
-	/*path := *utils.Dir + `/tmp`
-	if runtime.GOOS == "windows" {
-		path = "tmp"
-	}
-	globalSessions, err = session.NewManager("file", `{"cookieName":"gosessionid","gclifetime":864000,"ProviderConfig":"`+path+`"}`)*/
+
 	globalSessions, err = session.NewManager("memory", `{"cookieName":"gosessionid","gclifetime":864000}`)
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
@@ -116,7 +110,6 @@ func init() {
 
 // CallController calls the method with this name
 func CallController(c *Controller, name string) (string, error) {
-	// имя экспортируемого метода должно начинаться с заглавной буквы
 	// the name of exported method must begin with a capital letter
 	a := []rune(name)
 	a[0] = unicode.ToUpper(a[0])
@@ -176,23 +169,6 @@ func CallMethod(i interface{}, methodName string) (string, error) {
 	// return or panic, method not found of either type
 	return "", fmt.Errorf("method not found")
 }
-
-/*
-func GetSessEUserId(sess session.SessionStore) int64 {
-	sessUserId := sess.Get("e_user_id")
-	log.Debug("sessUserId: %v", sessUserId)
-	switch sessUserId.(type) {
-	case int64:
-		return sessUserId.(int64)
-	case int:
-		return int64(sessUserId.(int))
-	case string:
-		return utils.StrToInt64(sessUserId.(string))
-	default:
-		return 0
-	}
-	return 0
-}*/
 
 // GetSessWalletID returns session's wallet id
 func GetSessWalletID(sess session.SessionStore) int64 {
@@ -262,7 +238,6 @@ func SetLang(w http.ResponseWriter, r *http.Request, lang int) {
 }
 
 // CheckLang checks if there is a language with such id
-// если в lang прислали какую-то гадость
 // If some muck was sent in the lang
 func CheckLang(lang int) bool {
 	for _, v := range consts.LangMap {

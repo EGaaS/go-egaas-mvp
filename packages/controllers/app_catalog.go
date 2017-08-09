@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 )
 
@@ -75,21 +75,23 @@ func (c *Controller) AppCatalog() (string, error) {
 		return ``, err
 	}
 	apps := make(map[string]int)
-	loadapps := func(table string) error {
-		data, err := c.GetAll(`select name,done from `+table, -1)
+	loadapps := func(prefix string) error {
+		app := &model.App{}
+		app.SetTablePrefix(prefix)
+		data, err := app.GetAll()
 		if err != nil {
 			return err
 		}
 		for _, item := range data {
-			apps[item[`name`]] = converter.StrToInt(item[`done`])
+			apps[item.Name] = int(item.Done)
 		}
 		return nil
 	}
-	err = loadapps(fmt.Sprintf(`"%d_apps"`, c.SessStateID))
+	err = loadapps(fmt.Sprintf(`"%d"`, c.SessStateID))
 	if err != nil {
 		return ``, err
 	}
-	err = loadapps(`global_apps`)
+	err = loadapps(`global`)
 	if err != nil {
 		return ``, err
 	}

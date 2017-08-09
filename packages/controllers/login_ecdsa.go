@@ -23,16 +23,13 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
-	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 type loginECDSAPage struct {
-	Lang  map[string]string
-	Title string
-	Key   string
-	//	States     map[string]string
+	Lang        map[string]string
+	Title       string
+	Key         string
 	States      string
 	State       int64
 	OneCountry  int64
@@ -52,18 +49,6 @@ func (c *Controller) LoginECDSA() (string, error) {
 		private, _ = ioutil.ReadFile(filepath.Join(*utils.Dir, `PrivateKey`))
 	}
 
-	/*	states := make(map[string]string)
-		data, err := c.GetList(`SELECT id FROM system_states`).String()
-		if err != nil {
-			return ``, err
-		}
-		for _, id := range data {
-			state_name, err := c.Single(`SELECT value FROM "` + id + `_state_parameters" WHERE name = 'state_name'`).String()
-			if err != nil {
-				return ``, err
-			}
-			states[id] = state_name
-		}*/
 	states, _ := c.AjaxStatesList()
 	key := c.r.FormValue("key")
 	pkey := c.r.FormValue("pkey")
@@ -77,18 +62,6 @@ func (c *Controller) LoginECDSA() (string, error) {
 	var stateID int64
 	if len(state) > 0 {
 		stateID, err = strconv.ParseInt(state, 10, 64)
-		if err != nil {
-			list, err := sql.DB.GetAllTables()
-			if err != nil {
-				return "", utils.ErrInfo(err)
-			}
-			if converter.InSliceString(`global_states_list`, list) {
-				stateID, err = c.Single("select gstate_id from global_states_list where state_name=?", state).Int64()
-				if err != nil {
-					return "", utils.ErrInfo(err)
-				}
-			}
-		}
 	}
 	TemplateStr, err := makeTemplate("login", "loginECDSA", &loginECDSAPage{
 		Lang:        c.Lang,
@@ -101,9 +74,7 @@ func (c *Controller) LoginECDSA() (string, error) {
 		OneCountry:  utils.OneCountry,
 		PrivCountry: utils.PrivCountry,
 		Private:     string(private),
-		/*		MyWalletData:          MyWalletData,
-				Title:                 "modalAnonym",
-		*/})
+	})
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

@@ -19,9 +19,10 @@ package controllers
 import (
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 )
 
 // NewColumn show the form for creating new column
@@ -34,7 +35,7 @@ func (c *Controller) NewColumn() (string, error) {
 
 	tableName := converter.Escape(c.r.FormValue("tableName"))
 
-	count, _ := c.NumIndexes(tableName)
+	count, _ := model.NumIndexes(tableName)
 
 	TemplateStr, err := makeTemplate("edit_column", "editColumn", &editColumnPage{
 		Alert:            c.Alert,
@@ -45,7 +46,7 @@ func (c *Controller) NewColumn() (string, error) {
 		StateID:          c.SessStateID,
 		ColumnName:       "",
 		ColumnPermission: "",
-		CanIndex:         count < sql.SysInt(sql.MaxIndexes),
+		CanIndex:         count < syspar.GetMaxIndexes(),
 		TimeNow:          timeNow,
 		TxType:           txType,
 		TxTypeID:         utils.TypeInt(txType)})

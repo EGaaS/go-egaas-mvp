@@ -23,8 +23,8 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/config"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
@@ -73,22 +73,20 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	c.SessStateID = sessStateID
 
 	if dbInit {
-		//c.DCDB, err = utils.NewDbConnect(configIni)
-
-		c.DCDB = sql.DB
-
-		if sql.DB == nil || sql.DB.DB == nil {
+		if model.DBConn == nil {
 			log.Error("utils.DB == nil")
 			dbInit = false
 		}
 	}
 	log.Debug("sessStateID", sessStateID)
 	if sessStateID > 0 {
-		stateName, err := c.GetStateName(sessStateID)
+		stateParameter := &model.StateParameter{}
+		stateParameter.SetTablePrefix(converter.Int64ToStr(sessStateID))
+		err := stateParameter.GetByName("state_name")
 		if err != nil {
 			log.Error("%v", err)
 		}
-		c.StateName = stateName
+		c.StateName = stateParameter.Value
 		c.StateID = sessStateID
 		c.StateIDStr = converter.Int64ToStr(sessStateID)
 	}
@@ -108,11 +106,12 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if dbInit {
-		config, err := c.GetNodeConfig()
+		nodeConfig := &model.Config{}
+		err := nodeConfig.GetConfig()
 		if err != nil {
 			log.Error("%v", err)
 		}
-		c.NodeConfig = config
+		c.NodeConfig = *nodeConfig
 
 	}
 	r.ParseForm()
@@ -130,31 +129,24 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	log.Debug("controllerName=", controllerName)
 
 	html := ""
-
-	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	// Общие контролы для двух проверок
 	// The common controls for two checks
 	pages := "Install|AjaxGetMenuHtml|AjaxStatesList|SignIn|Updatedaylight|AlertFromAdmin|FreecoinProcess|RestartDb|ReloadDb|DebugInfo|CheckSetupPassword|AcceptNewKeyStatus|availableKeys|CfCatalog|CfPagePreview|CfStart|CheckNode|GetBlock|GetMinerData|GetMinerDataMap|GetSellerData|Index|IndexCf|InstallStep0|InstallStep1|InstallStep2|Login|SynchronizationBlockchain|UpdatingBlockchain|Menu|SignUpInPool|SignLogin"
-	// Почему CfCatalog,CfPagePreview,CfStart,Index,IndexCf,InstallStep0,InstallStep1,
-	// InstallStep2,Login,UpdatingBlockchain были только во втором случае? Похоже не нужны больше.
 	// Why CfCatalog,CfPagePreview,CfStart,Index,IndexCf,InstallStep0,InstallStep1,
 	// InstallStep2,Login,UpdatingBlockchain were in the second case only? They seem not need anymore.
 
 	if ok, _ := regexp.MatchString(`^(?i)`+pages+`|GetServerTime|TxStatus|AnonymHistory|RewritePrimaryKeySave|SendPromisedAmountToPool|SaveEmailAndSendTestMess|sendMobile|rewritePrimaryKey|EImportData|EDataBaseDump|Update|exchangeAdmin|exchangeSupport|exchangeUser|ETicket|newPhoto|NodeConfigControl|SaveDecryptComment|EncryptChatMessage|GetChatMessages|SendToTheChat|SaveToken|SendToPool|ClearDbLite|ClearDb|UploadVideo|daylightKey|PoolAddUsers|SaveQueue|AlertMessage|SaveHost|PoolDataBaseDump|GenerateNewPrimaryKey|GenerateNewNodeKey|SaveNotifications|ProgressBar|MinersMap|EncryptComment|Logout|SaveVideo|SaveShopData|SaveRaceCountry|MyNoticeData|HolidaysList|ClearVideo|CheckCfCurrency|WalletsListCfProject|SendTestEmail|SendSms|SaveUserCoords|SaveGeolocation|SaveEmailSms|Profile|DeleteVideo|CropPhoto$`, controllerName); !ok {
 		html = "Access denied 0"
 	} else {
-		if utils.Mobile() { // На IOS можно сгенерить ключ без сессии // It's possible to generate the key on IOS without session
+		if utils.Mobile() { // It's possible to generate the key on IOS without session
 			pages += "|daylightKey"
 		}
 		if ok, _ := regexp.MatchString(`^(?i)`+pages+`$`, controllerName); !ok && c.SessWalletID <= 0 && c.SessCitizenID <= 0 && len(c.SessAddress) == 0 {
 			html = "Access denied 1"
 		} else {
-			// без БД будет выдавать панику
 			// without the DB it will give a panic
 			if ok, _ := regexp.MatchString(`^(?i)GetChatMessages$`, controllerName); ok && !dbInit {
 				html = "Please wait. nill dbInit"
 			} else {
-				// вызываем контроллер в зависимости от шаблона
 				// call the controller depending on template
 				html, err = CallController(c, controllerName)
 				if err != nil {

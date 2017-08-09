@@ -18,12 +18,13 @@ package stopdaemons
 
 import (
 	"fmt"
-	"github.com/EGaaS/go-egaas-mvp/packages/system"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
+	"github.com/EGaaS/go-egaas-mvp/packages/system"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 /*
@@ -67,25 +68,22 @@ func Signals() {
 		signal.Notify(SigChan, os.Interrupt, os.Kill, Term)
 		<-SigChan
 		fmt.Println("KILL SIGNAL")
-		for _, ch := range utils.DaemonsChans {
-			fmt.Println("ch.ChBreaker<-true")
-			ch.ChBreaker <- true
-		}
-		for _, ch := range utils.DaemonsChans {
-			fmt.Println(<-ch.ChAnswer)
-		}
-		log.Debug("Daemons killed")
-		fmt.Println("Daemons killed")
-		if sql.DB != nil && sql.DB.DB != nil {
-			err := sql.DB.Close()
-			fmt.Println("DB Closed")
-			if err != nil {
-				log.Error(utils.ErrInfo(err).Error())
-				//panic(err)
-			}
+
+		utils.CancelFunc()
+		for i := 0; i < utils.DaemonsCount; i++ {
+			name := <-utils.ReturnCh
+			log.Debugf("daemon %s stopped", name)
 		}
 
-		err := os.Remove(*utils.Dir + "/daylight.pid")
+		log.Debug("Daemons killed")
+		fmt.Println("Daemons killed")
+		err := model.GormClose()
+		if err != nil {
+			log.Error(utils.ErrInfo(err).Error())
+			//panic(err)
+		}
+
+		err = os.Remove(*utils.Dir + "/daylight.pid")
 		if err != nil {
 			log.Error(utils.ErrInfo(err).Error())
 			panic(err)

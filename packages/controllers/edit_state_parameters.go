@@ -19,6 +19,8 @@ package controllers
 import (
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -45,14 +47,22 @@ func (c *Controller) EditStateParameters() (string, error) {
 
 	name := c.r.FormValue(`name`)
 
-	stateParameters, err := c.OneRow(`SELECT * FROM "`+c.StateIDStr+`_state_parameters" WHERE name = ?`, name).String()
+	stateParameter := &model.StateParameter{}
+	stateParameter.SetTablePrefix(converter.Int64ToStr(c.StateID))
+	err = stateParameter.GetByName(name)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
 
-	allStateParameters, err := c.GetList(`SELECT name FROM "` + c.StateIDStr + `_state_parameters"`).String()
+	sParameters := stateParameter.ToMap()
+
+	allParameters, err := stateParameter.GetAllStateParameters(c.StateIDStr)
 	if err != nil {
 		return "", utils.ErrInfo(err)
+	}
+	allStateParameters := make([]string, 0)
+	for _, param := range allParameters {
+		allStateParameters = append(allStateParameters, param.Name)
 	}
 
 	TemplateStr, err := makeTemplate("edit_state_parameters", "editStateParameters", &editStateParametersPage{
@@ -61,7 +71,7 @@ func (c *Controller) EditStateParameters() (string, error) {
 		WalletID:           c.SessWalletID,
 		CitizenID:          c.SessCitizenID,
 		StateID:            c.StateID,
-		StateParameters:    stateParameters,
+		StateParameters:    sParameters,
 		AllStateParameters: allStateParameters,
 		TimeNow:            timeNow,
 		TxType:             txType,
