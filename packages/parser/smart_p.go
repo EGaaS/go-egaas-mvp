@@ -48,6 +48,7 @@ var (
 		"DBGetTable":     struct{}{},
 		"DBString":       struct{}{},
 		"DBInt":          struct{}{},
+		"DBRowExt":       struct{}{},
 		"DBStringExt":    struct{}{},
 		"DBIntExt":       struct{}{},
 		"DBFreeRequest":  struct{}{},
@@ -60,17 +61,27 @@ var (
 		"UpdatePage":     struct{}{},
 		"DBInsertReport": struct{}{},
 		"UpdateSysParam": struct{}{},
+		"FindEcosystem":  struct{}{},
 	}
 	extendCost = map[string]int64{
-		"AddressToId":    10,
-		"IdToAddress":    10,
-		"NewState":       1000, // ?? What cost must be?
-		"Sha256":         50,
-		"PubToID":        10,
-		"StateVal":       10,
-		"SysParamString": 10,
-		"SysParamInt":    10,
-		"SysCost":        10,
+		"AddressToId":       10,
+		"IdToAddress":       10,
+		"NewState":          1000, // ?? What cost must be?
+		"Sha256":            50,
+		"PubToID":           10,
+		"StateVal":          10,
+		"SysParamString":    10,
+		"SysParamInt":       10,
+		"SysCost":           10,
+		"ValidateCondition": 30,
+		"PrefixTable":       10,
+		"EvalCondition":     20,
+		"HasPrefix":         10,
+		"Contains":          10,
+		"Replace":           10,
+		"UpdateLang":        10,
+		"Size":              10,
+		"Substr":            10,
 	}
 )
 
@@ -83,6 +94,7 @@ func init() {
 		"DBGetTable":         DBGetTable,
 		"DBString":           DBString,
 		"DBInt":              DBInt,
+		"DBRowExt":           DBRowExt,
 		"DBStringExt":        DBStringExt,
 		"DBFreeRequest":      DBFreeRequest,
 		"DBIntExt":           DBIntExt,
@@ -115,6 +127,16 @@ func init() {
 		"UpdatePage":         UpdatePage,
 		"DBInsertReport":     DBInsertReport,
 		"UpdateSysParam":     UpdateSysParam,
+		"ValidateCondition":  ValidateCondition,
+		"PrefixTable":        PrefixTable,
+		"EvalCondition":      EvalCondition,
+		"HasPrefix":          strings.HasPrefix,
+		"Contains":           strings.Contains,
+		"Replace":            Replace,
+		"FindEcosystem":      FindEcosystem,
+		"UpdateLang":         UpdateLang,
+		"Size":               Size,
+		"Substr":             Substr,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -339,11 +361,9 @@ func DBUpdate(p *Parser, tblname string, id int64, params string, val ...interfa
 func DBUpdateExt(p *Parser, tblname string, column string, value interface{}, params string, val ...interface{}) (qcost int64, err error) { // map[string]interface{}) {
 	qcost = 0
 	var isIndex bool
-
 	if err = checkReport(tblname); err != nil {
 		return
 	}
-
 	columns := strings.Split(params, `,`)
 	if err = p.AccessColumns(tblname, columns); err != nil {
 		return
@@ -351,7 +371,7 @@ func DBUpdateExt(p *Parser, tblname string, column string, value interface{}, pa
 	if isIndex, err = sql.DB.IsIndex(tblname, column); err != nil {
 		return
 	} else if !isIndex {
-		err = fmt.Errorf(`there is not index on %s`, column)
+		err = fmt.Errorf(`there is no index on %s`, column)
 	} else {
 		qcost, _, err = p.selectiveLoggingAndUpd(columns, val, tblname, []string{column}, []string{fmt.Sprint(value)}, true)
 	}
@@ -415,7 +435,7 @@ func getBytea(table string) map[string]bool {
 		return isBytea
 	}
 	for _, icol := range colTypes {
-		isBytea[icol[`column_name`]] = icol[`data_type`] == `bytea`
+		isBytea[icol[`column_name`]] = icol[`column_name`] != `conditions` && icol[`data_type`] == `bytea`
 	}
 	return isBytea
 }
@@ -439,7 +459,7 @@ func DBStringExt(tblname string, name string, id interface{}, idname string) (in
 	if isIndex, err := sql.DB.IsIndex(tblname, idname); err != nil {
 		return 0, ``, err
 	} else if !isIndex {
-		return 0, ``, fmt.Errorf(`there is not index on %s`, idname)
+		return 0, ``, fmt.Errorf(`there is no index on %s`, idname)
 	}
 	cost, err := sql.DB.GetQueryTotalCost(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+converter.EscapeName(idname)+`=?`, id)
 	if err != nil {
@@ -495,7 +515,7 @@ func DBStringWhere(tblname string, name string, where string, params ...interfac
 		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
 			return 0, ``, err
 		} else if !isIndex {
-			return 0, ``, fmt.Errorf(`there is not index on %s`, iret[1])
+			return 0, ``, fmt.Errorf(`there is no index on %s`, iret[1])
 		}
 	}
 	selectQuery := `select ` + converter.EscapeName(name) + ` from ` + converter.EscapeName(tblname) + ` where ` + strings.Replace(converter.Escape(where), `$`, `?`, -1)
@@ -529,7 +549,7 @@ func StateTable(p *Parser, tblname string) string {
 	return fmt.Sprintf("%d_%s", p.TxStateID, tblname)
 }
 
-// StateTable adds a prefix with the state number to the table name
+// StateTableTx adds a prefix with the state number to the table name
 func StateTableTx(p *Parser, tblname string) string {
 	return fmt.Sprintf("%v_%s", p.TxData[`StateId`], tblname)
 }
@@ -908,7 +928,7 @@ func checkWhere(tblname string, where string, order string) (string, string, err
 		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
 			return ``, ``, err
 		} else if !isIndex {
-			return ``, ``, fmt.Errorf(`there is not index on %s`, iret[1])
+			return ``, ``, fmt.Errorf(`there is no index on %s`, iret[1])
 		}
 	}
 	if len(order) > 0 {
@@ -924,18 +944,19 @@ func DBGetList(tblname string, name string, offset, limit int64, order string,
 	if err := checkReport(tblname); err != nil {
 		return 0, nil, err
 	}
+	if !sql.IsSystemTable(tblname) {
+		re := regexp.MustCompile(`([a-z]+[\w_]*)\"?\s*[!><=]`)
+		ret := re.FindAllStringSubmatch(where, -1)
 
-	re := regexp.MustCompile(`([a-z]+[\w_]*)\"?\s*[><=]`)
-	ret := re.FindAllStringSubmatch(where, -1)
-
-	for _, iret := range ret {
-		if len(iret) != 2 {
-			continue
-		}
-		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
-			return 0, nil, err
-		} else if !isIndex {
-			return 0, nil, fmt.Errorf(`there is not index on %s`, iret[1])
+		for _, iret := range ret {
+			if len(iret) != 2 {
+				continue
+			}
+			if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
+				return 0, nil, err
+			} else if !isIndex {
+				return 0, nil, fmt.Errorf(`there is no index on %s`, iret[1])
+			}
 		}
 	}
 	if len(order) > 0 {
@@ -986,6 +1007,37 @@ func NewStateFunc(p *Parser, country, currency string) (err error) {
 	return
 }
 
+// DBRowExt returns one row from the table StringExt
+func DBRowExt(tblname string, columns string, id interface{}, idname string) (int64, map[string]string, error) {
+
+	if err := checkReport(tblname); err != nil {
+		return 0, nil, err
+	}
+
+	isBytea := getBytea(tblname)
+	if isBytea[idname] {
+		switch id.(type) {
+		case string:
+			if vbyte, err := hex.DecodeString(id.(string)); err == nil {
+				id = vbyte
+			}
+		}
+	}
+	if isIndex, err := sql.DB.IsIndex(tblname, idname); err != nil {
+		return 0, nil, err
+	} else if !isIndex {
+		return 0, nil, fmt.Errorf(`there is no index on %s`, idname)
+	}
+	query := `select ` + converter.Sanitize(columns, ` ,()*`) + ` from ` + converter.EscapeName(tblname) + ` where ` + converter.EscapeName(idname) + `=?`
+	cost, err := sql.DB.GetQueryTotalCost(query, id)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := sql.DB.OneRow(query, id).String()
+
+	return cost, res, err
+}
+
 // UpdateSysParam updates the system parameter
 func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 	var (
@@ -1033,4 +1085,94 @@ func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 		return 0, err
 	}
 	return 0, nil
+}
+
+// ValidateCondition checks if the condition can be compiled
+func ValidateCondition(condition string, state int64) error {
+	if len(condition) == 0 {
+		return fmt.Errorf("Conditions cannot be empty")
+	}
+	return smart.CompileEval(condition, uint32(state))
+}
+
+// PrefixTable returns table name with global or state prefix
+func PrefixTable(p *Parser, tablename string, global int64) string {
+	tablename = converter.Sanitize(tablename, ``)
+	if global == 1 {
+		return `global_` + tablename
+	}
+	return StateTable(p, tablename)
+}
+
+// EvalCondition gets the condition and check it
+func EvalCondition(p *Parser, table, name, condfield string) error {
+	conditions, err := p.Single(`SELECT `+converter.EscapeName(condfield)+` FROM `+converter.EscapeName(table)+
+		` WHERE name = ?`, name).String()
+	if err != nil {
+		return err
+	}
+	if len(conditions) == 0 {
+		return fmt.Errorf(`The condition is empty`)
+	}
+	ret, err := p.EvalIf(conditions)
+	if err != nil {
+		return err
+	}
+	if !ret {
+		return fmt.Errorf(`Access denied`)
+	}
+	return nil
+}
+
+// Replace replaces old substrings to new substrings
+func Replace(s, old, new string) string {
+	return strings.Replace(s, old, new, -1)
+}
+
+// FindEcosystem checks if there is an ecosystem with the specified name
+func FindEcosystem(p *Parser, country string) (int64, int64, error) {
+	query := `SELECT id FROM system_states`
+	cost, err := p.GetQueryTotalCost(query)
+	if err != nil {
+		return 0, 0, err
+	}
+	data, err := p.GetList(`SELECT id FROM system_states`).Int64()
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, id := range data {
+		query = fmt.Sprintf(`SELECT value FROM "%d_state_parameters" WHERE name = 'state_name'`, id)
+		idcost, err := p.GetQueryTotalCost(query)
+		if err != nil {
+			return cost, 0, err
+		}
+		cost += idcost
+		stateName, err := p.Single(query).String()
+		if err != nil {
+			return cost, 0, err
+		}
+		if strings.ToLower(stateName) == strings.ToLower(country) {
+			return cost, id, nil
+		}
+	}
+	return cost, 0, nil
+}
+
+// UpdateLang updates language resource
+func UpdateLang(p *Parser, name, trans string) {
+	language.UpdateLang(int(p.TxStateID), name, trans)
+}
+
+// Size returns the length of the string
+func Size(s string) int64 {
+	return int64(len(s))
+}
+
+// Substr returns the substring of the string
+func Substr(s string, off int64, slen int64) string {
+	ilen := int64(len(s))
+	if off < 0 || slen < 0 || off > ilen || off+slen > ilen {
+		return ``
+	}
+	return s[off : off+slen]
 }

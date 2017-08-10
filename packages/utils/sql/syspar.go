@@ -54,6 +54,8 @@ const (
 	RecoveryAddress = `recovery_address`
 	// CommissionWallet is the address for commissions
 	CommissionWallet = `commission_wallet`
+	// FullNodes is the list of nodes
+	FullNodes = `full_nodes`
 )
 
 var (
@@ -71,6 +73,7 @@ var (
 		UpdFullNodesPeriod: `3600`, // 3600 is for the test time, then we have to put 86400`
 		RecoveryAddress:    `8275283526439353759`,
 		CommissionWallet:   `8275283526439353759`,
+		FullNodes:          `[]`,
 	}
 	cost  = make(map[string]int64)
 	mutex = &sync.RWMutex{}
