@@ -244,7 +244,6 @@ func (p *Parser) CallContract(flags int) (err error) {
 	if !p.TxContract.Block.Info.(*script.ContractInfo).Active {
 		return fmt.Errorf(`Contract %s is not active`, p.TxContract.Name)
 	}
-	fmt.Println(`RATE`, p.TxContract.GetSettings(`rate`))
 	p.TxContract.FreeRequest = false
 	for i := uint32(0); i < 4; i++ {
 		if (flags & (1 << i)) > 0 {
