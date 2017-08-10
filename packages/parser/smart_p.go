@@ -130,8 +130,8 @@ func init() {
 		"ValidateCondition":  ValidateCondition,
 		"PrefixTable":        PrefixTable,
 		"EvalCondition":      EvalCondition,
-		"HasPrefix":          HasPrefix,
-		"Contains":           Contains,
+		"HasPrefix":          strings.HasPrefix,
+		"Contains":           strings.Contains,
 		"Replace":            Replace,
 		"FindEcosystem":      FindEcosystem,
 		"UpdateLang":         UpdateLang,
@@ -371,7 +371,7 @@ func DBUpdateExt(p *Parser, tblname string, column string, value interface{}, pa
 	if isIndex, err = sql.DB.IsIndex(tblname, column); err != nil {
 		return
 	} else if !isIndex {
-		err = fmt.Errorf(`there is not index on %s`, column)
+		err = fmt.Errorf(`there is no index on %s`, column)
 	} else {
 		qcost, _, err = p.selectiveLoggingAndUpd(columns, val, tblname, []string{column}, []string{fmt.Sprint(value)}, true)
 	}
@@ -459,7 +459,7 @@ func DBStringExt(tblname string, name string, id interface{}, idname string) (in
 	if isIndex, err := sql.DB.IsIndex(tblname, idname); err != nil {
 		return 0, ``, err
 	} else if !isIndex {
-		return 0, ``, fmt.Errorf(`there is not index on %s`, idname)
+		return 0, ``, fmt.Errorf(`there is no index on %s`, idname)
 	}
 	cost, err := sql.DB.GetQueryTotalCost(`select `+converter.EscapeName(name)+` from `+converter.EscapeName(tblname)+` where `+converter.EscapeName(idname)+`=?`, id)
 	if err != nil {
@@ -515,7 +515,7 @@ func DBStringWhere(tblname string, name string, where string, params ...interfac
 		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
 			return 0, ``, err
 		} else if !isIndex {
-			return 0, ``, fmt.Errorf(`there is not index on %s`, iret[1])
+			return 0, ``, fmt.Errorf(`there is no index on %s`, iret[1])
 		}
 	}
 	selectQuery := `select ` + converter.EscapeName(name) + ` from ` + converter.EscapeName(tblname) + ` where ` + strings.Replace(converter.Escape(where), `$`, `?`, -1)
@@ -549,7 +549,7 @@ func StateTable(p *Parser, tblname string) string {
 	return fmt.Sprintf("%d_%s", p.TxStateID, tblname)
 }
 
-// StateTableEx adds a prefix with the state number to the table name
+// StateTableTx adds a prefix with the state number to the table name
 func StateTableTx(p *Parser, tblname string) string {
 	return fmt.Sprintf("%v_%s", p.TxData[`StateId`], tblname)
 }
@@ -928,7 +928,7 @@ func checkWhere(tblname string, where string, order string) (string, string, err
 		if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
 			return ``, ``, err
 		} else if !isIndex {
-			return ``, ``, fmt.Errorf(`there is not index on %s`, iret[1])
+			return ``, ``, fmt.Errorf(`there is no index on %s`, iret[1])
 		}
 	}
 	if len(order) > 0 {
@@ -955,7 +955,7 @@ func DBGetList(tblname string, name string, offset, limit int64, order string,
 			if isIndex, err := sql.DB.IsIndex(tblname, iret[1]); err != nil {
 				return 0, nil, err
 			} else if !isIndex {
-				return 0, nil, fmt.Errorf(`there is not index on %s`, iret[1])
+				return 0, nil, fmt.Errorf(`there is no index on %s`, iret[1])
 			}
 		}
 	}
@@ -1026,7 +1026,7 @@ func DBRowExt(tblname string, columns string, id interface{}, idname string) (in
 	if isIndex, err := sql.DB.IsIndex(tblname, idname); err != nil {
 		return 0, nil, err
 	} else if !isIndex {
-		return 0, nil, fmt.Errorf(`there is not index on %s`, idname)
+		return 0, nil, fmt.Errorf(`there is no index on %s`, idname)
 	}
 	query := `select ` + converter.Sanitize(columns, ` ,()*`) + ` from ` + converter.EscapeName(tblname) + ` where ` + converter.EscapeName(idname) + `=?`
 	cost, err := sql.DB.GetQueryTotalCost(query, id)
@@ -1122,16 +1122,6 @@ func EvalCondition(p *Parser, table, name, condfield string) error {
 		return fmt.Errorf(`Access denied`)
 	}
 	return nil
-}
-
-// HasPrefix returns true if the string has the specified prefix
-func HasPrefix(input, prefix string) bool {
-	return strings.HasPrefix(input, prefix)
-}
-
-// Contains returns true if the string contains the specified string
-func Contains(s, substr string) bool {
-	return strings.Contains(s, substr)
 }
 
 // Replace replaces old substrings to new substrings
