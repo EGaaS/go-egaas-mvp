@@ -1171,8 +1171,11 @@ func Size(s string) int64 {
 // Substr returns the substring of the string
 func Substr(s string, off int64, slen int64) string {
 	ilen := int64(len(s))
-	if off < 0 || slen < 0 || off > ilen || off+slen > ilen {
+	if off < 0 || slen < 0 || off > ilen {
 		return ``
+	}
+	if off+slen > ilen {
+		return s[off:]
 	}
 	return s[off : off+slen]
 }

@@ -17,6 +17,9 @@
 package controllers
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
@@ -28,6 +31,17 @@ type contractsPage struct {
 	AllStateParameters []string
 	StateSmartLaws     []map[string]string
 	Global             string
+}
+
+func ContractsList(value string) string {
+	list := make([]string, 0)
+	re := regexp.MustCompile(`contract[\s]*([\d\w_]+)[\s]*{`)
+	for _, item := range re.FindAllStringSubmatch(value, -1) {
+		if len(item) > 1 {
+			list = append(list, item[1])
+		}
+	}
+	return strings.Join(list, `, `)
 }
 
 // Contracts is a handle function for showing the list of contracts
@@ -55,6 +69,7 @@ func (c *Controller) Contracts() (string, error) {
 		if val[`active`] == `NULL` {
 			stateSmartLaws[ind][`active`] = ``
 		}
+		stateSmartLaws[ind][`name`] = ContractsList(val[`value`])
 	}
 	var allStateParameters []string
 	if global == "0" {

@@ -5,15 +5,14 @@ import "fmt"
 type NewContract struct {
 	Header
 	Global     string
-	Name       string
 	Value      string
 	Conditions string
 	Wallet     string
 }
 
 func (s NewContract) ForSign() string {
-	return fmt.Sprintf("%d,%d,%d,%d,%s,%s,%s,%s,%s", s.Header.Type, s.Header.Time, s.Header.UserID,
-		s.Header.StateID, s.Global, s.Name, s.Value, s.Conditions, s.Wallet)
+	return fmt.Sprintf("%d,%d,%d,%d,%s,%s,%s,%s", s.Header.Type, s.Header.Time, s.Header.UserID,
+		s.Header.StateID, s.Global, s.Value, s.Conditions, s.Wallet)
 }
 
 type EditContract struct {

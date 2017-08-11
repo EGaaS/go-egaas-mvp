@@ -196,16 +196,18 @@
 			<form role="form">
 			   <button type="button" class="btn btn-link" onclick="" id="back" title="Back"><span class="glyphicons glyphicons-arrow-left"></span></button>
 			   <div class="clearfix">
+				   {{if .Data.id}}
 				   <div class="pull-xs-left">
 					   <div class="form-group">
 						   <label>ID: </label>
 						   {{.Data.id}}
 					   </div>
 					   <div class="form-group mb-lg">
-						   <label class="lang" lang-id="name"></label>
+						   <label class="lang" lang-id="contract_name"></label>
 						   {{if .Data.name}} <p class="form-control-static">{{.Data.name}}</p> <input type="hidden" class="form-control" id="id" value="{{.Data.id}}"> {{else}} <input type="text" class="form-control" id="name"> {{end}}
 					   </div>
 				   </div>
+					{{end}}
 				   <div class="pull-xs-right" style="min-width:220px;">
 					   <div class="form-group">
 						   <label>Wallet ID: </label>
@@ -215,6 +217,7 @@
 					   		   <input type="text" class="form-control" id="walletAddress" data-type="wallet">
 						   {{end}}
 					   </div>
+						{{if .Data.id}}						   
 					   <div class="form-group mb-lg">
 						   <label>Active: </label>
 						   {{.Data.active}}&nbsp;&nbsp;&nbsp;
@@ -222,6 +225,7 @@
 							   {{if ne .Data.active "1"}}<button type="button" id="activate" class="btn btn-primary lang" data-tool="panel-refresh" onClick="activate_contract(this);" >Activate</button>{{end}}
 						   {{end}}
 					   </div>
+						{{end}}
 				   </div>
 			   </div>
 			   <div class="form-group">
