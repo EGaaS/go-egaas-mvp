@@ -572,21 +572,6 @@ function load_template(page, parameters, anchor, customFunc) {
 		}, "html");
 }
 
-function load_file(input) {
-	var file = input.files[0];
-	if (!file)
-		return;
-
-	var reader = new FileReader();
-	reader.onload = function (e) {
-		document.getElementById(input.id + '_data').value = e.target.result;
-		document.getElementById(input.id + '_name').value = file.name;
-		document.getElementById(input.id + '_size').value = file.size;
-		console.log('Loaded file::', file.name);
-	}
-	reader.readAsDataURL(file);
-}
-
 function load_app(page, parameters) {
 	clearAllTimeouts();
 	NProgress.set(1.0);
@@ -1519,7 +1504,7 @@ function prepare_ok(predata, unique, forsign, sendnet) {
 }
 
 function prepare_contract(predata, unique, sendnet, preorigin) {
-	$.post('ajax?json=ajax_prepare_tx', predata,
+	$.get('ajax?json=ajax_prepare_tx', predata,
 		function (data) {
 			if (data.error.length > 0) {
 				$(".sweet-alert").remove();
@@ -1599,7 +1584,7 @@ function InitMobileTable() {
 				}
 				title.addClass("ui-table-title");
 			});
-			if (_this.hasClass("ui-table")) {
+			if (_this.hasClass("ui-table") && !(_this.closest("table").parent().attr("egaas-id") || _this.closest(".box").hasClass("ui-draggable"))) {
 				_this.closest("table").table("refresh").trigger("create");
 				//console.log('reload table');
 			} else {
