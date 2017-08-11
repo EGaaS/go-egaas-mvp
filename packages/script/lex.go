@@ -98,6 +98,7 @@ const (
 	keyFalse
 	keyVar
 	keyTX
+	keySettings
 	keyBreak
 	keyContinue
 	keyWarning
@@ -112,7 +113,7 @@ var (
 	// The list of key words
 	keywords = map[string]uint32{`contract`: keyContract, `func`: keyFunc, `return`: keyReturn,
 		`if`: keyIf, `else`: keyElse, `error`: keyError, `warning`: keyWarning, `info`: keyInfo,
-		`while`: keyWhile, `data`: keyTX, `nil`: keyNil, `action`: keyAction, `conditions`: keyCond,
+		`while`: keyWhile, `data`: keyTX, `settings`: keySettings, `nil`: keyNil, `action`: keyAction, `conditions`: keyCond,
 		`true`: keyTrue, `false`: keyFalse, `break`: keyBreak, `continue`: keyContinue, `var`: keyVar}
 	// list of available types
 	// The list of types which save the corresponding 'reflect' type
