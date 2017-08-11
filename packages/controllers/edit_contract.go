@@ -18,9 +18,12 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/script"
+	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -73,24 +76,29 @@ func (c *Controller) EditContract() (string, error) {
 		}
 	}
 
-	var data map[string]string
+	data := make(map[string]string)
 	var dataContractHistory []map[string]string
 	var rbID int64
 	var err error
 	var contWallet int64
 	for i := 0; i < 10; i++ {
 		if i == 0 {
+			if id == 0 {
+				var state uint32
+				if prefix != `global` {
+					state = uint32(converter.StrToInt64(prefix))
+				}
+				if contract := smart.GetContract(name, state); contract != nil {
+					id = (*contract).Block.Info.(*script.ContractInfo).TableID
+				}
+			}
 			if id != 0 {
 				data, err = c.OneRow(`SELECT * FROM "`+prefix+`_smart_contracts" WHERE id = ?`, id).String()
 				if err != nil {
 					return "", utils.ErrInfo(err)
 				}
-			} else {
-				data, err = c.OneRow(`SELECT * FROM "`+prefix+`_smart_contracts" WHERE name = ?`, name).String()
-				if err != nil {
-					return "", utils.ErrInfo(err)
-				}
 			}
+			data[`name`] = ContractsList(data[`value`])
 			if data[`wallet_id`] == `NULL` {
 				data[`wallet`] = ``
 			} else {
