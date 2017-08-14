@@ -18,8 +18,8 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
@@ -98,7 +98,7 @@ func (c *Controller) EditContract() (string, error) {
 					return "", utils.ErrInfo(err)
 				}
 			}
-			data[`name`] = ContractsList(data[`value`])
+			data[`name`] = strings.Join(smart.ContractsList(data[`value`]), `,`)
 			if data[`wallet_id`] == `NULL` {
 				data[`wallet`] = ``
 			} else {
