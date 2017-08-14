@@ -70,6 +70,15 @@ function TPL(tpl,dict) {
     );
 }
 
+function SUPER(scope,args)
+{
+    var fn=args.callee.SUPER;
+    if(arguments.length>2)
+        args=Array.prototype.slice.call(arguments,2);
+    return fn && fn.apply(scope,args);
+}
+
+
 function JS_CLASS(superclass, overrides)
 {
 	var subclass, F, supp, subp, i, s, d;

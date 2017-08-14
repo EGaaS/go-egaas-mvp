@@ -84,7 +84,7 @@ CodeGenerator.Controller = JS_CLASS({
 
                 self.findOverTagTimer = setTimeout((function() {
                     self.findOverTagTimer = null;
-                }).bind(self), 100);
+                }).bind(self), 50);
 
                 self.over.findOverTag(
                     e.pageX - self.containerOffset.left,
@@ -175,9 +175,9 @@ CodeGenerator.Controller = JS_CLASS({
                 if($(this).attr("tag-params")) {
                     self.draggingTag.params = JSON.parse($(this).attr("tag-params"));
                 }
-                if($(this).attr("tag-nestedClassList")) {
-                    self.draggingTag.nestedClassList = JSON.parse($(this).attr("tag-nestedClassList"));
-                }
+                // if($(this).attr("tag-nestedClassList")) {
+                //     self.draggingTag.nestedClassList = JSON.parse($(this).attr("tag-nestedClassList"));
+                // }
                 //ol, liClass
 
                 self.startDragging(e);
@@ -505,6 +505,7 @@ CodeGenerator.Over = JS_CLASS({
         this.$info = this.$over.find(".js-over-info");
         this.$settings = this.$over.find(".js-over-settings");
         this.tag = null;
+        this.tagObj = null;
         this.prevTag = null;
         this.parentTag = null;
         this.position = null; //inside, before, after
@@ -516,6 +517,10 @@ CodeGenerator.Over = JS_CLASS({
     events: function () {
         var self = this;
         this.$settings.on("click", function() {
+            if(self.owner.dragging)
+                return;
+            if(!self.tag.name)
+                return;
             console.log("settings", self.tag);
             new TagSettingsDialog({ tag: self.tag });
         });
@@ -549,6 +554,12 @@ CodeGenerator.Over = JS_CLASS({
         }
         this.prevTag = this.tag;
 
+        if(this.tag) {
+            this.tagObj = constructTag(this.tag);
+        }
+        else {
+            this.tagObj = null;
+        }
         //return this.tag;
     },
     findNextOverTag: function (x, y, tag) {
@@ -595,10 +606,12 @@ CodeGenerator.Over = JS_CLASS({
         if(this.mode == "view")
             this.drawView();
 
-        if(this.tag) {
+        if(this.tagObj) {
             var name = "Контейнер";
-            if(this.tag.name)
-                name = this.tag.name;
+            if(this.tagObj.name) {
+                name = this.tagObj.title + ' ' + this.tagObj.name;
+            }
+
             this.$info
                 .show()
                 .html("<b>" + name + "</b>");
@@ -682,11 +695,18 @@ var TagSettingsDialog = JS_CLASS({
         CP(this, param);
 
         this.$dialog = $(".js-tag-settings-dialog");
-        this.$dialogBody = $(".js-tag-settings-dialog__body");
+        this.$dialogBody = this.$dialog.find(".js-body");
+        this.$controls = this.$dialog.find(".js-controls");
         this.$close = this.$dialog.find(".js-close");
+        this.$title = this.$dialog.find(".js-title");
+
+        this.tagObj = constructTag(this.tag);
+
+        this.controls = [];
 
         this.events();
         this.show();
+        this.render();
     },
 
     events: function () {
@@ -696,7 +716,6 @@ var TagSettingsDialog = JS_CLASS({
         });
 
         this.$dialogBody.on("click", function (e) {
-            e.preventDefault();
             e.stopPropagation();
         });
 
@@ -711,6 +730,31 @@ var TagSettingsDialog = JS_CLASS({
 
     cancel: function () {
         this.$dialog.hide();
+    },
+
+    render: function () {
+        this.$controls.empty();
+        if(!this.tagObj)
+            return;
+
+        this.$title.html(this.tagObj.title);
+
+        for(var paramName in this.tagObj.paramsType) {
+            if (this.tagObj.paramsType.hasOwnProperty(paramName)) {
+                //paramArr.push(paramName + ' = "' + this.params[paramName] + '"');
+                var param = this.tagObj.paramsType[paramName];
+                if(Control[param.type]) {
+                    var control = new Control[param.type]({
+                        $content: this.$controls,
+                        name: paramName,
+                        param: param
+                    });
+                    control.setValue(this.tagObj.params[paramName]);
+                    this.controls.push(control);
+                }
+            }
+        }
+
     }
 
 
@@ -754,6 +798,8 @@ function constructTag(item, offset) {
 var Tag = JS_CLASS({
     acceptRule: null,
     exceptRule: null,
+    paramsType: {},
+    params: {},
     constructor: function (param) {
         CP(this, param);
     },
@@ -784,7 +830,6 @@ var Tag = JS_CLASS({
 
 /*простые теги, например a, p, img*/
 var SimpleTag = JS_CLASS(Tag, {
-    params: {},
     name: "",
     lineOffset: 0,
     acceptRule: null,
@@ -811,7 +856,6 @@ var SimpleTag = JS_CLASS(Tag, {
 
 /* теги со вложенностью, например LiBegin, UList*/
 var StructureTag = JS_CLASS(Tag, {
-    params: {},
     nameBegin: "",
     nameEnd: "",
     lineOffset: 0,
@@ -879,10 +923,19 @@ var MainTemplate = JS_CLASS(StructureTag, {
 var TagDivs = JS_CLASS(StructureTag, {
     nameBegin: "Divs",
     nameEnd: "DivsEnd",
+    title: "Блоки",
+    paramsType: {
+        "nestedClassList": {
+            "title": "Список классов",
+            "description": "Введите названия классов через пробел, группы классов можно разделять запятыми. Количество контейнеров Div равно количеству групп классов. Например, \"row, col-xs-10 col-md-7\"",
+            "type": "WhiteSpaceStringArray",
+            "obligatory": false
+        }
+    },
     renderCode: function () {
         var code = this.renderOffset() + this.nameBegin + "(";
 
-        code += this.nestedClassList.join(", ");
+        code += this.params.nestedClassList.join(", ");
         code += ")\n";
 
         code += this.renderSubItems();
@@ -894,13 +947,13 @@ var TagDivs = JS_CLASS(StructureTag, {
     renderHTML: function () {
         var html = '';
 
-        for(var i = 0; i < this.nestedClassList.length; i++) {
-            html += '<div tag-id="' + this.id + '" class="'+ this.nestedClassList[i] +'">';
+        for(var i = 0; i < this.params.nestedClassList.length; i++) {
+            html += '<div tag-id="' + this.id + '" class="'+ this.params.nestedClassList[i] +'">';
         }
 
         html += this.renderSubItems('html');
 
-        for(i = 0; i < this.nestedClassList.length; i++) {
+        for(i = 0; i < this.params.nestedClassList.length; i++) {
             html += '</div>';
         }
 
@@ -911,8 +964,31 @@ var TagDivs = JS_CLASS(StructureTag, {
 var TagUList = JS_CLASS(StructureTag, {
     nameBegin: "UList",
     nameEnd: "UListEnd",
+    title: "Список",
     acceptRule: "Li LiBegin",
     exceptRule: null,
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "ol": {
+            "title": "Нумерованный список",
+            "description": "Отметьте, если необходима нумерация элементов списка",
+            "type": "Checkbox",
+            "onValue": "ol",
+            "offValue": "",
+            "obligatory": false
+        },
+        "liClass": {
+            "title": "Общий список классов для всех элементов списка",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "String",
+            "obligatory": false
+        }
+    },
     renderHTML: function () {
         var tag = 'ul';
         if(this.params.ol == 'ol')
@@ -930,7 +1006,15 @@ var TagUList = JS_CLASS(StructureTag, {
 var TagLiBegin = JS_CLASS(StructureTag, {
     nameBegin: "LiBegin",
     nameEnd: "LiEnd",
-
+    title: "Составной элемент списка",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
     renderHTML: function () {
         var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">';
 
@@ -943,7 +1027,26 @@ var TagLiBegin = JS_CLASS(StructureTag, {
 
 var TagA = JS_CLASS(SimpleTag, {
     name: "A",
-
+    title: "Ссылка",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Текст ссылки",
+            "type": "String",
+            "obligatory": true
+        },
+        "href": {
+            "title": "URL",
+            "description": "Укажите ресурс, на который ссылаемся",
+            "type": "String",
+            "obligatory": true
+        }
+    },
     renderHTML: function () {
         var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</a>';
         return html;
@@ -952,7 +1055,20 @@ var TagA = JS_CLASS(SimpleTag, {
 
 var TagP = JS_CLASS(SimpleTag, {
     name: "P",
-
+    title: "Текст",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Отображаемый текст",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
     renderHTML: function () {
         var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</p>';
         return html;
@@ -961,6 +1077,20 @@ var TagP = JS_CLASS(SimpleTag, {
 
 var TagDiv = JS_CLASS(SimpleTag, {
     name: "Div",
+    title: "Блок",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Отображаемый текст",
+            "type": "String",
+            "obligatory": true
+        }
+    },
     renderHTML: function () {
         var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</div>';
         return html;
@@ -969,6 +1099,27 @@ var TagDiv = JS_CLASS(SimpleTag, {
 
 var TagImage = JS_CLASS(SimpleTag, {
     name: "Image",
+    title: "Изображение",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "src": {
+            "title": "Ссылка на изображение",
+            "description": "Укажите URL в виде http://site.com/image.jpg или img/image.jpg",
+            "type": "String",
+            "obligatory": true
+        },
+        "alt": {
+            "title": "Альтернаптивный текст",
+            "description": "Укажите текст, который отобразится, если изображение недоступно",
+            "type": "String",
+            "obligatory": false
+        }
+    },
     renderHTML: function () {
         var html = '<img tag-id="' + this.id + '" src="' + (this.params.src ? this.params.src : "") + '" class="' + (this.params.class ? this.params.class : "") + '" alt="' + (this.params.alt ? this.params.alt : "") + '">';
         return html;
@@ -977,8 +1128,137 @@ var TagImage = JS_CLASS(SimpleTag, {
 
 var TagLi = JS_CLASS(SimpleTag, {
     name: "Li",
+    title: "Элемент списка",
+    paramsType: {
+        "class": {
+            "title": "Список классов элемента",
+            "description": "Укажите названия CSS классов через пробел",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Отображаемый текст",
+            "type": "String",
+            "obligatory": true
+        }
+    },
     renderHTML: function () {
         var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</li>';
         return html;
+    }
+});
+
+var Control = {};
+
+Control.BaseController = JS_CLASS({
+    $content: null,
+    value: null,
+    name: "",
+    constructor: function (param) {
+        CP(this, param);
+
+        this.data = this.param;
+        this.data.name = this.name;
+
+        //console.log("checkbox", this.data);
+
+        this.$html = $(TPL ($(this.tpl).html(), this.data));
+        this.$content.append(this.$html);
+
+        this.$input = this.$html.find(".js-control-input");
+        this.$error = this.$html.find(".js-control-error");
+        this.$description = this.$html.find(".js-control-description");
+        if(this.data && this.data.description)
+            this.$description.show();
+
+        this.init();
+        //console.log(this.data);
+    },
+
+    init: function() {
+
+    },
+
+    setValue: function(value) {
+        console.log(this.name + " set " + value);
+        if(value === null)
+            value = '';
+        this.$input.val(value);
+    },
+
+    getValue: function(value) {
+        return this.$input.val();
+    }
+});
+
+Control.String = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-string",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+
+    }
+});
+
+Control.Textarea = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-textarea",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+
+    }
+});
+
+Control.WhiteSpaceString = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-white-space-string",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+
+    }
+});
+
+Control.WhiteSpaceStringArray = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-white-space-string-array",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+
+    }
+});
+
+Control.Checkbox = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-checkbox",
+    constructor: function (param) {
+
+        SUPER(this,arguments);
+
+        if(typeof this.param.onValue == "undefined")
+            this.param.onValue = 1;
+        if(typeof this.param.offValue == "undefined")
+            this.param.offValue = 0;
+    },
+
+    init: function () {
+
+    },
+
+    setValue: function(value) {
+        if(value === null)
+            value = '';
+        console.log("checkbox ol", value, this.param.onValue);
+        this.$input.prop("checked", value === this.param.onValue);
+    },
+
+    getValue: function(value) {
+        return this.$input.prop("checked") ? this.param.onValue : this.param.offValue;
     }
 });

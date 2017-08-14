@@ -82,7 +82,7 @@
 		height: 25px;
 		line-height: 15px;
 		top: -29px;
-		float: right;
+		float: left;
 		left: 3px;
 		padding: 5px;
 		color: #336700;
@@ -94,9 +94,9 @@
 	.b-over-settings {
 		display: block;
 		position: absolute;
-		right: 0;
+		left: 0;
 		top: 0;
-		padding: 3px 5px;
+		padding: 2px 5px;
 	}
 
 	.b-over-settings:hover {
@@ -209,6 +209,11 @@
 		position: absolute;
 		top: 0; right: 0;
 		padding: 10px;
+		cursor: pointer;
+	}
+
+	.b-tag-settings-dialog__body__controls {
+
 	}
 
 
@@ -256,17 +261,17 @@
 				<div class="js-draggable b-source-element" tag-name="P" tag-params='{"class":"b-red", "text": "Пример текста"}'>Текст</div>
 				<div class="js-draggable b-source-element" tag-name="Image" tag-params='{"class":"", "src": "https://www.vectorlogo.zone/logos/getbootstrap/getbootstrap-card.png", "alt": "Подпись изображения"}'>Изображение</div>
 				<div class="js-draggable b-source-element" tag-name="Div" tag-params='{"class":"", "text": "Текст внутри блока"}'>Блок</div>
-				<div class="js-draggable b-source-element" tag-name="Divs" tag-nestedClassList='["row col-xs-10"]'>Блоки</div>
+				<div class="js-draggable b-source-element" tag-name="Divs" tag-params='{"nestedClassList": ["row", "col-lg-5 col-xs-10"]}'>Блоки</div>
 				<div class="js-draggable b-source-element" tag-name="UList" tag-params='{"class":"", "ol": "ol"}'>Список</div>
 				<div class="js-draggable b-source-element" tag-name="Li" tag-params='{"class":"", "text": "Элемента списка"}'>Элемент списка</div>
-				<div class="js-draggable b-source-element" tag-name="LiBegin" tag-params='{"class":""}'>Сложный элемент списка</div>
+				<div class="js-draggable b-source-element" tag-name="LiBegin" tag-params='{"class":""}'>Составной элемент списка</div>
 			</div>
 
 			<i class="fa fa-trash-o js-trash b-trash"></i>
 
 		</div>
 
-		<div class="b-container-wrapper js-container-wrapper">
+		<div class="b-container-wrapper g-no-select js-container-wrapper">
 			<div class="b-over js-over">
 				<div class="b-over__inner">
 					<div class="b-over-info js-over-info">
@@ -275,18 +280,28 @@
 				</div>
 			</div>
 			<div class="b-draggable-bag js-draggable-bag"><div class="b-draggable-bag__inner js-draggable-bag__inner">'+html+'</div></div>
-			<div class="b-container js-container">
-
+			<div class="b-container  js-container">
 			</div>
 		</div>
 
 		<div class="b-tag-settings-dialog js-tag-settings-dialog">
-			<div class="b-tag-settings-dialog__body js-tag-settings-dialog__body">
+			<div class="b-tag-settings-dialog__body js-body">
 				<div class="b-tag-settings-dialog__body__close js-close"><i class="fa fa-close"></i></div>
+				<h2 class="js-title"></h2>
+				<br>
+				<div class="b-tag-settings-dialog__body__controls js-controls"></div>
+
+				<button type="button" class="btn btn-primary">Применить</button>
+				<button type="button" class="btn btn-default js-close">Отменить</button>
+
 			</div>
 		</div>
 
 		<p class="js-error" style="color: red;"></p>
+
+
+
+
 		<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Введите код шаблона">
 
     Divs(row)
@@ -359,3 +374,47 @@ UListEnd:
 <script type="text/javascript" src="static/generator/js/parser.js"></script>
 <script type="text/javascript" src="static/generator/js/code-generator.js"></script>
 <script type="text/javascript" src="static/generator/js/main.js"></script>
+
+<script id="tpl-control-string" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-white-space-string" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-white-space-string-array" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-textarea" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<textarea id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input" rows="5"></textarea>
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-checkbox" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="checkbox" data-type="checkbox" class="checkbox-inline js-control-input"> <span class="help-block js-control-description">{description}</span>
+	<div class="has-error js-control-error"></div>
+  </div>
+</script>

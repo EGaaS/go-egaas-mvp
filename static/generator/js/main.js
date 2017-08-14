@@ -27,7 +27,6 @@ $(function() {
             codeGenerator.generateCode();
             codeGenerator.render();
 
-
         }
         catch (e) {
             $output.html("");

@@ -353,7 +353,7 @@ window.parser = /*
               type: "tag",
               name: "Divs",
               id: generateId(),
-              nestedClassList: params,
+              params: { "nestedClassList": params },
               body: optionalList(body)
             }       
           },
