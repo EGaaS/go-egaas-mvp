@@ -76,6 +76,12 @@ CodeGenerator.Controller = JS_CLASS({
                     return;
                 }
 
+                var gap = 3;
+                if(self.startDraggingX && self.startDraggingY && !(e.pageX > self.startDraggingX - gap && e.pageX < self.startDraggingX + gap
+                    && e.pageY > self.startDraggingY - gap && e.pageY < self.startDraggingY + gap)) {
+                    self.startDragging();
+                }
+
                 self.findOverTagTimer = setTimeout((function() {
                     self.findOverTagTimer = null;
                 }).bind(self), 100);
@@ -104,20 +110,24 @@ CodeGenerator.Controller = JS_CLASS({
             });
 
         this.over.$over
-            .on("mousedown", function () {
+            .on("mousedown", function (e) {
                 if(self.over.tag && self.over.tag.type == "tag") {
                     self.draggingTag = self.over.tag;
                     self.$draggingTag = self.$container.find("*[tag-id=" + self.over.tag.id + "]");
                     //console.log("self.$draggingTag", self.$draggingTag);
                     if(self.$draggingTag && self.$draggingTag.length) {
-                        self.startDragging();
-
+                        self.preStartDragging(e);
                     }
                 }
             })
             .on("mouseup", function () {
-                self.cancelDragging();
-                self.dropTo(self.over.tag);
+                if(self.dragging) {
+                    self.cancelDragging();
+                    self.dropTo(self.over.tag);
+                }
+                else {
+                    self.preStopDragging();
+                }
             });
 
         $(document.body)
@@ -170,7 +180,7 @@ CodeGenerator.Controller = JS_CLASS({
                 }
                 //ol, liClass
 
-                self.startDragging();
+                self.startDragging(e);
             });
 
         this.$trash
@@ -223,6 +233,17 @@ CodeGenerator.Controller = JS_CLASS({
         this.cancelDragging();
     },
 
+    preStartDragging: function (e) {
+        this.startDraggingX = e.pageX;
+        this.startDraggingY = e.pageY;
+        console.log("preStartDragging", e);
+    },
+
+    preStopDragging: function () {
+        this.startDraggingX = null;
+        this.startDraggingY = null;
+    },
+
     startDragging: function () {
         this.dragging = true;
         //this.$overInner.addClass("g-move");
@@ -235,6 +256,7 @@ CodeGenerator.Controller = JS_CLASS({
 
     cancelDragging: function () {
         this.dragging = false;
+        this.preStopDragging();
         //this.$overInner.removeClass("g-move");
         this.over.$over
             .removeClass("b-droppable_inside")
@@ -244,6 +266,8 @@ CodeGenerator.Controller = JS_CLASS({
             .removeClass("g-no-select")
             .removeClass("g-no-overflow-x");
         this.removeDraggableBag();
+        this.startDraggingX = null;
+        this.startDraggingY = null;
 
 
         $(".b-draggable_dragging").removeClass("b-draggable_dragging");
@@ -447,11 +471,12 @@ CodeGenerator.Model = JS_CLASS({
             parent: null,
             parentPosition: 0
         };
+        console.log("findElementById", el, id);
         this.findNextElementById(el, id);
     },
 
     findNextElementById: function (el, id) {
-        //console.log("findNextElementById", el, id);
+
 
         if (el.id == id) {
             this.findInfo.el = el;
@@ -478,11 +503,24 @@ CodeGenerator.Over = JS_CLASS({
     constructor: function (param) {
         CP(this, param);
         this.$info = this.$over.find(".js-over-info");
+        this.$settings = this.$over.find(".js-over-settings");
         this.tag = null;
+        this.prevTag = null;
         this.parentTag = null;
         this.position = null; //inside, before, after
         this.canDrop = false;
         this.mode = "view"; //"drag"
+        this.events();
+    },
+
+    events: function () {
+        var self = this;
+        this.$settings.on("click", function() {
+            console.log("settings", self.tag);
+            new TagSettingsDialog({ tag: self.tag });
+        });
+
+
     },
 
     hide: function () {
@@ -506,6 +544,10 @@ CodeGenerator.Over = JS_CLASS({
             //         "height": "100%"
             // };
         }
+        if(this.prevTag != this.tag) {
+            this.onOverTagChange();
+        }
+        this.prevTag = this.tag;
 
         //return this.tag;
     },
@@ -540,6 +582,10 @@ CodeGenerator.Over = JS_CLASS({
                 }
             }
         }
+    },
+
+    onOverTagChange: function () {
+
     },
 
     draw: function () {
@@ -627,6 +673,46 @@ CodeGenerator.Over = JS_CLASS({
             }
         }
     }
+
+});
+
+var TagSettingsDialog = JS_CLASS({
+
+    constructor: function (param) {
+        CP(this, param);
+
+        this.$dialog = $(".js-tag-settings-dialog");
+        this.$dialogBody = $(".js-tag-settings-dialog__body");
+        this.$close = this.$dialog.find(".js-close");
+
+        this.events();
+        this.show();
+    },
+
+    events: function () {
+        var self = this;
+        this.$dialog.on("click", function () {
+            self.cancel();
+        });
+
+        this.$dialogBody.on("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        this.$close.on("click", function () {
+            self.cancel();
+        });
+    },
+
+    show: function () {
+        this.$dialog.show();
+    },
+
+    cancel: function () {
+        this.$dialog.hide();
+    }
+
 
 });
 
