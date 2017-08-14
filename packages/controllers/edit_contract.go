@@ -71,6 +71,9 @@ func (c *Controller) EditContract() (string, error) {
 			r, _ = regexp.Compile(`([\w]+)`)
 			name = r.FindString(name)
 		}
+		if strings.Contains(name, `,`) {
+			name = name[:strings.IndexByte(name, ',')]
+		}
 		if len(name) > 0 && !utils.CheckInputData(name, "string") {
 			return "", utils.ErrInfo("Incorrect name")
 		}

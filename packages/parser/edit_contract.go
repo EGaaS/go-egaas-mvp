@@ -17,6 +17,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/script"
 	"github.com/EGaaS/go-egaas-mvp/packages/smart"
@@ -62,10 +64,25 @@ func (p *EditContractParser) Validate() error {
 			return p.ErrInfo(err)
 		}
 	}
-	conditions, err := p.Single(`SELECT conditions FROM "`+prefix+`_smart_contracts" WHERE id = ?`, p.EditContract.Id).String()
+	current, err := p.OneRow(`SELECT conditions, value FROM "`+prefix+`_smart_contracts" WHERE id = ?`, p.EditContract.Id).String()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
+	curlist := smart.ContractsList(current[`value`])
+	newlist := smart.ContractsList(p.EditContract.Value)
+	if len(curlist) != len(newlist) {
+		return p.ErrInfo(fmt.Errorf(`Contracts cannot be removed or inserted`))
+	}
+checkcur:
+	for _, icur := range curlist {
+		for _, inew := range newlist {
+			if icur == inew {
+				continue checkcur
+			}
+		}
+		return p.ErrInfo(fmt.Errorf(`Contracts names cannot be changed`))
+	}
+	conditions := current[`conditions`]
 	if len(conditions) > 0 {
 		ret, err := p.EvalIf(conditions)
 		if err != nil {
