@@ -59,7 +59,7 @@ func (p *NewContractParser) Validate() error {
 			return p.ErrInfo(fmt.Errorf(`wrong wallet %s`, p.NewContract.Wallet))
 		}
 	}
-	verifyData := map[string][]interface{}{"int64": []interface{}{p.NewContract.Global}, "string": []interface{}{p.NewContract.Name}}
+	verifyData := map[string][]interface{}{"int64": []interface{}{p.NewContract.Global}}
 	err = p.CheckInputData(verifyData)
 	if err != nil {
 		return p.ErrInfo(err)
@@ -82,11 +82,14 @@ func (p *NewContractParser) Validate() error {
 			return p.ErrInfo(err)
 		}
 	}
-
-	if exist, err := p.Single(`select id from "`+prefix+"_smart_contracts"+`" where name=?`, p.NewContract.Name).Int64(); err != nil {
-		return p.ErrInfo(err)
-	} else if exist > 0 {
-		return p.ErrInfo(fmt.Sprintf("The contract %s already exists", p.NewContract.Name))
+	state := p.NewContract.Header.StateID
+	if prefix == `global` {
+		state = 0
+	}
+	for _, name := range smart.ContractsList(p.NewContract.Value) {
+		if contract := smart.GetContract(name, uint32(state)); contract != nil {
+			return p.ErrInfo(fmt.Sprintf("The contract %s already exists", name))
+		}
 	}
 	return nil
 }
@@ -104,8 +107,8 @@ func (p *NewContractParser) Action() error {
 		return p.ErrInfo(err)
 	}
 
-	_, tblid, err := p.selectiveLoggingAndUpd([]string{"name", "value", "conditions", "wallet_id"},
-		[]interface{}{p.NewContract.Name, p.NewContract.Value, p.NewContract.Conditions,
+	_, tblid, err := p.selectiveLoggingAndUpd([]string{"value", "conditions", "wallet_id"},
+		[]interface{}{p.NewContract.Value, p.NewContract.Conditions,
 			p.walletContract}, prefix+"_smart_contracts", nil, nil, true)
 	if err != nil {
 		return p.ErrInfo(err)
