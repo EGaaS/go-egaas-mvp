@@ -1167,7 +1167,7 @@ func BlockInfo(vars *map[string]string, pars ...string) string {
 
 // Val returns the value of the html control with id identifier
 func Val(vars *map[string]string, pars ...string) string {
-	return fmt.Sprintf(`$('#%s').val()`, pars[0])
+	return fmt.Sprintf(`FormVal('%s')`, pars[0])
 }
 
 // BtnPage returns the button HTML tag with the link to the template page

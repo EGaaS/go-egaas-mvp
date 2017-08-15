@@ -1406,6 +1406,17 @@ function FormValidate(form, input, btn) {
 	}
 }
 
+function FormVal(id) {
+	var element = $("#" + id);
+	if (!element.length)
+		return "";
+
+	switch (element.prop("type")) {
+		case "checkbox": return element.is(":checked");
+		default: return element.val();
+	}
+}
+
 function Validate(form, input, btn) {
 	var form = $("#" + form);
 	var btn = $("#" + btn);
