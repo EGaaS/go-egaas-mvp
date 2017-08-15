@@ -615,7 +615,7 @@ CodeGenerator.Over = JS_CLASS({
             this.drawView();
 
         if(this.tagObj) {
-            var name = "Контейнер";
+            var name = "Container";
             if(this.tagObj.name) {
                 name = this.tagObj.title + ' ' + this.tagObj.name;
             }
@@ -950,11 +950,12 @@ var MainTemplate = JS_CLASS(StructureTag, {
 var TagDivs = JS_CLASS(StructureTag, {
     nameBegin: "Divs",
     nameEnd: "DivsEnd",
-    title: "Блоки",
+    title: "Blocks",
     paramsType: {
         "nestedClassList": {
-            "title": "Список классов",
-            "description": "Введите названия классов через пробел, группы классов можно разделять запятыми. Количество контейнеров Div равно количеству групп классов. Например, \"row, col-xs-10 col-md-7\"",
+            "title": "Class list",
+            "description": "Input CSS class list using whitespace separator",
+            "description": "Input CSS class list using whitespace separator, separate class groups with commas. Example: \"row, col-xs-10 col-md-7\"",
             "type": "WhiteSpaceStringArray",
             "obligatory": false
         }
@@ -991,27 +992,27 @@ var TagDivs = JS_CLASS(StructureTag, {
 var TagUList = JS_CLASS(StructureTag, {
     nameBegin: "UList",
     nameEnd: "UListEnd",
-    title: "Список",
+    title: "List",
     acceptRule: "Li LiBegin",
     exceptRule: null,
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "ol": {
-            "title": "Нумерованный список",
-            "description": "Отметьте, если необходима нумерация элементов списка",
+            "title": "Numbered list",
+            "description": "Check this box for numbered list",
             "type": "Checkbox",
             "onValue": "ol",
             "offValue": "",
             "obligatory": false
         },
         "liClass": {
-            "title": "Общий список классов для всех элементов списка",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Common class for list elements",
+            "description": "Input CSS class list using whitespace separator",
             "type": "String",
             "obligatory": false
         }
@@ -1033,11 +1034,11 @@ var TagUList = JS_CLASS(StructureTag, {
 var TagLiBegin = JS_CLASS(StructureTag, {
     nameBegin: "LiBegin",
     nameEnd: "LiEnd",
-    title: "Составной элемент списка",
+    title: "Complex list element",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         }
@@ -1054,22 +1055,22 @@ var TagLiBegin = JS_CLASS(StructureTag, {
 
 var TagA = JS_CLASS(SimpleTag, {
     name: "A",
-    title: "Ссылка",
+    title: "Link",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "text": {
-            "title": "Текст ссылки",
+            "title": "Link text",
             "type": "String",
             "obligatory": true
         },
         "href": {
             "title": "URL",
-            "description": "Укажите ресурс, на который ссылаемся",
+            "description": "Enter link URL",
             "type": "String",
             "obligatory": true
         }
@@ -1082,16 +1083,16 @@ var TagA = JS_CLASS(SimpleTag, {
 
 var TagP = JS_CLASS(SimpleTag, {
     name: "P",
-    title: "Текст",
+    title: "Text",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "text": {
-            "title": "Отображаемый текст",
+            "title": "Text",
             "type": "Textarea",
             "obligatory": true
         }
@@ -1104,16 +1105,16 @@ var TagP = JS_CLASS(SimpleTag, {
 
 var TagDiv = JS_CLASS(SimpleTag, {
     name: "Div",
-    title: "Блок",
+    title: "Block",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "text": {
-            "title": "Отображаемый текст",
+            "title": "Text",
             "type": "String",
             "obligatory": true
         }
@@ -1126,23 +1127,23 @@ var TagDiv = JS_CLASS(SimpleTag, {
 
 var TagImage = JS_CLASS(SimpleTag, {
     name: "Image",
-    title: "Изображение",
+    title: "Image",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "src": {
-            "title": "Ссылка на изображение",
-            "description": "Укажите URL в виде http://site.com/image.jpg или img/image.jpg",
+            "title": "Image URL",
+            "description": "Example: http://site.com/image.jpg или img/image.jpg",
             "type": "String",
             "obligatory": true
         },
         "alt": {
-            "title": "Альтернативный текст",
-            "description": "Укажите текст, который отобразится, если изображение недоступно",
+            "title": "Alternative text",
+            "description": "Enter alternative image text",
             "type": "String",
             "obligatory": false
         }
@@ -1155,16 +1156,16 @@ var TagImage = JS_CLASS(SimpleTag, {
 
 var TagLi = JS_CLASS(SimpleTag, {
     name: "Li",
-    title: "Элемент списка",
+    title: "List element",
     paramsType: {
         "class": {
-            "title": "Список классов элемента",
-            "description": "Укажите названия CSS классов через пробел",
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false
         },
         "text": {
-            "title": "Отображаемый текст",
+            "title": "Text",
             "type": "String",
             "obligatory": true
         }
