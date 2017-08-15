@@ -211,7 +211,6 @@ func (c *Controller) SaveQueue() (string, error) {
 		toSerialize = tx.NewContract{
 			Header:     header,
 			Global:     c.r.FormValue("global"),
-			Name:       c.r.FormValue("name"),
 			Value:      c.r.FormValue("value"),
 			Wallet:     c.r.FormValue("wallet"),
 			Conditions: c.r.FormValue("conditions"),

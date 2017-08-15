@@ -17,7 +17,10 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
@@ -55,6 +58,7 @@ func (c *Controller) Contracts() (string, error) {
 		if val[`active`] == `NULL` {
 			stateSmartLaws[ind][`active`] = ``
 		}
+		stateSmartLaws[ind][`name`] = strings.Join(smart.ContractsList(val[`value`]), `,`)
 	}
 	var allStateParameters []string
 	if global == "0" {
