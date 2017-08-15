@@ -465,6 +465,10 @@ CodeGenerator.Model = JS_CLASS({
         }
     },
 
+    // update: function (id, params) {
+    //     var tag = this.findElementById(this.json, id);
+    // },
+
     findElementById: function (el, id) {
         this.findInfo = {
             el: null,
@@ -522,7 +526,11 @@ CodeGenerator.Over = JS_CLASS({
             if(!self.tag.name)
                 return;
             console.log("settings", self.tag);
-            new TagSettingsDialog({ tag: self.tag });
+            new TagSettingsDialog({
+                tag: self.tag,
+                model: self.model,
+                owner: self
+            });
         });
 
 
@@ -698,6 +706,7 @@ var TagSettingsDialog = JS_CLASS({
         this.$dialogBody = this.$dialog.find(".js-body");
         this.$controls = this.$dialog.find(".js-controls");
         this.$close = this.$dialog.find(".js-close");
+        this.$save = this.$dialog.find(".js-save");
         this.$title = this.$dialog.find(".js-title");
 
         this.tagObj = constructTag(this.tag);
@@ -722,6 +731,10 @@ var TagSettingsDialog = JS_CLASS({
         this.$close.on("click", function () {
             self.cancel();
         });
+
+        this.$save.on("click", function () {
+            self.save();
+        });
     },
 
     show: function () {
@@ -730,6 +743,20 @@ var TagSettingsDialog = JS_CLASS({
 
     cancel: function () {
         this.$dialog.hide();
+    },
+
+    save: function () {
+
+        for(var i = 0; i < this.controls.length; i++) {
+            var control = this.controls[i];
+            console.log(control.name, control.getValue());
+            this.tag.params[control.name] = control.getValue();
+        }
+
+        this.$dialog.hide();
+        this.owner.owner.generateCode();
+        this.owner.owner.render();
+        this.model.saveHistory();
     },
 
     render: function () {
@@ -1048,7 +1075,7 @@ var TagA = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</a>';
+        var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</a>';
         return html;
     }
 });
@@ -1070,7 +1097,7 @@ var TagP = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</p>';
+        var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</p>';
         return html;
     }
 });
@@ -1092,7 +1119,7 @@ var TagDiv = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</div>';
+        var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</div>';
         return html;
     }
 });
@@ -1114,7 +1141,7 @@ var TagImage = JS_CLASS(SimpleTag, {
             "obligatory": true
         },
         "alt": {
-            "title": "Альтернаптивный текст",
+            "title": "Альтернативный текст",
             "description": "Укажите текст, который отобразится, если изображение недоступно",
             "type": "String",
             "obligatory": false
@@ -1143,7 +1170,7 @@ var TagLi = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + this.params.text + '</li>';
+        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</li>';
         return html;
     }
 });
@@ -1186,7 +1213,7 @@ Control.BaseController = JS_CLASS({
         this.$input.val(value);
     },
 
-    getValue: function(value) {
+    getValue: function() {
         return this.$input.val();
     }
 });
@@ -1232,6 +1259,22 @@ Control.WhiteSpaceStringArray = JS_CLASS(Control.BaseController, {
 
     init: function () {
 
+    },
+
+    setValue: function(value) {
+
+        if(value === null)
+            value = '';
+        if(value && value.length)
+            value = value.join(", ");
+        this.$input.val(value);
+    },
+
+    getValue: function() {
+        var value = this.$input.val();
+        if(value.length)
+            return value.split(", ");
+        return [];
     }
 });
 

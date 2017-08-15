@@ -258,7 +258,7 @@
 
 			<div class="js-source-elements">
 				<div class="js-draggable b-source-element" tag-name="A" tag-params='{"class":"", "text": "Текст ссылки", "href": "http://"}'>Ссылка</div>
-				<div class="js-draggable b-source-element" tag-name="P" tag-params='{"class":"b-red", "text": "Пример текста"}'>Текст</div>
+				<div class="js-draggable b-source-element" tag-name="P" tag-params='{"class":"", "text": "Пример текста"}'>Текст</div>
 				<div class="js-draggable b-source-element" tag-name="Image" tag-params='{"class":"", "src": "https://www.vectorlogo.zone/logos/getbootstrap/getbootstrap-card.png", "alt": "Подпись изображения"}'>Изображение</div>
 				<div class="js-draggable b-source-element" tag-name="Div" tag-params='{"class":"", "text": "Текст внутри блока"}'>Блок</div>
 				<div class="js-draggable b-source-element" tag-name="Divs" tag-params='{"nestedClassList": ["row", "col-lg-5 col-xs-10"]}'>Блоки</div>
@@ -291,7 +291,7 @@
 				<br>
 				<div class="b-tag-settings-dialog__body__controls js-controls"></div>
 
-				<button type="button" class="btn btn-primary">Применить</button>
+				<button type="button" class="btn btn-primary js-save">Применить</button>
 				<button type="button" class="btn btn-default js-close">Отменить</button>
 
 			</div>
@@ -301,10 +301,34 @@
 
 
 
+		<h4>Код шаблона</h4>
+		<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Введите код шаблона"></textarea>
 
-		<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Введите код шаблона">
+		<!--
 
-    Divs(row)
+		 Divs(row)
+   Divs(col-lg-6 col-xs-8)
+     P{class = "lead", text = "Заголовок"}
+     UList{class = "", ol = "ol", liClass = ""}
+       Li{class = "", text = "Первый"}
+       Li{class = "text-info", text = "Второй"}
+       Li{class = "", text = "Элемента списка"}
+       LiBegin{class = ""}
+         A{class = "", text = "Текст ссылки", href = "http://"}
+       LiEnd:
+     UListEnd:
+     P{class = "text-muted", text = "Пример текста, пример текста, пример текста, пример текста. Дополнительное описание."}
+   DivsEnd:
+   Divs(col-lg-6 col-xs-5)
+     Image{src = "http://brandmanager.com.hr/wp-content/uploads/2013/05/Trening_Educa-600x400.jpg", alt = "фото", class = "img-rounded"}
+   DivsEnd:
+ DivsEnd:
+
+
+
+
+
+		    Divs(row)
 Divs(col-xs-6)
 Divs(panel panel-default, panel-body)
 
@@ -363,8 +387,11 @@ UList(b-big, ol)
 Li:привет
 UListEnd:
 
-		</textarea>
+		-->
+
+
 		<p class="js-output"></p>
+		<h4>Результат</h4>
 		<pre class="js-code-generated"></pre>
 
 	</div>
