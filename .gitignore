@@ -100,3 +100,5 @@ Temporary Items
 
 static/prepros.cfg
 static/sass
+
+packages/static/
