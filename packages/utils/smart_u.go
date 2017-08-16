@@ -157,7 +157,7 @@ func init() {
 		`Money`: Money, `Source`: Source, `Val`: Val, `Lang`: LangRes, `LangJS`: LangJS, `InputDate`: InputDate,
 		`MenuGroup`: MenuGroup, `MenuEnd`: MenuEnd, `MenuItem`: MenuItem, `MenuPage`: MenuPage, `MenuBack`: MenuBack,
 		`WhiteMobileBg`: WhiteMobileBg, `Bin2Hex`: Bin2Hex, `MessageBoard`: MessageBoard, `AutoUpdate`: AutoUpdate,
-		`AutoUpdateEnd`: AutoUpdateEnd, `Include`: Include, `Upload`: Upload,
+		`AutoUpdateEnd`: AutoUpdateEnd, `Include`: Include, `Upload`: Upload, `InputCheckbox`: InputCheckbox,
 	})
 }
 
@@ -483,6 +483,32 @@ func Input(vars *map[string]string, pars ...string) string {
 	}
 	return fmt.Sprintf(`<input type="%s" id="%s" placeholder="%s" class="%s" value="%s" %s>`,
 		itype, pars[0], placeholder, class, value, more)
+}
+
+// InputCheckbox returns styled input HTML tag with checkbox type
+func InputCheckbox(vars *map[string]string, pars ...string) string {
+	var (
+		class, label, checked, disabled string
+	)
+	icon := `fa fa-check`
+
+	if len(pars) > 1 {
+		class, _ = getClass(pars[1])
+	}
+	if len(pars) > 2 {
+		label = LangRes(vars, pars[2])
+	}
+	if len(pars) > 3 && len(pars[3]) > 0 {
+		icon = pars[3]
+	}
+	if len(pars) > 4 && ifValue(pars[4]) {
+		checked = `checked="checked"`
+	}
+	if len(pars) > 5 && ifValue(pars[5]) {
+		disabled = `disabled`
+	}
+	return fmt.Sprintf(`<div class="checkbox c-checkbox %s"><label><input type="checkbox" id="%s" %s %s><span class="%s"></span> %s</label></div>`,
+		class, pars[0], checked, disabled, icon, label)
 }
 
 // InputDate returns input HTML tag with datepicker
@@ -1167,7 +1193,7 @@ func BlockInfo(vars *map[string]string, pars ...string) string {
 
 // Val returns the value of the html control with id identifier
 func Val(vars *map[string]string, pars ...string) string {
-	return fmt.Sprintf(`$('#%s').val()`, pars[0])
+	return fmt.Sprintf(`FormVal('%s')`, pars[0])
 }
 
 // BtnPage returns the button HTML tag with the link to the template page
