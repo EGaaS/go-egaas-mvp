@@ -228,6 +228,7 @@ func (p *NewStateParser) Main(country, currency string) (id string, err error) {
 		id+`_pages`, `{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\",\"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "`+sid+`"}`, psid,
 		id+`_languages`, `{"insert": "ContractAccess(\"@0NewLang\")", "update": {"*": "ContractAccess(\"@0EditLang\")"}, "new_column": "ContractAccess(\"@0NewLangColumn\")", "general_update": "`+sid+`"}`, psid,
 		id+`_state_parameters`, `{"insert": "ContractAccess(\"@0NewStateParameters\")", "update": {"*": "ContractAccess(\"@0EditStateParameters\",\"@0RestoreAccess\")"}, "new_column": "ContractAccess(\"@0NewStateParametersColumn\")", "general_update":  "`+sid+`"}`, psid,
+		id+`_smart_contracts`, `{"insert": "ContractAccess(\"@0NewContract\")", "update": {"*": "ContractAccess(\"@0EditContract\")"}, "new_column": "ContractAccess(\"@0NewContractColumn\")", "general_update":  "`+sid+`"}`, psid,
 		id+`_signatures`, `{"insert": "ContractAccess(\"@0NewSign\")", "update": {"*": "ContractAccess(\"@0EditSign\")"}, "new_column": "ContractAccess(\"@0NewSignColumn\")", "general_update":  "`+sid+`"}`, psid)
 	if err != nil {
 		return

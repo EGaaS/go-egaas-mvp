@@ -49,6 +49,7 @@ var (
 		"DBString":       struct{}{},
 		"DBInt":          struct{}{},
 		"DBRowExt":       struct{}{},
+		"DBRow":          struct{}{},
 		"DBStringExt":    struct{}{},
 		"DBIntExt":       struct{}{},
 		"DBFreeRequest":  struct{}{},
@@ -82,6 +83,11 @@ var (
 		"UpdateLang":        10,
 		"Size":              10,
 		"Substr":            10,
+		"ContractsList":     10,
+		"IsContract":        10,
+		"CompileContract":   100,
+		"FlushContract":     50,
+		"Eval":              10,
 	}
 )
 
@@ -95,6 +101,7 @@ func init() {
 		"DBString":           DBString,
 		"DBInt":              DBInt,
 		"DBRowExt":           DBRowExt,
+		"DBRow":              DBRow,
 		"DBStringExt":        DBStringExt,
 		"DBFreeRequest":      DBFreeRequest,
 		"DBIntExt":           DBIntExt,
@@ -105,7 +112,7 @@ func init() {
 		"AddressToId":        AddressToID,
 		"IdToAddress":        IDToAddress,
 		"DBAmount":           DBAmount,
-		"ContractAccess":     IsContract,
+		"ContractAccess":     ContractAccess,
 		"ContractConditions": ContractConditions,
 		"NewState":           NewStateFunc,
 		"StateVal":           StateVal,
@@ -137,6 +144,11 @@ func init() {
 		"UpdateLang":         UpdateLang,
 		"Size":               Size,
 		"Substr":             Substr,
+		"ContractsList":      ContractsList,
+		"IsContract":         IsContract,
+		"CompileContract":    CompileContract,
+		"FlushContract":      FlushContract,
+		"Eval":               Eval,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -582,8 +594,8 @@ func ContractConditions(p *Parser, names ...interface{}) (bool, error) {
 	return true, nil
 }
 
-// IsContract checks whether the name of the executable contract matches one of the names listed in the parameters.
-func IsContract(p *Parser, names ...interface{}) bool {
+// ContractAccess checks whether the name of the executable contract matches one of the names listed in the parameters.
+func ContractAccess(p *Parser, names ...interface{}) bool {
 	for _, iname := range names {
 		name := iname.(string)
 		if p.TxContract != nil && len(name) > 0 {
@@ -1038,6 +1050,23 @@ func DBRowExt(tblname string, columns string, id interface{}, idname string) (in
 	return cost, res, err
 }
 
+// DBRow returns one row from the table StringExt
+func DBRow(tblname string, columns string, id int64) (int64, map[string]string, error) {
+
+	if err := checkReport(tblname); err != nil {
+		return 0, nil, err
+	}
+
+	query := `select ` + converter.Sanitize(columns, ` ,()*`) + ` from ` + converter.EscapeName(tblname) + ` where id=?`
+	cost, err := sql.DB.GetQueryTotalCost(query, id)
+	if err != nil {
+		return 0, nil, err
+	}
+	res, err := sql.DB.OneRow(query, id).String()
+
+	return cost, res, err
+}
+
 // UpdateSysParam updates the system parameter
 func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 	var (
@@ -1111,17 +1140,7 @@ func EvalCondition(p *Parser, table, name, condfield string) error {
 	if err != nil {
 		return err
 	}
-	if len(conditions) == 0 {
-		return fmt.Errorf(`The condition is empty`)
-	}
-	ret, err := p.EvalIf(conditions)
-	if err != nil {
-		return err
-	}
-	if !ret {
-		return fmt.Errorf(`Access denied`)
-	}
-	return nil
+	return Eval(p, conditions)
 }
 
 // Replace replaces old substrings to new substrings
@@ -1178,4 +1197,61 @@ func Substr(s string, off int64, slen int64) string {
 		return s[off:]
 	}
 	return s[off : off+slen]
+}
+
+func IsContract(name string, state int64) bool {
+	return smart.GetContract(name, uint32(state)) != nil
+}
+
+func ContractsList(value string) []interface{} {
+	list := smart.ContractsList(value)
+	result := make([]interface{}, len(list))
+	for i := 0; i < len(list); i++ {
+		result[i] = reflect.ValueOf(list[i]).Interface()
+	}
+	return result
+}
+
+func CompileContract(p *Parser, code string, state, id int64) (interface{}, error) {
+	if p.TxContract.Name != `@0NewContract` && p.TxContract.Name != `@0EditContract` {
+		return 0, fmt.Errorf(`CompileContract can be only called from NewContract or EditContract`)
+	}
+	var prefix string
+	if state == 0 {
+		prefix = `global`
+	} else {
+		prefix = converter.Int64ToStr(state)
+	}
+	return smart.CompileBlock(code, prefix, false, id)
+}
+
+func FlushContract(p *Parser, iroot interface{}, id int64, active bool) error {
+	if p.TxContract.Name != `@0NewContract` && p.TxContract.Name != `@0EditContract` {
+		return fmt.Errorf(`FlushContract can be only called from NewContract or EditContract`)
+	}
+	root := iroot.(*script.Block)
+	for i, item := range root.Children {
+		if item.Type == script.ObjContract {
+			root.Children[i].Info.(*script.ContractInfo).TableID = id
+			root.Children[i].Info.(*script.ContractInfo).Active = active
+		}
+	}
+
+	smart.FlushBlock(root)
+	return nil
+}
+
+// Eval evaluates the condition
+func Eval(p *Parser, condition string) error {
+	if len(condition) == 0 {
+		return fmt.Errorf(`The condition is empty`)
+	}
+	ret, err := p.EvalIf(condition)
+	if err != nil {
+		return err
+	}
+	if !ret {
+		return fmt.Errorf(`Access denied`)
+	}
+	return nil
 }
