@@ -1032,6 +1032,32 @@ INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('co
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract ActivateContract {
+    data {
+        Global     int
+        Id         int
+    }
+
+    conditions {
+        $cur = DBRow(PrefixTable(`smart_contracts`, $Global), `id,conditions,active`, $Id)
+        if Int($cur[`id`]) != $Id {
+            error Sprintf(`Contract %d does not exist`, $Id)
+        }
+        if Int($cur[`active`]) == 1 {
+            error Sprintf(`The contract %d has been already activated`, $Id)
+        }
+        Eval($cur[`conditions`])
+    }
+
+    action {
+        var istate int
+        if $Global == 0 {
+            istate = $state
+        }
+        DBUpdate(PrefixTable(`smart_contracts`, $Global), $Id, `active`, 1)
+        Activate($Id, istate)
+    }
+}', '1','ContractConditions(`MainCondition`)');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -1064,7 +1090,7 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         '{"insert": "ContractAccess(\"@0RestoreAccess\")", "update": {"*": "ContractAccess(\"@0RestoreAccess\", \"@0RestoreAccessActive\", \"@0RestoreAccessClose\", \"@0RestoreAccessRequest\")"}, "new_column": "ContractAccess(\"@0NewRestoreAccessColumn\")", "general_update": "ContractAccess(\"@0UpdateRestoreAccess\")"}',
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_smart_contracts', 
-        '{"insert": "ContractAccess(\"@0NewContract\")", "update": {"*": "ContractAccess(\"@0EditContract\")"}, "new_column": "ContractAccess(\"@0NewContractColumn\")", "general_update": "ContractConditions(`MainCondition`)"}',
+        '{"insert": "ContractAccess(\"@0NewContract\")", "update": {"*": "ContractAccess(\"@0EditContract\", \"@0ActivateContract\")"}, "new_column": "ContractAccess(\"@0NewContractColumn\")", "general_update": "ContractConditions(`MainCondition`)"}',
         'false');
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;

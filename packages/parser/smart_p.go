@@ -88,6 +88,7 @@ var (
 		"CompileContract":   100,
 		"FlushContract":     50,
 		"Eval":              10,
+		"Activate":          10,
 	}
 )
 
@@ -149,6 +150,7 @@ func init() {
 		"CompileContract":    CompileContract,
 		"FlushContract":      FlushContract,
 		"Eval":               Eval,
+		"Activate":           ActivateContract,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1253,5 +1255,15 @@ func Eval(p *Parser, condition string) error {
 	if !ret {
 		return fmt.Errorf(`Access denied`)
 	}
+	return nil
+}
+
+// ActivateContract sets Active status of the contract in smartVM
+func ActivateContract(p *Parser, tblid int64, state int64) error {
+	if p.TxContract.Name != `@0ActivateContract` {
+		return fmt.Errorf(`ActivateContract can be only called from @0ActivateContract`)
+	}
+
+	smart.ActivateContract(tblid, converter.Int64ToStr(state), true)
 	return nil
 }
