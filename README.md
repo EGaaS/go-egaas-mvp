@@ -9,7 +9,7 @@
 
 ## Build
 
-Clone release beanch:
+Clone release branch:
 ```
 git clone -b 1.0 https://github.com/EGaaS/go-egaas-mvp.git $GOPATH/src/github.com/EGaaS/go-egaas-mvp
 ```
@@ -17,12 +17,11 @@ git clone -b 1.0 https://github.com/EGaaS/go-egaas-mvp.git $GOPATH/src/github.co
 Build EgaaS:
 ```
 go get -u github.com/jteeuwen/go-bindata/...
-rm -rf $GOPATH/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go
-$GOPATH/bin/go-bindata -o="$GOPATH/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go" -pkg="static" $GOPATH/src/github.com/EGaaS/go-egaas-mvp/static/...
+$GOPATH/bin/go-bindata -o="$GOPATH/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go" -pkg="static" -prefix="$GOPATH/src/github.com/EGaaS/go-egaas-mvp/" $GOPATH/src/github.com/EGaaS/go-egaas-mvp/static/...
 go install github.com/EGaaS/go-egaas-mvp
 ```
 
-## Running
+# Running
 
 Create EGaaS directory and copy binary:
 ```

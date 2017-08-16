@@ -4,9 +4,9 @@
 go-bindata:
 	go get -u github.com/jteeuwen/go-bindata/...
 
-static:
+static-files:
 	rm -rf $GOPATH/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go
-	$GOPATH/bin/go-bindata -o="$GOPATH/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go" -pkg="static" $GOPATH/src/github.com/EGaaS/go-egaas-mvp/static/...
+	${GOPATH}/bin/go-bindata -o="${GOPATH}/src/github.com/EGaaS/go-egaas-mvp/packages/static/static.go" -pkg="static" -prefix="${GOPATH}/src/github.com/EGaaS/go-egaas-mvp/" ${GOPATH}/src/github.com/EGaaS/go-egaas-mvp/static/...
 
 build:
 	go build github.com/EGaaS/go-egaas-mvp
@@ -16,5 +16,5 @@ install:
 
 all:
 	make go-bindata
-	make static
+	make static-files
 	make install
