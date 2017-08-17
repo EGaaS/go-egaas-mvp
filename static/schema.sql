@@ -491,8 +491,7 @@ ALTER SEQUENCE "global_smart_contracts_id_seq" owned by "global_smart_contracts"
 ALTER TABLE ONLY "global_smart_contracts" ADD CONSTRAINT global_smart_contracts_pkey PRIMARY KEY (id);
 CREATE INDEX global_smart_contracts_index_name ON "global_smart_contracts" (name);
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('DLTTransfer',
-  'contract DLTTransfer {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract DLTTransfer {
     data {
         Recipient string
         Amount    string
@@ -521,8 +520,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, comment, time, block_id`, $wallet, $recipient, $amount, $Comment, $block_time, $block)
     }
 }', '1','ContractAccess("@0UpdateDLTTranfer")');
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('DLTChangeHostVote',
-  'contract DLTChangeHostVote {
+INSERT INTO global_smart_contracts ( "value", "active", "conditions") VALUES ('contract DLTChangeHostVote {
     data {
         Host        string
 	AddressVote string
@@ -541,8 +539,8 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`host,address_vote,fuel_rate,last_forging_data_upd`, $Host, $AddressVote, $FuelRate, $block_time)
     }
 }', '1','ContractAccess("@0UpdateDLTChangeHostVote")');
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewMenu',
-  'contract NewMenu {
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ( 'contract NewMenu {
     data {
         Global     int
     	Name       string
@@ -563,8 +561,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractAccess("@0UpdateNewMenu")');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditMenu',
-  'contract EditMenu {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditMenu {
     data {
         Global     int
     	Name       string
@@ -587,8 +584,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('AppendMenu',
-  'contract AppendMenu {
+INSERT INTO global_smart_contracts ( "value", "active", "conditions") VALUES ('contract AppendMenu {
     data {
         Global     int
     	Name       string
@@ -606,8 +602,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewPage',
-  'contract NewPage {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewPage {
     data {
         Global     int
     	Name       string
@@ -633,8 +628,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
 }', '1','ContractConditions(`MainCondition`)');
 
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditPage',
-  'contract EditPage {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditPage {
     data {
         Global     int
     	Name       string
@@ -658,8 +652,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('AppendPage',
-  'contract AppendPage {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract AppendPage {
     data {
         Global     int
     	Name       string
@@ -683,8 +676,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewStateParameters',
-  'contract NewStateParameters {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewStateParameters {
     data {
         Name string
         Value string
@@ -698,8 +690,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditStateParameters',
-  'contract EditStateParameters {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditStateParameters {
     data {
         Name string
         Value string
@@ -721,8 +712,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewLang',
-  'contract NewLang {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewLang {
     data {
         Name  string
         Trans string
@@ -743,8 +733,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditLang',
-  'contract EditLang {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditLang {
     data {
         Name  string
         Trans string
@@ -760,8 +749,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('NewSign',
-  'contract NewSign {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewSign {
     data {
         Global     int
     	Name       string
@@ -787,8 +775,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('EditSign',
-  'contract EditSign {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditSign {
     data {
         Global     int
     	Name       string
@@ -812,8 +799,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
 }', '1','ContractConditions(`MainCondition`)');
 
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('UpdFullNodes',
-  'contract UpdFullNodes {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract UpdFullNodes {
     data {
 
     }
@@ -850,8 +836,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractAccess("@0UpdateUpdFullNodes")');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccess',
-  'contract RestoreAccess {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccess {
     data {
         State int
     }
@@ -886,8 +871,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessActive',
-  'contract RestoreAccessActive {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessActive {
     data {
         Secret string
     }
@@ -913,8 +897,7 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessClose',
-  'contract RestoreAccessClose {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessClose {
     data {
 
     }
@@ -935,12 +918,9 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('RestoreAccessRequest',
-  'contract RestoreAccessRequest {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessRequest {
     data {
-
     }
-
     conditions {
 	    if $wallet != SysParamInt(`recovery_address`) {
 		    error "wallet != recovery_address"
@@ -961,6 +941,123 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewContract {
+    data {
+        Global     int
+    	Value      string
+    	Conditions string
+    	Wallet       string "optional"
+    }
+
+    conditions {
+        $istate = 0
+        if $Global == 0 {
+            $istate = $state
+        }
+        ValidateCondition($Conditions,$istate)
+        $walletContract = $wallet
+       	if $Wallet {
+		    $walletContract = AddressToId($Wallet)
+		    if $walletContract == 0 {
+			   error Sprintf(`wrong wallet %s`, $Wallet)
+		    }
+	    }
+	    var list array
+	    list = ContractsList($Value)
+	    var i int
+	    while i < Len(list) {
+	        if IsContract(list[i], $istate) {
+	            warning Sprintf(`Contract %s exists`, list[i] )
+	        }
+	        i = i + 1
+	    }
+    }
+
+    action {
+        var root, id int
+        root = CompileContract($Value, $istate, 0)
+        id = DBInsert(PrefixTable(`smart_contracts`, $Global), `value,conditions, wallet_id`, $Value, $Conditions, $walletContract)
+        FlushContract(root, id, false)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditContract {
+    data {
+        Global     int
+        Id         int
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        $cur = DBRow(PrefixTable(`smart_contracts`, $Global), `id,value,conditions,active`, $Id)
+        if Int($cur[`id`]) != $Id {
+            error Sprintf(`Contract %d does not exist`, $Id)
+        }
+        Eval($cur[`conditions`])
+        $istate = 0
+        if $Global == 0 {
+            $istate = $state
+        }
+        ValidateCondition($Conditions,$istate)
+	    var list, curlist array
+	    list = ContractsList($Value)
+	    curlist = ContractsList($cur[`value`])
+	    if Len(list) != Len(curlist) {
+	        error `Contracts cannot be removed or inserted`
+	    }
+	    var i int
+	    while i < Len(list) {
+	        var j int
+	        var ok bool
+	        while j < Len(curlist) {
+	            if curlist[j] == list[i] {
+	                ok = true
+	                break
+	            }
+	            j = j + 1 
+	        }
+	        if !ok {
+	            error `Contracts names cannot be changed`
+	        }
+	        i = i + 1
+	    }
+    }
+
+    action {
+        var root int
+        root = CompileContract($Value, $istate, $Id)
+        DBUpdate(PrefixTable(`smart_contracts`, $Global), $Id, `value,conditions`, $Value, $Conditions)
+        FlushContract(root, $Id, Int($cur[`active`]) == 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract ActivateContract {
+    data {
+        Global     int
+        Id         int
+    }
+
+    conditions {
+        $cur = DBRow(PrefixTable(`smart_contracts`, $Global), `id,conditions,active`, $Id)
+        if Int($cur[`id`]) != $Id {
+            error Sprintf(`Contract %d does not exist`, $Id)
+        }
+        if Int($cur[`active`]) == 1 {
+            error Sprintf(`The contract %d has been already activated`, $Id)
+        }
+        Eval($cur[`conditions`])
+    }
+
+    action {
+        var istate int
+        if $Global == 0 {
+            istate = $state
+        }
+        DBUpdate(PrefixTable(`smart_contracts`, $Global), $Id, `active`, 1)
+        Activate($Id, istate)
+    }
+}', '1','ContractConditions(`MainCondition`)');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -991,6 +1088,9 @@ INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALU
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('system_restore_access', 
         '{"insert": "ContractAccess(\"@0RestoreAccess\")", "update": {"*": "ContractAccess(\"@0RestoreAccess\", \"@0RestoreAccessActive\", \"@0RestoreAccessClose\", \"@0RestoreAccessRequest\")"}, "new_column": "ContractAccess(\"@0NewRestoreAccessColumn\")", "general_update": "ContractAccess(\"@0UpdateRestoreAccess\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_smart_contracts', 
+        '{"insert": "ContractAccess(\"@0NewContract\")", "update": {"*": "ContractAccess(\"@0EditContract\", \"@0ActivateContract\")"}, "new_column": "ContractAccess(\"@0NewContractColumn\")", "general_update": "ContractConditions(`MainCondition`)"}',
         'false');
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;

@@ -60,8 +60,13 @@
 		$(".formConfirm").show();
 	}
 	
+	function getName(value) {
+		var result = value.match( /contract[\s]*([\d\w_]+)[\s]*{/i );
+		return result[1];
+	}
+
 	function Edit() {
-		load_page('editContract', {name: $("#name").val() , global: "{{.Global}}" });
+		load_page('editContract', {name: getName($("#value").val()), global: "{{.Global}}" });
 	}
 	
 	function Reload() {
