@@ -6,6 +6,8 @@ $(function() {
     var $error = $(".js-error");
     var $codeGenerated = $(".js-code-generated");
 
+    var $openVisualEditor = $(".js-open-visual-editor");
+
     var codeGenerator = new CodeGenerator.Controller({
         $container: $(".js-container"),
         $containerWrapper: $(".js-container-wrapper"),
@@ -40,6 +42,10 @@ $(function() {
         $input.trigger("change");
     }, 300);
 
+    $openVisualEditor.on("click", function () {
+        $(".js-visual-editor-on").show();
+        $(".js-visual-editor-off").hide();
+    });
 
 
 });

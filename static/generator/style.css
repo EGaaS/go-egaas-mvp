@@ -1,0 +1,214 @@
+.g-no-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color:rgba(0,0,0,0);
+    -moz-tap-highlight-color: rgba(0,0,0,0);
+}
+
+.g-no-overflow-x {
+    overflow-x: hidden;
+}
+
+.js-draggable {
+    cursor: move;
+}
+
+.g-move {
+    cursor: move;
+}
+
+.g-padding {
+    padding: 20px;
+}
+
+.g-red {
+    border: 1px solid red;
+}
+
+.b-tag {
+    position: relative;
+    -margin: 3px;
+}
+
+.b-visual-editor {
+
+}
+
+.b-container-wrapper {
+    position: relative;
+
+}
+
+.b-container {
+    min-height: 300px;
+    position: relative;
+    border: 1px solid #cfdbe2;
+}
+
+.b-container ul,
+.b-container ol,
+.b-container div {
+    min-height: 10px;
+}
+
+.b-over {
+    position: absolute;
+    overflow: visible;
+    top: 0; left: 0;
+    z-index: 1000;
+    min-width: 100px;
+    min-height: 30px;
+    opacity: 1;
+    border: 3px dashed rgba(200, 200, 155, 0.7);
+    background: rgba(200, 200, 155, 0.2);
+}
+
+.b-over__inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.b-over-info {
+    position: relative;
+    display: inline-block;
+    height: 25px;
+    line-height: 15px;
+    top: -29px;
+    float: left;
+    left: 3px;
+    padding: 5px;
+    color: #336700;
+    background: rgba(167, 232, 140, 0.7);
+    border: 1px solid rgba(167, 232, 140, 1);
+    border-bottom: none;
+}
+
+.b-over-settings {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 2px 5px;
+}
+
+.b-over-settings:hover {
+    color: #000;
+    cursor: pointer;
+}
+
+.b-over-settings-dialog {
+    display: none;
+    position: absolute;
+    top: 0; right: 0;
+    width: 300px;
+    min-height: 100px;
+    border: 1px solid #EEE;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.b-droppable_inside {
+    background: rgba(100, 200, 255, 0.2);
+    border-color: rgba(136, 179, 255, 0.7);
+    border-width: 3px;
+    border-style: dashed;
+
+}
+
+.b-droppable_before {
+    background: rgba(100, 200, 255, 0.2);
+    border-color: rgba(136, 179, 255, 0.7);
+    border-right-width: 1px;
+    border-right-style: dashed;
+    border-bottom-width: 1px;
+    border-bottom-style: dashed;
+    border-top-width: 6px;
+    border-top-style: solid;
+    border-left-width: 6px;
+    border-left-style: solid;
+}
+
+.b-droppable_after {
+    background: rgba(100, 200, 255, 0.2);
+    border-color: rgba(136, 179, 255, 0.7);
+    border-right-width: 6px;
+    border-right-style: solid;
+    border-bottom-width: 6px;
+    border-bottom-style: solid;
+    border-top-width: 1px;
+    border-top-style: dashed;
+    border-left-width: 1px;
+    border-left-style: dashed;
+}
+
+.b-source-element {
+    cursor: move;
+}
+
+.b-draggable_dragging {
+    opacity: 0.3;
+}
+
+.b-draggable-bag {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 8000;
+    min-width: 100px;
+    min-height: 30px;
+    opacity: 0.7;
+    border: 3px dashed rgba(136, 179, 255, 0.7);
+    background: rgba(100, 200, 255, 0.2);
+}
+
+.b-draggable-bag__inner {
+    position: relative;
+    -padding: 10px;
+}
+
+.b-trash {
+    font-size: 80px;
+    color: #999;
+    padding: 30px 50px;
+    text-align: center;
+}
+
+.b-trash_over {
+    color: #F44;
+}
+
+.b-tag-settings-dialog {
+    display: none;
+    position: fixed;
+    z-index: 8000;
+    top: 0; left: 0;
+    right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.b-tag-settings-dialog__body {
+    position: relative;
+    background: #FFF;
+    width: 500px;
+    min-height: 400px;
+    border: 1px solid #EEE;
+    border-radius: 5px;
+    margin: 100px auto 0 auto;
+    padding: 20px;
+}
+
+.b-tag-settings-dialog__body__close {
+    position: absolute;
+    top: 0; right: 0;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.b-tag-settings-dialog__body__controls {
+
+}

@@ -204,6 +204,7 @@ Lang = {
 	"edit_page": "Edit page",
 	"new_page": "New page",
 	"show_page": "Show page",
+	"visual_editor": "Visual Editor",
 	"add_menu": "Add menu",
 	"page": "Page",
 	"pages": "Pages",

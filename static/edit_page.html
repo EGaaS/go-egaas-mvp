@@ -25,6 +25,8 @@
 	}
 </style>
 
+<link rel="stylesheet" type="text/css" href="static/generator/style.css" />
+
 <script>
 	var serverTime;
 	var menu = null;
@@ -351,6 +353,11 @@
 		$(window).scrollTop(0);
 	});
 </script>
+
+
+
+
+
 	<div class="content-heading">
 		{{if .Block}}
 		{{if .DataPage.name}}<span class="lang" lang-id="edit_block">Edit Block</span>{{else}}<span class="lang" lang-id="new_block">New Block</span>{{end}}
@@ -358,11 +365,12 @@
 		{{if .DataPage.name}}<span class="lang" lang-id="edit_page"></span>{{else}}<span class="lang" lang-id="new_page"></span>{{end}}
 		{{end}}
 	</div>
-	<ol class="breadcrumb">
+	<ol class="breadcrumb js-visual-editor-off">
 	   <li><a href='#' onclick="load_page('interface')" class="lang" lang-id="interface"></a></li>
 	</ol>
 
-<div class="row form">
+
+<div class="row form js-visual-editor-off">
 	<div class="col-md-8">
 		<!-- START panel-->
 		<div class="panel panel-primary" data-sweet-alert>
@@ -378,7 +386,8 @@
 		 </div>
 		 <div class="panel-body">
 			<form role="form">
-				<button type="button" class="btn btn-link lang" onclick="" id="back" lang-id="show_page"></button>
+			   <button type="button" class="btn btn-link lang" onclick="" id="back" lang-id="show_page"></button>
+			   <button type="button" class="btn btn-link lang js-open-visual-editor" _onclick='load_page("generator",{"templateCode": editor.getValue()});' style="margin-left: -15px; margin-top: -15px; margin-bottom: 10px;" lang-id="visual_editor">Visual Editor</button>
 			   <div class="form-group">
 				   <label class="lang" lang-id="name"></label>
 				   {{if .DataPage.name}} <p class="form-control-static" id="page_name_text">{{.DataPage.name}}</p> <input type="hidden" class="form-control" id="page_name" value="{{.DataPage.name}}"> {{else}} <input type="text" class="form-control" id="page_name" value="{{.Name}}"> {{end}}
@@ -500,6 +509,9 @@
 		<!-- END panel-->
 	</div>
 	{{end}}
+
+
+
 </div>
 
 <div class="formConfirm" style="display:none;">
@@ -530,7 +542,160 @@
 
 <input type="hidden" id="global" value="{{.Global}}">
 
+
+<div class="js-visual-editor-on" style="display: none;">
+	<div class="row">
+		<div class="col-xs-12 col-md-2">
+
+			<ul class="nav nav-list accordion-group">
+				<li class="nav-header">
+					<b>Instrument panel</b>
+				</li>
+			</ul>
+
+			<div class="js-source-elements">
+				<div class="js-draggable b-source-element" tag-name="A" tag-params='{"class":"", "text": "Link text", "href": "http://"}'>Link</div>
+				<div class="js-draggable b-source-element" tag-name="P" tag-params='{"class":"", "text": "Text example"}'>Text</div>
+				<div class="js-draggable b-source-element" tag-name="Image" tag-params='{"class":"", "src": "https://www.vectorlogo.zone/logos/getbootstrap/getbootstrap-card.png", "alt": "Image text"}'>Image</div>
+				<div class="js-draggable b-source-element" tag-name="Div" tag-params='{"class":"", "text": "Block text"}'>Block</div>
+				<div class="js-draggable b-source-element" tag-name="Divs" tag-params='{"nestedClassList": ["row", "col-lg-5 col-xs-10"]}'>Blocks</div>
+				<div class="js-draggable b-source-element" tag-name="UList" tag-params='{"class":"", "ol": "ol"}'>List</div>
+				<div class="js-draggable b-source-element" tag-name="Li" tag-params='{"class":"", "text": "List element"}'>List element</div>
+				<div class="js-draggable b-source-element" tag-name="LiBegin" tag-params='{"class":""}'>Complex List element</div>
+			</div>
+
+			<i class="fa fa-trash-o js-trash b-trash"></i>
+		</div>
+		<div class="col-xs-12 col-md-10">
+
+			<ul class="nav">
+				<!--<li>-->
+				<!--<div class="btn-group">-->
+				<!--<button onclick="resizeCanvas('lg')" class="btn btn-primary navbar-btn"><i class="fa fa-desktop"></i> </button>-->
+				<!--<button onclick="resizeCanvas('md')" class="btn btn-primary navbar-btn"><i class="fa fa-laptop"></i> </button>-->
+				<!--<button onclick="resizeCanvas('sm')" class="btn btn-primary navbar-btn"><i class="fa fa-tablet"></i> </button>-->
+				<!--<button onclick="resizeCanvas('xs')" class="btn btn-primary navbar-btn"><i class="fa fa-mobile-phone"></i> </button>-->
+				<!--</div>-->
+				<!--</li>-->
+				<li class="pull-left">
+					<div class="btn-group">
+						<button class="btn navbar-btn js-undo"><i class="fa fa-undo"></i> </button>
+						<button class="btn navbar-btn js-redo"><i class="fa fa-repeat"></i> </button>
+					</div>
+				</li>
+				<li class="pull-right">
+					<div class="btn-group" style="margin-left: 10px; line-height: 33px;">
+						<a href='#' onclick="" class="navbar-btn js-visual-editor-cancel">Cancel</a>
+					</div>
+					<div class="btn-group" style="margin-left: 10px;">
+						<button class="btn navbar-btn btn-default js-visual-editor-save"><i class="fa fa-check"></i> OK</button>
+					</div>
+
+				</li>
+
+
+			</ul>
+
+			<div class="clearfix"></div>
+
+
+			<div class="b-container-wrapper g-no-select js-container-wrapper">
+				<div class="b-over js-over">
+					<div class="b-over__inner">
+						<div class="b-over-info js-over-info">
+						</div>
+						<div class="b-over-settings js-over-settings"><i class="fa fa-gear"></i></div>
+					</div>
+				</div>
+				<div class="b-draggable-bag js-draggable-bag"><div class="b-draggable-bag__inner js-draggable-bag__inner">'+html+'</div></div>
+				<div class="b-container  js-container">
+				</div>
+			</div>
+
+			<div class="b-tag-settings-dialog js-tag-settings-dialog">
+				<div class="b-tag-settings-dialog__body js-body">
+					<div class="b-tag-settings-dialog__body__close js-close"><i class="fa fa-close"></i></div>
+					<h2 class="js-title"></h2>
+					<br>
+					<div class="b-tag-settings-dialog__body__controls js-controls"></div>
+
+					<button type="button" class="btn btn-primary js-save">Apply</button>
+					<button type="button" class="btn btn-default js-close">Cancel</button>
+
+				</div>
+			</div>
+
+			<p class="js-error" style="color: red;"></p>
+
+
+
+			<h4>Template code</h4>
+			<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Enter template code"></textarea>
+
+			<p class="js-output"></p>
+			<h4>Output</h4>
+			<pre class="js-code-generated"></pre>
+		</div>
+	</div>
+
+
+</div>
+
+
+
+
+<script type="text/javascript" src="static/generator/js/libs/js-class.js"></script>
+<script type="text/javascript" src="static/generator/js/parser.js"></script>
+<script type="text/javascript" src="static/generator/js/code-generator.js"></script>
+<script type="text/javascript" src="static/generator/js/main.js"></script>
+
+<script id="tpl-control-string" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-white-space-string" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-white-space-string-array" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input">
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-textarea" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<textarea id="control-input-{name}" name="{name}" type="text" data-type="text" class="form-control js-control-input" rows="5"></textarea>
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-checkbox" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<input id="control-input-{name}" name="{name}" type="checkbox" data-type="checkbox" class="checkbox-inline js-control-input"> <span class="help-block js-control-description">{description}</span>
+	<div class="has-error js-control-error"></div>
+  </div>
+</script>
+
+
 {{template "signatures".}}
 
 
 {{end}}
+

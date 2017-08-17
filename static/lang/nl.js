@@ -207,6 +207,7 @@ Lang = {
 	"edit_page": "Pagina wijzigen",
 	"new_page": "Nieuwe Pagina",
 	"show_page": "Toon Pagina",
+	"visual_editor": "Visual Editor",
 	"add_menu": "Menu toevoegen",
 	"page": "Pagina",
 	"pages": "Pagina’s",
