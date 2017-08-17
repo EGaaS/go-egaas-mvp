@@ -30,7 +30,7 @@
 						});
 						predata{{$.Unique}}['{{.Name}}'] = list;//list.join(',');
 					{{else}}
-						predata{{$.Unique}}['{{.Name}}'] = $("#" + '{{.ID}}').val();
+						predata{{$.Unique}}['{{.Name}}'] = FormVal('{{.ID}}');
 					{{end}}
 				{{end}}
 			{{end}}
