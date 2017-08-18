@@ -32,8 +32,12 @@ CodeGenerator.Controller = JS_CLASS({
     },
 
     generateCode: function () {
-        var code = (new MainTemplate(this.model.json)).renderCode();
-        this.$codeGenerated.html(code);
+        this.code = (new MainTemplate(this.model.json)).renderCode();
+        this.$codeGenerated.html(this.code);
+    },
+
+    getCode: function () {
+        return this.code;
     },
 
     generateHTML: function () {

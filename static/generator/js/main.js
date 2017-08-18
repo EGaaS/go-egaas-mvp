@@ -6,7 +6,9 @@ $(function() {
     var $error = $(".js-error");
     var $codeGenerated = $(".js-code-generated");
 
-    var $openVisualEditor = $(".js-open-visual-editor");
+    var $visualEditorOpen = $(".js-visual-editor-open");
+    var $visualEditorCancel = $(".js-visual-editor-cancel");
+    var $visualEditorSave = $(".js-visual-editor-save");
 
     var codeGenerator = new CodeGenerator.Controller({
         $container: $(".js-container"),
@@ -42,9 +44,32 @@ $(function() {
         $input.trigger("change");
     }, 300);
 
-    $openVisualEditor.on("click", function () {
+    $visualEditorOpen.on("click", function () {
         $(".js-visual-editor-on").show();
         $(".js-visual-editor-off").hide();
+
+        try {
+            var result = parser.parse(editor.getValue());
+            //console.log(result);
+            codeGenerator.setJsonData(result);
+            codeGenerator.generateCode();
+            codeGenerator.render();
+        }
+        catch (e) {
+            $output.html("");
+            $error.html(e.message);
+        }
+    });
+
+    $visualEditorCancel.on("click", function () {
+        $(".js-visual-editor-off").show();
+        $(".js-visual-editor-on").hide();
+    });
+
+    $visualEditorSave.on("click", function () {
+        $(".js-visual-editor-off").show();
+        $(".js-visual-editor-on").hide();
+        editor.setValue(codeGenerator.getCode());
     });
 
 

@@ -387,7 +387,7 @@
 		 <div class="panel-body">
 			<form role="form">
 			   <button type="button" class="btn btn-link lang" onclick="" id="back" lang-id="show_page"></button>
-			   <button type="button" class="btn btn-link lang js-open-visual-editor" _onclick='load_page("generator",{"templateCode": editor.getValue()});' style="margin-left: -15px; margin-top: -15px; margin-bottom: 10px;" lang-id="visual_editor">Visual Editor</button>
+			   <button type="button" class="btn btn-link lang js-visual-editor-open" _onclick='load_page("generator",{"templateCode": editor.getValue()});' style="margin-left: -15px; margin-top: -15px; margin-bottom: 10px;" lang-id="visual_editor">Visual Editor</button>
 			   <div class="form-group">
 				   <label class="lang" lang-id="name"></label>
 				   {{if .DataPage.name}} <p class="form-control-static" id="page_name_text">{{.DataPage.name}}</p> <input type="hidden" class="form-control" id="page_name" value="{{.DataPage.name}}"> {{else}} <input type="text" class="form-control" id="page_name" value="{{.Name}}"> {{end}}
@@ -629,12 +629,12 @@
 
 
 
-			<h4>Template code</h4>
-			<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Enter template code"></textarea>
+			<!--<h4>Input Template code</h4>-->
+			<!--<textarea class="js-input" style="width: 100%; height: 300px;" placeholder="Enter template code"></textarea>-->
 
-			<p class="js-output"></p>
-			<h4>Output</h4>
-			<pre class="js-code-generated"></pre>
+			<!--<p class="js-output"></p>-->
+			<!--<h4>Output</h4>-->
+			<!--<pre class="js-code-generated"></pre>-->
 		</div>
 	</div>
 
