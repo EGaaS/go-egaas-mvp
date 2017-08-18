@@ -1,4 +1,4 @@
-﻿DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
+DROP SEQUENCE IF EXISTS "dlt_transactions_id_seq" CASCADE;
 CREATE SEQUENCE "dlt_transactions_id_seq" START WITH 1;
 DROP TABLE IF EXISTS "dlt_transactions"; CREATE TABLE "dlt_transactions" (
 "id" bigint NOT NULL  default nextval('dlt_transactions_id_seq'),
