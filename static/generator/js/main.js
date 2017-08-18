@@ -47,6 +47,7 @@ $(function() {
     $visualEditorOpen.on("click", function () {
         $(".js-visual-editor-on").show();
         $(".js-visual-editor-off").hide();
+        $error.html("");
 
         try {
             var result = parser.parse(editor.getValue());
