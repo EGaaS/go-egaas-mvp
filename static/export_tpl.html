@@ -79,13 +79,14 @@ function get_tpl() {
 		langs.push(get_name(this));
 	})
 	
-	data = {"name": name, "title": $("#title").val(),"desc": $("#desc").val(), 
+	data = {"page":"export_tpl","name": name, "title": $("#title").val(),"desc": $("#desc").val(), 
 	    "smart_contracts": contracts.join(','), "pages": pages.join(','), "tables": tables.join(','), 
 		"datatables": datatables.join(','), 
 		"menu": menu.join(','), "state_parameters": params.join(','), "apppages": JSON.stringify( apppages ),
 		"appmenu": JSON.stringify( appmenu ), "lang": langs.join(',')};
 	console.log('Data', data);
-	load_page('export_tpl', data);
+
+	window.location.href = "content?" + $.param(data);
 	return false;
 }
 
