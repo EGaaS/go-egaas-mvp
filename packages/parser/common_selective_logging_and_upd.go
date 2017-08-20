@@ -109,10 +109,11 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 	}
 	cost += selectCost
 	log.Debug(`SELECT ` + addSQLFields + ` rb_id FROM "` + table + `" ` + addSQLWhere)
-	if whereFields != nil {
-		if len(logData) == 0 {
-			return 0, tableID, fmt.Errorf(`update of the unknown record`)
-		}
+	if whereFields != nil && len(logData) > 0 {
+		/*if whereFields != nil {
+			if len(logData) == 0 {
+			return tableID, fmt.Errorf(`update of the unknown record`)
+		}*/
 		jsonMap := make(map[string]string)
 		for k, v := range logData {
 			if k == p.AllPkeys[table] {
