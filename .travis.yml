@@ -8,6 +8,6 @@ go:
 
 install: make go-bindata
 
-before_script: make static
+before_script: make static-files
 
 script: make build
