@@ -30,6 +30,10 @@ type contentResult struct {
 	HTML string `json:"html"`
 }
 
+type contentJSONResult struct {
+	Tree string `json:"tree"`
+}
+
 func contentPage(w http.ResponseWriter, r *http.Request, data *apiData) error {
 
 	params := make(map[string]string)
@@ -67,5 +71,31 @@ func contentMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
 			`<!--#` + data.params[`name`].(string) + `#-->`
 	}
 	data.result = &contentResult{HTML: menu}
+	return nil
+}
+
+func contentJSONPage(w http.ResponseWriter, r *http.Request, data *apiData) error {
+	var query string
+	params := make(map[string]string)
+	for name := range r.Form {
+		params[name] = r.FormValue(name)
+	}
+	page := data.params[`page`].(string)
+	if page == `body` {
+		params[`autobody`] = r.FormValue("body")
+	}
+	params[`global`] = converter.Int64ToStr(data.params[`global`].(int64))
+	params[`accept_lang`] = r.Header.Get(`Accept-Language`)
+	if data.params[`global`].(int64) == 1 {
+		query = `SELECT value FROM global_pages WHERE name = ?`
+	} else {
+		query = `SELECT value FROM "` + converter.Int64ToStr(data.sess.Get(`state`).(int64)) + `_pages" WHERE name = ?`
+	}
+	pattern, err := sql.DB.Single(query, page).String()
+	if err != nil {
+		return err
+	}
+	ret := template.Template2JSON(pattern)
+	data.result = &contentJSONResult{Tree: string(ret)}
 	return nil
 }

@@ -73,4 +73,13 @@ var forTest = tplList{
 		  Columns: [[Avatar, Image(#avatar#)],  [ID, Address(#id#)],  [Name, #name#]]
 		}
 	  AutoUpdateEnd:`, `[{"type":"block","name":"AutoUpdate","data":["5"],"children":[{"type":"map","name":"Table","map":{"":"","Columns":"[[Avatar, Image(#avatar#)],  [ID, Address(#id#)],  [Name, #name#]]","Order":"id","Table":"citizens"}},{"type":"fn","name":"AutoUpdateEnd"}]}]`},
+
+	{`Title: State info
+	  Navigation(LiTemplate(government,Government), State info)
+	  Divs(md-4, panel panel-default elastic center)
+		  Divs: panel-body
+			IfParams(#flag#=="", Image(static/img/noflag.svg, No flag, img-responsive),Image(#flag#, Flag, img-responsive))
+		  DivsEnd:
+	  DivsEnd:
+`, `[{"type":"fn","name":"Title","data":["State info"]},{"type":"fn","name":"Navigation","data":[[{"type":"fn","name":"LiTemplate","data":["government","Government"]}],"State info"]},{"type":"block","name":"Divs","data":["md-4","panel panel-default elastic center"],"children":[{"type":"block","name":"Divs","data":["panel-body"],"children":[{"type":"fn","name":"IfParams","data":["#flag#==\"\"",[{"type":"fn","name":"Image","data":["static/img/noflag.svg","No flag","img-responsive"]}],[{"type":"fn","name":"Image","data":["#flag#","Flag","img-responsive"]}]]},{"type":"fn","name":"DivsEnd"}]},{"type":"fn","name":"DivsEnd"}]}]`},
 }

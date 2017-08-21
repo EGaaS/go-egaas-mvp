@@ -53,7 +53,7 @@ var (
 		`PageEnd`, `StateVal`, `Json`, `And`, `Or`,
 		`TxId`, `SetVar`, `GetList`, `GetRow`, `GetOne`, `TextHidden`,
 		`ValueById`, `FullScreen`, `Ring`, `WiBalance`, `GetVar`,
-		`WiAccount`, `WiCitizen`, `Map`, `MapPoint`, `StateLink`,
+		`WiAccount`, `WiCitizen`, `Map`, `MapPoint`, `StateLink`, `IfParams`,
 		`Else`, `ElseIf`, `Trim`, `Date`, `DateTime`, `Now`, `Input`,
 		`Textarea`, `InputMoney`, `InputAddress`,
 		`BlockInfo`, `Back`, `ListVal`, `Tag`, `BtnContract`,
@@ -392,6 +392,7 @@ func processTemplate(input string, owner *[]*templ) error {
 		if ch == '(' || ch == ':' {
 			if slen := len(stackBlocks); slen > 0 && stackBlocks[slen-1].End == string(name) {
 				*owner = append(*owner, &templ{Type: `fn`, Name: string(name)})
+				name = name[:0]
 				children := owner
 				owner = stackBlocks[slen-1].Prev
 				(*owner)[len(*owner)-1].Children = *children

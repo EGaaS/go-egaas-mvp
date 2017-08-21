@@ -63,4 +63,14 @@ func TestContent(t *testing.T) {
 		t.Error(fmt.Errorf(`not empty global menu`))
 		return
 	}
+	ret, err = sendGet(`content/jsonpage/StateInfo`, nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	fmt.Println(`RET`, ret)
+	if ret[`tree`].(string) == `NULL` || len(ret[`tree`].(string)) == 0 {
+		t.Error(fmt.Errorf(`empty page`))
+		return
+	}
 }
