@@ -65,7 +65,7 @@ func (c *Controller) SystemInfo() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	pageData.Votes, err = c.GetAll(`SELECT address_vote, sum(amount) as sum FROM dlt_wallets WHERE address_vote !='' GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 10`, -1)
+	pageData.Votes, err = c.GetAll(`SELECT address_vote, sum(amount)/1000000000000000000 as sum FROM dlt_wallets WHERE address_vote !='' GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 10`, -1)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
