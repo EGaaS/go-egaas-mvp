@@ -26,9 +26,5 @@ import (
 )
 
 func KillPid(pid string) error {
-	err := syscall.Kill(converter.StrToInt(pid), syscall.SIGTERM)
-	if err != nil {
-		return err
-	}
-	return nil
+	return syscall.Kill(converter.StrToInt(pid), syscall.SIGTERM)
 }

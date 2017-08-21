@@ -19,7 +19,6 @@ package daylight
 import (
 	"encoding/json"
 	"fmt"
-	//	_ "image/png"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -52,12 +51,11 @@ import (
 	"github.com/go-thrust/lib/commands"
 	"github.com/go-thrust/thrust"
 	"github.com/julienschmidt/httprouter"
-	"github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 )
 
 // FileAsset returns the body of the file
 func FileAsset(name string) ([]byte, error) {
-
 	if name := strings.Replace(name, "\\", "/", -1); name == `static/img/logo.`+utils.LogoExt {
 		logofile := *utils.Dir + `/logo.` + utils.LogoExt
 		if fi, err := os.Stat(logofile); err == nil && fi.Size() > 0 {
@@ -69,7 +67,9 @@ func FileAsset(name string) ([]byte, error) {
 
 func readConfig() {
 	// read the config.ini
-	config.Read()
+	if err := config.Read(); err != nil {
+		log.WithFields(logrus.Fields{"error": err}).Info("Error reading config")
+	}
 	if *utils.TCPHost == "" {
 		*utils.TCPHost = config.ConfigIni["tcp_host"]
 	}
@@ -90,30 +90,27 @@ func readConfig() {
 }
 
 func killOld() {
-	if _, err := os.Stat(*utils.Dir + "/daylight.pid"); err == nil {
-		dat, err := ioutil.ReadFile(*utils.Dir + "/daylight.pid")
+	path := *utils.Dir + "/daylight.pid"
+	if _, err := os.Stat(path); err == nil {
+		dat, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
+			log.WithFields(logrus.Fields{"path": path, "error": err}).Warn("reading pid file")
 		}
 		var pidMap map[string]string
 		err = json.Unmarshal(dat, &pidMap)
 		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
+			log.WithFields(logrus.Fields{"path": path, "error": err}).Warn("Error unmarshalling pid file to json")
 		}
-		fmt.Println("old PID ("+*utils.Dir+"/daylight.pid"+"):", pidMap["pid"])
-
+		log.WithFields(logrus.Fields{"pid": pidMap["pid"]}).Info("Old process pid to kill")
 		err = KillPid(pidMap["pid"])
 		if nil != err {
-			fmt.Println(err)
-			log.Error("KillPid %v", utils.ErrInfo(err))
+			log.WithFields(logrus.Fields{"pid": pidMap["pid"], "error": err}).Warn("killing process with pid")
 		}
 		if fmt.Sprintf("%s", err) != "null" {
-			fmt.Println(fmt.Sprintf("%s", err))
 			// give 15 sec to end the previous process
+			log.Info("Waiting for previous process to die")
 			for i := 0; i < 15; i++ {
-				log.Debug("waiting killer %d", i)
 				if _, err := os.Stat(*utils.Dir + "/daylight.pid"); err == nil {
-					fmt.Println("waiting killer")
 					time.Sleep(time.Second)
 				} else { // if there is no daylight.pid, so it is finished
 					break
@@ -124,20 +121,14 @@ func killOld() {
 }
 
 func initLogs() error {
-	var backend *logging.LogBackend
-
 	if config.ConfigIni["log_output"] == "console" {
-		backend = logging.NewLogBackend(os.Stderr, "", 0)
-	} else {
 		f, err := os.OpenFile(*utils.Dir+"/dclog.txt", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0777)
 		if err != nil {
+			log.WithFields(logrus.Fields{"path": *utils.Dir + "/dclog.txt", "error": err}).Warn("opening file for logging output")
 			return err
 		}
-		backend = logging.NewLogBackend(f, "", 0)
+		logrus.SetOutput(f)
 	}
-
-	backendFormatter := logging.NewBackendFormatter(backend, format)
-	backendLeveled := logging.AddModuleLevel(backendFormatter)
 
 	if *utils.LogLevel == "" {
 		if level, ok := config.ConfigIni["log_level"]; ok {
@@ -147,15 +138,20 @@ func initLogs() error {
 		}
 	}
 
-	logLevel, err := logging.LogLevel(*utils.LogLevel)
-	if err != nil {
-		log.Error("bad log level - %s: %v", *utils.LogLevel, utils.ErrInfo(err))
-		return err
+	switch *utils.LogLevel {
+	case "DEBUG":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "INFO":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "WARNING":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "ERROR":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "FATAL":
+		logrus.SetLevel(logrus.FatalLevel)
+	case "PANIC":
+		logrus.SetLevel(logrus.PanicLevel)
 	}
-
-	log.Infof("set logLevel: %v", logLevel)
-	backendLeveled.SetLevel(logLevel, "")
-	logging.SetBackend(backendLeveled)
 	return nil
 }
 
@@ -163,46 +159,53 @@ func savePid() error {
 	pid := os.Getpid()
 	PidAndVer, err := json.Marshal(map[string]string{"pid": converter.IntToStr(pid), "version": consts.VERSION})
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err}).Warn("Error marshalling process info to json")
 		return err
 	}
-	return ioutil.WriteFile(*utils.Dir+"/daylight.pid", PidAndVer, 0644)
+	if err := ioutil.WriteFile(*utils.Dir+"/daylight.pid", PidAndVer, 0644); err != nil {
+		log.WithFields(logrus.Fields{"path": *utils.Dir + "/daylight.pid", "error": err}).Warn("Error saving pidfile")
+		return err
+	}
+	return nil
 }
 
 func delPidFile() {
-	os.Remove(filepath.Join(*utils.Dir, "daylight.pid"))
+	path := filepath.Join(*utils.Dir, "daylight.pid")
+	if err := os.Remove(path); err != nil {
+		log.WithFields(logrus.Fields{"path": path, "error": err}).Warn("Can't remove pidfile")
+	}
 }
 
 func rollbackToBlock(blockID int64) error {
 	if err := template.LoadContracts(); err != nil {
-		log.Errorf(`Load Contracts`, err)
+		log.WithFields(logrus.Fields{"error": err}).Error(`Load Contracts, while rollbacking to block`)
 		return err
 	}
 	parser := new(parser.Parser)
 	err := parser.RollbackToBlockID(*utils.RollbackToBlockID)
 	if err != nil {
-		log.Errorf("rollback return error: %s", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("Rollback to block ID failed")
 		return err
 	}
 
 	// we recieve the statistics of all tables
 	allTable, err := model.GetAllTables()
 	if err != nil {
-		log.Errorf("get all tables failed: %s", err)
+		log.WithFields(logrus.Fields{"error": err}).Error("Get all tables error")
 		return err
 
 	}
 
 	startData := map[string]int64{"install": 1, "config": 1, "queue_tx": 99999, "log_transactions": 1, "transactions_status": 99999, "block_chain": 1, "info_block": 1, "dlt_wallets": 1, "confirmations": 9999999, "full_nodes": 1, "system_parameters": 4, "my_node_keys": 99999, "transactions": 999999}
 	for _, table := range allTable {
+		query := `SELECT COUNT(*) FROM ` + converter.EscapeName(table)
 		count, err := model.Single(`SELECT count(*) FROM ` + converter.EscapeName(table)).Int64()
 		if err != nil {
-			log.Errorf("select from table %s failed: %s", table, err)
+			log.WithFields(logrus.Fields{"error": err, query: query}).Error("Query failed")
 			return err
 		}
 		if count > 0 && count > startData[table] {
-			fmt.Println(">>ALERT<<", table, count)
-		} else {
-			fmt.Println(table, "ok")
+			log.WithFields(logrus.Fields{"count": count, "normal_count": startData[table], "table": table}).Warn("count exceed normal count at start")
 		}
 	}
 	return nil
@@ -213,6 +216,7 @@ func setRoute(route *httprouter.Router, path string, handle func(http.ResponseWr
 		route.HandlerFunc(method, path, handle)
 	}
 }
+
 func initRoutes(listenHost, browserHost string) string {
 	route := httprouter.New()
 	setRoute(route, `/`, controllers.Index, `GET`)
@@ -229,7 +233,7 @@ func initRoutes(listenHost, browserHost string) string {
 		go http.ListenAndServeTLS(":443", *utils.TLS+`/fullchain.pem`, *utils.TLS+`/privkey.pem`, route)
 	}
 
-	httpListener(listenHost, &browserHost, route)
+	httpListener(listenHost, browserHost, route)
 	// for ipv6 server
 	httpListenerV6(route)
 	return browserHost
@@ -237,14 +241,10 @@ func initRoutes(listenHost, browserHost string) string {
 
 // Start starts the main code of the program
 func Start(dir string, thrustWindowLoder *window.Window) {
-
 	var err error
-	IosLog("start")
-
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("Recovered", r)
-			panic(r)
+			log.WithFields(logrus.Fields{"recover": r}).Panic("Panic with")
 		}
 	}()
 
@@ -263,15 +263,13 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 	// create first block
 	if *utils.GenerateFirstBlock == 1 {
-		log.Infof("generate first block")
+		log.Info("Generating first block")
 		utils.FirstBlock()
 		os.Exit(0)
 
 	}
-
-	fmt.Printf("work dir = %s\ndcVersion=%s\n", *utils.Dir, consts.VERSION)
-
 	exchangeapi.InitAPI()
+	log.Info("Exchange API Initialized")
 
 	// kill previously run eGaaS
 	if !utils.Mobile() {
@@ -279,15 +277,15 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	}
 
 	controllers.SessInit()
+	log.Info("Controllers Initialized")
 
-	// TODO: ??
 	if fi, err := os.Stat(*utils.Dir + `/logo.png`); err == nil && fi.Size() > 0 {
 		utils.LogoExt = `png`
 	}
 
 	err = initLogs()
 	if err != nil {
-		log.Error("logs init failed: %v", utils.ErrInfo(err))
+		log.WithFields(logrus.Fields{"error": err}).Error("Logs init fail")
 		Exit(1)
 	}
 
@@ -295,11 +293,10 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 
 	// if there is OldFileName, so act on behalf dc.tmp and we have to restart on behalf the normal name
 	if *utils.OldFileName != "" {
-
 		if *utils.OldFileName != "" { //*utils.Dir+`/dc.tmp`
 			err = utils.CopyFileContents(os.Args[0], *utils.OldFileName)
 			if err != nil {
-				log.Errorf("can't copy from %s %v", *utils.OldFileName, utils.ErrInfo(err))
+				log.WithFields(logrus.Fields{"from": *utils.OldFileName, "to": os.Args[0], "error": err}).Error("Error copying from old file no new")
 			}
 		}
 		schema.Migration()
@@ -307,11 +304,12 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		if *utils.OldFileName != "" {
 			err = model.DBConn.Close()
 			if err != nil {
-				log.Error("%v", utils.ErrInfo(err))
+				log.WithFields(logrus.Fields{"error": err}).Error("error closing db")
 			}
-			err = os.Remove(filepath.Join(*utils.Dir, "daylight.pid"))
+			path := filepath.Join(*utils.Dir, "daylight.pid")
+			err = os.Remove(path)
 			if err != nil {
-				log.Error("%v", utils.ErrInfo(err))
+				log.WithFields(logrus.Fields{"error": err, "path": path}).Error("error removing pidfile")
 			}
 
 			if thrustWindowLoder != nil {
@@ -320,8 +318,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 			system.Finish()
 			err = exec.Command(*utils.OldFileName, "-dir", *utils.Dir).Start()
 			if err != nil {
-				log.Debug("%v", os.Stderr)
-				log.Debug("%v", utils.ErrInfo(err))
+				log.WithFields(logrus.Fields{"cmd": *utils.OldFileName + " -dir" + *utils.Dir, "error": err}).Error("error exec old file name")
 			}
 			os.Exit(1)
 		}
@@ -330,8 +327,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	// save the current pid and version
 	if !utils.Mobile() {
 		if err := savePid(); err != nil {
-			log.Errorf("can't create pid: %s", err)
-			Exit(1)
+			log.WithFields(logrus.Fields{"error": err}).Fatal("can't save pid file")
 		}
 		defer delPidFile()
 	}
@@ -342,37 +338,32 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		Exit(0)
 	}
 
-	log.Debug("public")
-	IosLog("public")
-	if _, err := os.Stat(*utils.Dir + "/public"); os.IsNotExist(err) {
-		err = os.Mkdir(*utils.Dir+"/public", 0755)
+	dirpath := *utils.Dir + "/public"
+	if _, err := os.Stat(dirpath); os.IsNotExist(err) {
+		err = os.Mkdir(dirpath, 0755)
 		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
+			log.WithFields(logrus.Fields{"error": err, "dir": dirpath}).Error("Error creating public dir")
 			Exit(1)
 		}
 	}
 
 	BrowserHTTPHost, _, ListenHTTPHost := GetHTTPHost()
-	fmt.Printf("BrowserHTTPHost: %v, ListenHTTPHost: %v\n", BrowserHTTPHost, ListenHTTPHost)
-
+	log.WithFields(logrus.Fields{"browser_host": BrowserHTTPHost, "listen_host": ListenHTTPHost}).Info("http hosts")
 	if len(config.ConfigIni["db_type"]) > 0 {
 		// The installation process is already finished (where user has specified DB and where wallet has been restarted)
 		err = model.GormInit(config.ConfigIni["db_user"], config.ConfigIni["db_password"], config.ConfigIni["db_name"])
 		if err != nil {
-			log.Errorf("gorm init error: %s", err)
-			Exit(1)
+			log.WithFields(logrus.Fields{"db_user": config.ConfigIni["db_user"], "db_password": config.ConfigIni["db_password"],
+				"db_name": config.ConfigIni["db_name"], "error": err}).Fatal("error initing gorm")
 		}
 
 		err = syspar.SysUpdate()
 		if err != nil {
-			log.Error("can't read system parameters: %s", utils.ErrInfo(err))
-			Exit(1)
+			log.WithFields(logrus.Fields{"error": err}).Fatal("can't read system parameters")
 		}
 
-		log.Info("start daemons")
+		log.WithFields(logrus.Fields{"workdir": *utils.Dir, "version": consts.VERSION}).Info("Start daemons")
 		daemons.StartDaemons()
-		log.Debugf("daemon started")
-
 		daemonsTable := make(map[string]string)
 		go func() {
 			for {
@@ -388,13 +379,12 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		go stopdaemons.WaitStopTime()
 
 		if err := template.LoadContracts(); err != nil {
-			log.Errorf("Load Contracts error: %s", err)
-			Exit(1)
+			log.WithFields(logrus.Fields{"error": err}).Fatal("Error loading contracts, while starting project")
 		}
-		log.Debugf("all contracts loaded")
+		log.Info("Contracts loaded")
 
 		tcpListener()
-		log.Debugf("tcp listener started")
+		log.Info("TCP Listener started")
 		go controllers.GetChain()
 
 	}
@@ -406,7 +396,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		BrowserHTTPHost = initRoutes(ListenHTTPHost, BrowserHTTPHost)
 
 		if *utils.Console == 0 && !utils.Mobile() {
-			log.Debugf("try to start browser")
+			log.Info("Starting browser")
 			time.Sleep(time.Second)
 			if thrustWindowLoder != nil {
 				thrustWindowLoder.Close()
@@ -418,16 +408,13 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 					thrustWindow.OpenDevtools()
 				}
 				thrustWindow.HandleEvent("*", func(cr commands.EventResult) {
-					fmt.Println("HandleEvent", cr)
+					log.WithFields(logrus.Fields{"event": cr}).Info("Handle event")
 				})
 				thrustWindow.HandleRemote(func(er commands.EventResult, this *window.Window) {
-					//					fmt.Println("RemoteMessage Recieved:", er.Message.Payload)
 					if len(er.Message.Payload) > 7 && er.Message.Payload[:7] == `mailto:` && runtime.GOOS == `windows` {
 						utils.ShellExecute(er.Message.Payload)
 					} else if len(er.Message.Payload) > 7 && er.Message.Payload[:2] == `[{` {
 						ioutil.WriteFile(filepath.Join(*utils.Dir, `accounts.txt`), []byte(er.Message.Payload), 0644)
-						//					} else if len(er.Message.Payload) >= 7 && er.Message.Payload[:7] == `USERID=` {
-						// for Lite version - do nothing
 					} else if er.Message.Payload == `ACCOUNTS` {
 						accounts, _ := ioutil.ReadFile(filepath.Join(*utils.Dir, `accounts.txt`))
 						this.SendRemoteMessage(string(accounts))
@@ -452,5 +439,4 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 	// go utils.ChatOutput(utils.ChatNewTx)
 
 	time.Sleep(time.Second * 3600 * 24 * 90)
-	log.Errorf("exit")
 }

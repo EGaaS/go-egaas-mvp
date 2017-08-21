@@ -19,6 +19,7 @@
 package daylight
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -34,20 +35,23 @@ func KillPid(pid string) error {
 		sd := &model.StopDaemon{StopTime: time.Now().Unix()}
 		err := sd.Create()
 		if err != nil {
-			log.Error("%v", utils.ErrInfo(err))
+			log.WithFields(logrus.Fields{"error": err, "pid": pid}).Error("Error inserting into stop_daemons, when killing process")
 			return err
 		}
 	}
-	rez, err := exec.Command("tasklist", "/fi", "PID eq "+pid).Output()
+	cmd := "tasklist /fi PID eq" + pid
+	res, err := exec.Command("tasklist", "/fi", "PID eq "+pid).Output()
 	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "pid": pid, "command": cmd}).Error("error executing command, when killing process")
 		return err
 	}
-	if string(rez) == "" {
+	if string(res) == "" {
+		log.WithFields(logrus.Fields{"pid": pid, "command": cmd}).Error("command returned no result, when killing process")
 		return fmt.Errorf("null")
 	}
-	log.Debug("%rez s", string(rez))
-	fmt.Println("rez", string(rez))
-	if ok, _ := regexp.MatchString(`(?i)PID`, string(rez)); !ok {
+	log.WithFields(logrus.Fields{"pid": pid, "command": cmd}).Info("command returned result")
+	if ok, _ := regexp.MatchString(`(?i)PID`, string(res)); !ok {
+		log.WithFields(logrus.Fields{"pid": pid, "command": cmd, "output": res}).Error("command returned incorrect result, when killing process")
 		return fmt.Errorf("null")
 	}
 	return nil

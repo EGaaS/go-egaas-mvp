@@ -18,36 +18,37 @@ package daylight
 
 import (
 	"fmt"
-	//	_ "image/png"
 	"os/exec"
 	"runtime"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 )
 
 var (
-	log = logging.MustGetLogger("daylight")
-	//	format = logging.MustStringFormatter("%{color}%{time:15:04:05.000} %{shortfile} %{shortfunc} [%{level:.4s}] %{color:reset} %{message}[" + consts.VERSION + "]" + string(byte(0)))
-	format = logging.MustStringFormatter("%{shortfile} %{shortfunc} [%{level:.4s}] %{message}")
+	log = logrus.New()
 )
 
 func openBrowser(BrowserHTTPHost string) {
-	log.Debug("runtime.GOOS: %v", runtime.GOOS)
 	var err error
+	var command string
 	switch runtime.GOOS {
 	case "linux":
-		err = exec.Command("xdg-open", BrowserHTTPHost).Start()
+		command = "xdg-open"
+		err = exec.Command(command, BrowserHTTPHost).Start()
 	case "windows", "darwin":
-		err = exec.Command("open", BrowserHTTPHost).Start()
+		command = "open"
+		err = exec.Command(command, BrowserHTTPHost).Start()
 		if err != nil {
-			exec.Command("cmd", "/c", "start", BrowserHTTPHost).Start()
+			newCommand := "cmd /c start"
+			log.WithFields(logrus.Fields{"command": command, "new_command": newCommand, "error": err}).Info("Error opening application in browswer with command, trying another command")
+			err = exec.Command("cmd", "/c", "start", BrowserHTTPHost).Start()
 		}
 	default:
 		err = fmt.Errorf("unsupported platform")
 	}
 	if err != nil {
-		log.Error("%v", err)
+		log.WithFields(logrus.Fields{"runtime.GOOS": runtime.GOOS, "host": BrowserHTTPHost, "cmd": command, "error": err}).Fatal("Error running command, to open application in browser")
 	}
 }
 
