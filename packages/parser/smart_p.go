@@ -41,28 +41,30 @@ import (
 
 var (
 	funcCallsDB = map[string]struct{}{
-		"DBInsert":       struct{}{},
-		"DBUpdate":       struct{}{},
-		"DBUpdateExt":    struct{}{},
-		"DBGetList":      struct{}{},
-		"DBGetTable":     struct{}{},
-		"DBString":       struct{}{},
-		"DBInt":          struct{}{},
-		"DBRowExt":       struct{}{},
-		"DBRow":          struct{}{},
-		"DBStringExt":    struct{}{},
-		"DBIntExt":       struct{}{},
-		"DBFreeRequest":  struct{}{},
-		"DBStringWhere":  struct{}{},
-		"DBIntWhere":     struct{}{},
-		"DBAmount":       struct{}{},
-		"UpdateContract": struct{}{},
-		"UpdateParam":    struct{}{},
-		"UpdateMenu":     struct{}{},
-		"UpdatePage":     struct{}{},
-		"DBInsertReport": struct{}{},
-		"UpdateSysParam": struct{}{},
-		"FindEcosystem":  struct{}{},
+		"DBInsert":           struct{}{},
+		"DBUpdate":           struct{}{},
+		"DBUpdateExt":        struct{}{},
+		"DBGetList":          struct{}{},
+		"DBGetTable":         struct{}{},
+		"DBString":           struct{}{},
+		"DBInt":              struct{}{},
+		"DBRowExt":           struct{}{},
+		"DBRow":              struct{}{},
+		"DBStringExt":        struct{}{},
+		"DBIntExt":           struct{}{},
+		"DBFreeRequest":      struct{}{},
+		"DBStringWhere":      struct{}{},
+		"DBIntWhere":         struct{}{},
+		"DBAmount":           struct{}{},
+		"UpdateContract":     struct{}{},
+		"UpdateParam":        struct{}{},
+		"UpdateMenu":         struct{}{},
+		"UpdatePage":         struct{}{},
+		"DBInsertReport":     struct{}{},
+		"UpdateSysParam":     struct{}{},
+		"FindEcosystem":      struct{}{},
+		"DBNewTable":         struct{}{},
+		"DBNewTableRollback": struct{}{},
 	}
 	extendCost = map[string]int64{
 		"AddressToId":       10,
@@ -89,6 +91,7 @@ var (
 		"FlushContract":     50,
 		"Eval":              10,
 		"Activate":          10,
+		"Json2Array":        10,
 	}
 )
 
@@ -151,6 +154,9 @@ func init() {
 		"FlushContract":      FlushContract,
 		"Eval":               Eval,
 		"Activate":           ActivateContract,
+		"Json2Array":         JSON2Array,
+		"DBNewTable":         DBNewTable,
+		"DBNewTableRollback": DBNewTableRollback,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1266,4 +1272,116 @@ func ActivateContract(p *Parser, tblid int64, state int64) error {
 
 	smart.ActivateContract(tblid, converter.Int64ToStr(state), true)
 	return nil
+}
+
+// JSON2Array parses JSON array to [][]string
+func JSON2Array(input string) (ret []interface{}, err error) {
+	err = json.Unmarshal([]byte(input), &ret)
+	return
+}
+
+func DBNewTableRollback(p *Parser, tableName string) (int64, error) {
+	if p.TxContract.Name != `@0NewTable` {
+		return 0, fmt.Errorf(`DBNewTableRollback can be only called from NewTable contract`)
+	}
+	off := strings.IndexByte(tableName, '_')
+	if off < 0 {
+		return 0, fmt.Errorf(`wrong tablename`)
+	}
+	query := `DROP TABLE "` + tableName + `"`
+	cost, err := sql.DB.GetQueryTotalCost(query)
+	if err != nil {
+		return 0, err
+	}
+	err = sql.DB.ExecSQL(query)
+	if err != nil {
+		return cost, err
+	}
+	query = `DELETE FROM "` + tableName[:off] + `_tables" WHERE name = ?`
+	icost, err := sql.DB.GetQueryTotalCost(query, tableName)
+	if err != nil {
+		return cost, err
+	}
+	cost += icost
+	return cost, sql.DB.ExecSQL(query, tableName)
+}
+
+func DBNewTable(p *Parser, tableName string, columns string) (int64, error) {
+	if p.TxContract.Name != `@0NewTable` {
+		return 0, fmt.Errorf(`DBNewTable can be only called from NewTable contract`)
+	}
+	off := strings.IndexByte(tableName, '_')
+	if off < 0 {
+		return 0, fmt.Errorf(`wrong tablename`)
+	}
+	var cols [][]string
+	err := json.Unmarshal([]byte(columns), &cols)
+	if err != nil {
+		return 0, err
+	}
+	colsSQL := ""
+	colsSQL2 := ""
+	sqlIndex := ""
+	for _, data := range cols {
+		colType := ``
+		colDef := ``
+		switch data[1] {
+		case "text":
+			colType = `varchar(102400)`
+		case "int64":
+			colType = `bigint`
+			colDef = `NOT NULL DEFAULT '0'`
+		case "time":
+			colType = `timestamp`
+		case "hash":
+			colType = `bytea`
+		case "double":
+			colType = `double precision`
+		case "money":
+			colType = `decimal (30, 0)`
+			colDef = `NOT NULL DEFAULT '0'`
+		}
+		colsSQL += `"` + data[0] + `" ` + colType + " " + colDef + " ,\n"
+		colsSQL2 += `"` + data[0] + `": "ContractConditions(\"MainCondition\")",`
+		if data[2] == "1" {
+			sqlIndex += `CREATE INDEX "` + tableName + `_` + data[0] + `_index" ON "` + tableName + `" (` + data[0] + `);`
+		}
+	}
+	colsSQL2 = colsSQL2[:len(colsSQL2)-1]
+
+	query := `CREATE TABLE "` + tableName + `" ("id" bigint NOT NULL  default nextval('` + tableName + `_id_seq'),
+		` + colsSQL + `"rb_id" bigint NOT NULL DEFAULT '0');
+		ALTER SEQUENCE "` + tableName + `_id_seq" owned by "` + tableName + `".id;
+		ALTER TABLE ONLY "` + tableName + `" ADD CONSTRAINT "` + tableName + `_pkey" PRIMARY KEY (id);`
+	/*	cost, err := sql.DB.GetQueryTotalCost(query)
+		if err != nil {
+			return 0, err
+		}*/
+	var cost int64
+	query = `CREATE SEQUENCE "` + tableName + `_id_seq" START WITH 1;` + query
+
+	err = sql.DB.ExecSQL(query)
+	if err != nil {
+		return cost, err
+	}
+	/*	icost, err := sql.DB.GetQueryTotalCost(sqlIndex)
+		if err != nil {
+			return 0, err
+		}
+		cost += icost*/
+	err = sql.DB.ExecSQL(sqlIndex)
+	if err != nil {
+		return cost, err
+	}
+
+	query = `INSERT INTO "` + tableName[:off] + `_tables" ( name, columns_and_permissions ) VALUES ( ?, ? )`
+
+	icost, err := sql.DB.GetQueryTotalCost(query, tableName, `{"general_update":"ContractConditions(\"MainCondition\")", "update": {`+colsSQL2+`},
+	"insert": "ContractConditions(\"MainCondition\")", "new_column":"ContractConditions(\"MainCondition\")"}`)
+	if err != nil {
+		return cost, err
+	}
+	cost += icost
+	return cost, sql.DB.ExecSQL(query, tableName, `{"general_update":"ContractConditions(\"MainCondition\")", "update": {`+colsSQL2+`},
+	"insert": "ContractConditions(\"MainCondition\")", "new_column":"ContractConditions(\"MainCondition\")"}`)
 }

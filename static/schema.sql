@@ -1059,6 +1059,74 @@ INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('co
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewTable {
+    data {
+        Global int
+        Name string
+        Columns string
+    }
+
+    conditions {
+        var lencol int
+        $columns = Json2Array($Columns)
+        lencol = Len($columns)
+        if lencol == 0 {
+            error `Columns undefined`
+        }
+        if lencol > SysParamInt(`max_columns`) {
+            error Sprintf(`Too many columns. Limit is %d`, SysParamInt(`max_columns`))
+        }
+        var indexes, i int
+	    while i < lencol {
+	        var cdata array
+	        cdata = $columns[i]
+	        if Len(cdata) != 3 {
+	            error Sprintf(`Length of column parameters %v != 3`, cdata)
+	        }
+	        if cdata[1] != `text` && cdata[1] != `int64` && cdata[1] != `time` && cdata[1] != `hash` && cdata[1] != `double` && cdata[1] != `money` {
+			    error Sprintf(`incorrect type %v`, data[1])
+		    }
+    		if cdata[2] == `1` {
+			    if cdata[1] == `text` {
+				    error `incorrect index type`
+			    }
+			    indexes = indexes + 1
+    		}
+	        i = i+1
+		}
+    	if indexes > SysParamInt(`max_indexes`) {
+		    error Sprintf(`Too many indexes. Limit is %d`, SysParamInt(`max_indexes`))
+	    }
+	    var prefix string
+	    if $Global == 0 {
+	        prefix = Str($state)
+	    } else {
+	        prefix = `global`
+	    }
+	    $tablename = prefix + `_` + $Name
+	    if DBStringExt(PrefixTable(`tables`, $Global), `name`, $tablename, `name`) == $tablename {
+	        error Sprintf(`Table %s already exists`, $tablename)
+	    }
+	    EvalCondition(Table(`state_parameters`), `new_table`, `value`)
+    }
+
+    action {
+        DBNewTable($tablename, $Columns)
+    }
+    
+    func rollback() {
+         var prefix string
+	    if $Global == 0 {
+	        prefix = Str($state)
+	    } else {
+	        prefix = `global`
+	    }
+	    $tablename = prefix + `_` + $Name
+        DBNewTableRollback($tablename)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
 "columns_and_permissions" jsonb,
