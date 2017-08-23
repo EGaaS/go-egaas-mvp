@@ -222,7 +222,7 @@ func (p *NewStateParser) Main(country, currency string) (id string, err error) {
 	}
 
 	err = p.ExecSQL(`INSERT INTO "`+id+`_tables" (name, columns_and_permissions, conditions) VALUES
-		(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?)`,
+		(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?),(?, ?, ?)`,
 		id+`_citizens`, `{"general_update":"`+sid+`", "update": {"public_key_0": "`+sid+`"}, "insert": "`+sid+`", "new_column":"`+sid+`"}`, psid,
 		id+`_menu`, `{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\",\"@0AppendMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "`+sid+`"}`, psid,
 		id+`_pages`, `{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\",\"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "`+sid+`"}`, psid,
