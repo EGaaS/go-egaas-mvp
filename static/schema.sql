@@ -1165,6 +1165,44 @@ INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('co
     }
 }', '1','ContractConditions(`MainCondition`)');
 
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditColumn {
+    data {
+	TableName   string
+	ColumnName  string
+	Permissions string
+    }
+
+    conditions {
+        var lr array
+        lr = Split($TableName, `_`)
+        if Len(lr) < 2 {
+            error `wrong table name ` + $TableName
+        }
+	    $tables = lr[0] + `_tables`
+        if DBStringExt($tables, `name`, $TableName, `name`) != $TableName {
+	        error Sprintf(`Table %s does not exist`, $TableName)
+	    }
+	    $istate = 0
+        if lr[0] != `global` {
+            $istate = $state
+        }
+        $vals = Json2Map(DBStringExt($tables, `columns_and_permissions`, $TableName, `name`))
+        $upd = $vals[`update`]
+        if !($upd[$ColumnName]) {
+            error Sprintf(`Column %s does not exist`, $ColumnName)
+        }
+        ValidateCondition($Permissions,$istate)
+        AccessTable($TableName, `general_update`)
+    }
+
+    action {
+        $upd[$ColumnName] = $Permissions
+        $vals[`update`] = $upd
+        DBUpdateExt($tables, `name`, $TableName, `columns_and_permissions`, Map2Json($vals))
+
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',

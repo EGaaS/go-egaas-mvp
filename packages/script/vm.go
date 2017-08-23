@@ -183,6 +183,9 @@ func (rt *RunTime) extendFunc(name string) error {
 }
 
 func valueToBool(v interface{}) bool {
+	if v == nil {
+		return false
+	}
 	switch val := v.(type) {
 	case int:
 		if val != 0 {
