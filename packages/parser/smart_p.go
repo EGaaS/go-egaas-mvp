@@ -92,6 +92,10 @@ var (
 		"Eval":              10,
 		"Activate":          10,
 		"Json2Array":        10,
+		"Split":             10,
+		"AccessTable":       100,
+		"Json2Map":          10,
+		"Map2Json":          10,
 	}
 )
 
@@ -143,6 +147,7 @@ func init() {
 		"EvalCondition":      EvalCondition,
 		"HasPrefix":          strings.HasPrefix,
 		"Contains":           strings.Contains,
+		"Split":              Split,
 		"Replace":            Replace,
 		"FindEcosystem":      FindEcosystem,
 		"UpdateLang":         UpdateLang,
@@ -157,6 +162,9 @@ func init() {
 		"Json2Array":         JSON2Array,
 		"DBNewTable":         DBNewTable,
 		"DBNewTableRollback": DBNewTableRollback,
+		"AccessTable":        TableAccess,
+		"Json2Map":           JSON2Map,
+		"Map2Json":           Map2JSON,
 		"check_signature":    CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
@@ -1384,4 +1392,29 @@ func DBNewTable(p *Parser, tableName string, columns string) (int64, error) {
 	cost += icost
 	return cost, sql.DB.ExecSQL(query, tableName, `{"general_update":"ContractConditions(\"MainCondition\")", "update": {`+colsSQL2+`},
 	"insert": "ContractConditions(\"MainCondition\")", "new_column":"ContractConditions(\"MainCondition\")"}`)
+}
+
+// Split splits the string
+func Split(input string, sep string) []interface{} {
+	list := strings.Split(input, sep)
+	result := make([]interface{}, len(list))
+	for i := 0; i < len(list); i++ {
+		result[i] = reflect.ValueOf(list[i]).Interface()
+	}
+	return result
+}
+
+func TableAccess(p *Parser, table, action string) error {
+	return p.AccessTable(table, action)
+}
+
+func JSON2Map(input string) (ret map[string]interface{}, err error) {
+	ret = make(map[string]interface{})
+	err = json.Unmarshal([]byte(input), &ret)
+	return
+}
+
+func Map2JSON(m map[string]interface{}) (string, error) {
+	ret, err := json.Marshal(m)
+	return string(ret), err
 }

@@ -123,6 +123,7 @@ func IsSystemTable(table string) bool {
 		`global_apps`:            true,
 		`global_menu`:            true,
 		`global_pages`:           true,
+		`global_tables`:          true,
 		`global_signatures`:      true,
 		`global_smart_contracts`: true,
 		`system_restore_access`:  true,
