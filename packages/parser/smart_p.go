@@ -67,105 +67,109 @@ var (
 		"DBNewTableRollback": struct{}{},
 	}
 	extendCost = map[string]int64{
-		"AddressToId":       10,
-		"IdToAddress":       10,
-		"NewState":          1000, // ?? What cost must be?
-		"Sha256":            50,
-		"PubToID":           10,
-		"StateVal":          10,
-		"SysParamString":    10,
-		"SysParamInt":       10,
-		"SysCost":           10,
-		"ValidateCondition": 30,
-		"PrefixTable":       10,
-		"EvalCondition":     20,
-		"HasPrefix":         10,
-		"Contains":          10,
-		"Replace":           10,
-		"UpdateLang":        10,
-		"Size":              10,
-		"Substr":            10,
-		"ContractsList":     10,
-		"IsContract":        10,
-		"CompileContract":   100,
-		"FlushContract":     50,
-		"Eval":              10,
-		"Activate":          10,
-		"Json2Array":        10,
-		"Split":             10,
-		"AccessTable":       100,
-		"Json2Map":          10,
-		"Map2Json":          10,
+		"AddressToId":         10,
+		"IdToAddress":         10,
+		"NewState":            1000, // ?? What cost must be?
+		"Sha256":              50,
+		"PubToID":             10,
+		"StateVal":            10,
+		"SysParamString":      10,
+		"SysParamInt":         10,
+		"SysCost":             10,
+		"ValidateCondition":   30,
+		"PrefixTable":         10,
+		"EvalCondition":       20,
+		"HasPrefix":           10,
+		"Contains":            10,
+		"Replace":             10,
+		"UpdateLang":          10,
+		"Size":                10,
+		"Substr":              10,
+		"ContractsList":       10,
+		"IsContract":          10,
+		"CompileContract":     100,
+		"FlushContract":       50,
+		"Eval":                10,
+		"Activate":            10,
+		"Json2Array":          10,
+		"Split":               10,
+		"AccessTable":         100,
+		"Json2Map":            10,
+		"Map2Json":            10,
+		"DBNewColumn":         100,
+		"DBNewColumnRollback": 100,
 	}
 )
 
 func init() {
 	smart.Extend(&script.ExtendData{Objects: map[string]interface{}{
-		"DBInsert":           DBInsert,
-		"DBUpdate":           DBUpdate,
-		"DBUpdateExt":        DBUpdateExt,
-		"DBGetList":          DBGetList,
-		"DBGetTable":         DBGetTable,
-		"DBString":           DBString,
-		"DBInt":              DBInt,
-		"DBRowExt":           DBRowExt,
-		"DBRow":              DBRow,
-		"DBStringExt":        DBStringExt,
-		"DBFreeRequest":      DBFreeRequest,
-		"DBIntExt":           DBIntExt,
-		"DBStringWhere":      DBStringWhere,
-		"DBIntWhere":         DBIntWhere,
-		"Table":              StateTable,
-		"TableTx":            StateTableTx,
-		"AddressToId":        AddressToID,
-		"IdToAddress":        IDToAddress,
-		"DBAmount":           DBAmount,
-		"ContractAccess":     ContractAccess,
-		"ContractConditions": ContractConditions,
-		"NewState":           NewStateFunc,
-		"StateVal":           StateVal,
-		"SysParamString":     SysParamString,
-		"SysParamInt":        SysParamInt,
-		"SysCost":            SysCost,
-		"Int":                Int,
-		"Str":                Str,
-		"Money":              Money,
-		"Float":              Float,
-		"Len":                Len,
-		"Sha256":             Sha256,
-		"PubToID":            PubToID,
-		"HexToBytes":         HexToBytes,
-		"LangRes":            LangRes,
-		"UpdateContract":     UpdateContract,
-		"UpdateParam":        UpdateParam,
-		"UpdateMenu":         UpdateMenu,
-		"UpdatePage":         UpdatePage,
-		"DBInsertReport":     DBInsertReport,
-		"UpdateSysParam":     UpdateSysParam,
-		"ValidateCondition":  ValidateCondition,
-		"PrefixTable":        PrefixTable,
-		"EvalCondition":      EvalCondition,
-		"HasPrefix":          strings.HasPrefix,
-		"Contains":           strings.Contains,
-		"Split":              Split,
-		"Replace":            Replace,
-		"FindEcosystem":      FindEcosystem,
-		"UpdateLang":         UpdateLang,
-		"Size":               Size,
-		"Substr":             Substr,
-		"ContractsList":      ContractsList,
-		"IsContract":         IsContract,
-		"CompileContract":    CompileContract,
-		"FlushContract":      FlushContract,
-		"Eval":               Eval,
-		"Activate":           ActivateContract,
-		"Json2Array":         JSON2Array,
-		"DBNewTable":         DBNewTable,
-		"DBNewTableRollback": DBNewTableRollback,
-		"AccessTable":        TableAccess,
-		"Json2Map":           JSON2Map,
-		"Map2Json":           Map2JSON,
-		"check_signature":    CheckSignature, // system function
+		"DBInsert":            DBInsert,
+		"DBUpdate":            DBUpdate,
+		"DBUpdateExt":         DBUpdateExt,
+		"DBGetList":           DBGetList,
+		"DBGetTable":          DBGetTable,
+		"DBString":            DBString,
+		"DBInt":               DBInt,
+		"DBRowExt":            DBRowExt,
+		"DBRow":               DBRow,
+		"DBStringExt":         DBStringExt,
+		"DBFreeRequest":       DBFreeRequest,
+		"DBIntExt":            DBIntExt,
+		"DBStringWhere":       DBStringWhere,
+		"DBIntWhere":          DBIntWhere,
+		"Table":               StateTable,
+		"TableTx":             StateTableTx,
+		"AddressToId":         AddressToID,
+		"IdToAddress":         IDToAddress,
+		"DBAmount":            DBAmount,
+		"ContractAccess":      ContractAccess,
+		"ContractConditions":  ContractConditions,
+		"NewState":            NewStateFunc,
+		"StateVal":            StateVal,
+		"SysParamString":      SysParamString,
+		"SysParamInt":         SysParamInt,
+		"SysCost":             SysCost,
+		"Int":                 Int,
+		"Str":                 Str,
+		"Money":               Money,
+		"Float":               Float,
+		"Len":                 Len,
+		"Sha256":              Sha256,
+		"PubToID":             PubToID,
+		"HexToBytes":          HexToBytes,
+		"LangRes":             LangRes,
+		"UpdateContract":      UpdateContract,
+		"UpdateParam":         UpdateParam,
+		"UpdateMenu":          UpdateMenu,
+		"UpdatePage":          UpdatePage,
+		"DBInsertReport":      DBInsertReport,
+		"UpdateSysParam":      UpdateSysParam,
+		"ValidateCondition":   ValidateCondition,
+		"PrefixTable":         PrefixTable,
+		"EvalCondition":       EvalCondition,
+		"HasPrefix":           strings.HasPrefix,
+		"Contains":            strings.Contains,
+		"Split":               Split,
+		"Replace":             Replace,
+		"FindEcosystem":       FindEcosystem,
+		"UpdateLang":          UpdateLang,
+		"Size":                Size,
+		"Substr":              Substr,
+		"ContractsList":       ContractsList,
+		"IsContract":          IsContract,
+		"CompileContract":     CompileContract,
+		"FlushContract":       FlushContract,
+		"Eval":                Eval,
+		"Activate":            ActivateContract,
+		"Json2Array":          JSON2Array,
+		"DBNewTable":          DBNewTable,
+		"DBNewTableRollback":  DBNewTableRollback,
+		"AccessTable":         TableAccess,
+		"Json2Map":            JSON2Map,
+		"Map2Json":            Map2JSON,
+		"DBNewColumn":         DBNewColumn,
+		"DBNewColumnRollback": DBNewColumnRollback,
+		"check_signature":     CheckSignature, // system function
 	}, AutoPars: map[string]string{
 		`*parser.Parser`: `parser`,
 	}})
@@ -1417,4 +1421,67 @@ func JSON2Map(input string) (ret map[string]interface{}, err error) {
 func Map2JSON(m map[string]interface{}) (string, error) {
 	ret, err := json.Marshal(m)
 	return string(ret), err
+}
+
+func DBNewColumnRollback(p *Parser, tableName, columnName string) (int64, error) {
+	if p.TxContract.Name != `@0NewColumn` {
+		return 0, fmt.Errorf(`DBNewColumnRollback can be only called from NewColumn contract`)
+	}
+	err := sql.DB.ExecSQL(`ALTER TABLE "` + tableName + `" DROP COLUMN "` + columnName + `"`)
+	if err != nil {
+		return 0, err
+	}
+	return 0, nil
+}
+
+func DBNewColumn(p *Parser, tableName string, column, coltype string, index int64) (int64, error) {
+	if p.TxContract.Name != `@0NewColumn` {
+		return 0, fmt.Errorf(`DBNewColumn can be only called from NewColumn contract`)
+	}
+	off := strings.IndexByte(tableName, '_')
+	if off < 0 {
+		return 0, fmt.Errorf(`wrong tablename`)
+	}
+
+	count, err := sql.DB.Single("SELECT count(column_name) FROM information_schema.columns WHERE table_name=?", tableName).Int64()
+	if count >= sql.SysInt64(sql.MaxColumns)+2 /*id + rb_id*/ {
+		return 0, fmt.Errorf(`Too many columns. Limit is %d`, sql.SysInt64(sql.MaxColumns))
+	}
+	if index > 0 {
+		count, err := sql.DB.NumIndexes(tableName)
+		if err != nil {
+			return 0, err
+		}
+		if count >= sql.SysInt(sql.MaxIndexes) {
+			return 0, fmt.Errorf(`Too many indexes. Limit is %d`, sql.SysInt(sql.MaxIndexes))
+		}
+	}
+	colType := ``
+	switch coltype {
+	case "text":
+		colType = `varchar(102400)`
+	case "int64":
+		colType = `bigint`
+	case "time":
+		colType = `timestamp`
+	case "hash":
+		colType = `bytea`
+	case "money":
+		colType = `decimal(30,0)`
+	case "double":
+		colType = `double precision`
+	}
+
+	err = sql.DB.ExecSQL(`ALTER TABLE "` + tableName + `" ADD COLUMN "` + column + `" ` + colType)
+	if err != nil {
+		return 0, err
+	}
+
+	if index > 0 {
+		err = sql.DB.ExecSQL(`CREATE INDEX "` + tableName + `_` + column + `_index" ON "` + tableName + `" ("` + column + `")`)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return 0, nil
 }
