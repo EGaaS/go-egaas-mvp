@@ -607,10 +607,3 @@ func GetList(query string, args ...interface{}) *ListResult {
 	}
 	return &ListResult{result, nil}
 }
-
-func handleError(err error) error {
-	if err == gorm.ErrRecordNotFound {
-		return nil
-	}
-	return err
-}

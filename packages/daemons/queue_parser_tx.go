@@ -36,7 +36,7 @@ func QueueParserTx(d *daemon, ctx context.Context) error {
 
 	infoBlock := &model.InfoBlock{}
 	err = infoBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 	if infoBlock.BlockID == 0 {

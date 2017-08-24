@@ -89,7 +89,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 			ClearTmp(blocks)
 			return utils.ErrInfo(errors.New("len(binaryBlock) == 0"))
 		}
-		converter.BytesShift(&binaryBlock, 1) // уберем 1-й байт - тип (блок/тр-я)
+		converter.BytesShift(&binaryBlock, 1)
 		// remove the 1st byte - type (block/transaction)
 		// parse the heading of a block
 		blockData := utils.ParseBlockHeader(&binaryBlock)

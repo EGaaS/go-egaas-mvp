@@ -61,7 +61,7 @@ func GetBlockDataFromBlockChain(blockID int64) (*utils.BlockData, error) {
 	block := &model.Block{}
 	err := block.GetBlock(blockID)
 	if err != nil {
-		return BlockData, utils.ErrInfo(err)
+		return BlockData, err
 	}
 	log.Debug("data: %x\n", block.Data)
 	if len(block.Data) > 0 {
@@ -80,14 +80,14 @@ func GetNodePublicKeyWalletOrCB(walletID, stateID int64) ([]byte, error) {
 		log.Debug("wallet_id %v state_id %v", walletID, stateID)
 		wallet := &model.DltWallet{}
 		err = wallet.GetWallet(walletID)
-		if err != nil {
+		if err != nil && err != model.RecordNotFound {
 			return []byte(""), err
 		}
 		result = []byte(wallet.NodePublicKey)
 	} else {
 		srs := &model.SystemRecognizedState{}
 		err = srs.GetState(stateID)
-		if err != nil {
+		if err != nil && err != model.RecordNotFound {
 			return []byte(""), err
 		}
 		result = []byte(srs.NodePublicKey)
@@ -331,12 +331,13 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	}
 	logTx := &model.LogTransaction{}
 	err = logTx.GetByHash(searchedHash)
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		log.Error("%s", utils.ErrInfo(err))
 		return utils.ErrInfo(err)
 	}
+
 	log.Debug("hash %x", logTx.Hash)
-	if len(logTx.Hash) > 0 {
+	if err != model.RecordNotFound {
 		return utils.ErrInfo(fmt.Errorf("double tx in log_transactions %x", searchedHash))
 	}
 

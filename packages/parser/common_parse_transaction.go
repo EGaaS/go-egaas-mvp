@@ -172,7 +172,6 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, *tx.
 			p.TxCitizenID = head.CitizenID
 			p.TxWalletID = head.WalletID
 			p.TxTime = int64(head.Time)
-			fmt.Printf(`\nPARSED STRUCT %+v\n`, p.TxPtr)
 		}
 		if isStruct {
 			transSlice = append(transSlice, converter.Int64ToByte(txType))

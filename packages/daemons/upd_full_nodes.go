@@ -41,11 +41,9 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 
 	infoBlock := &model.InfoBlock{}
 	err = infoBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
-	}
-
-	if infoBlock.BlockID == 0 {
+	} else if err == model.RecordNotFound {
 		return utils.ErrInfo("blockID == 0")
 	}
 
@@ -58,24 +56,18 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 	myStateID := nodeConfig.StateID
 	myWalletID := nodeConfig.DltWalletID
 	log.Debug("%v", myWalletID)
-	// Есть ли мы в списке тех, кто может генерить блоки
 	// If we are in the list of those who are able to generate the blocks
 	fullNode := &model.FullNode{}
 	err = fullNode.FindNode(myStateID, myWalletID, myStateID, myWalletID)
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
-	}
-
-	fullNodeID := fullNode.ID
-	log.Debug("fullNodeID = %d", fullNodeID)
-	if fullNodeID == 0 {
+	} else if err == model.RecordNotFound {
 		d.sleepTime = 10 * time.Second // because 1s is too small for non-full nodes
 		return nil
 	}
 
 	curTime := time.Now().Unix()
 
-	// проверим, прошло ли время с момента последнего обновления
 	// check if the time of the last updating passed
 	updFn := &model.UpdFullNode{}
 	err = updFn.Read()

@@ -18,7 +18,7 @@ func (ib *InfoBlock) TableName() string {
 }
 
 func (ib *InfoBlock) GetInfoBlock() error {
-	return handleError(DBConn.Last(ib).Error)
+	return DBConn.Last(ib).Error
 }
 
 func (ib *InfoBlock) Update() error {

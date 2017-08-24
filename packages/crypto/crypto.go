@@ -108,7 +108,6 @@ func SharedDecrypt(private, ciphertext []byte) ([]byte, error) {
 }
 
 // GenBytesKeys generates a random pair of ECDSA private and public binary keys.
-// TODO параметризировать fillLeft
 func GenBytesKeys() ([]byte, []byte, error) {
 	var curve elliptic.Curve
 	switch ellipticSize {

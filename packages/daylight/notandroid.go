@@ -93,7 +93,6 @@ func httpListener(ListenHTTPHost string, BrowserHTTPHost *string, route http.Han
 		l, err = net.Listen("tcp4", host)
 		log.Debug("l", l)
 		if err == nil {
-			// Если это повторный запуск и он не из консоли, то открываем окно браузера, т.к. скорее всего юзер тыкнул по иконке
 			// If this is a restart and it is made not from the console, then open the browser window, because user most likely pressed the icon
 			/*if *utils.Console == 0 {
 				openBrowser(browser)
@@ -159,7 +158,6 @@ func tcpListener() {
 	go func() {
 		log.Debug("*utils.tcpHost: %v", *utils.TCPHost+":"+consts.TCP_PORT)
 		//if len(*utils.TCPHost) > 0 {
-		// включаем листинг TCP-сервером и обработку входящих запросов
 		// switch on the listing by TCP-server and the processing of incoming requests
 		l, err := net.Listen("tcp4", *utils.TCPHost+":"+consts.TCP_PORT)
 		if err != nil {

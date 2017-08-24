@@ -101,7 +101,7 @@ func MarkTransactionUnused(transactionHash []byte) (int64, error) {
 }
 
 func (t *Transaction) Read(hash []byte) error {
-	return handleError(DBConn.Where("hash = ?", hash).First(t).Error)
+	return DBConn.Where("hash = ?", hash).First(t).Error
 }
 
 func (t *Transaction) Save() error {
@@ -109,11 +109,11 @@ func (t *Transaction) Save() error {
 }
 
 func (t *Transaction) Get(transactionHash []byte) error {
-	return handleError(DBConn.Where("hash = ?", transactionHash).First(t).Error)
+	return DBConn.Where("hash = ?", transactionHash).First(t).Error
 }
 
 func (t *Transaction) GetVerified(transactionHash []byte) error {
-	return handleError(DBConn.Where("hash = ? AND verified = 1", transactionHash).First(t).Error)
+	return DBConn.Where("hash = ? AND verified = 1", transactionHash).First(t).Error
 }
 
 func (t *Transaction) IsExists() (bool, error) {

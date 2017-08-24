@@ -84,7 +84,7 @@ func blocksCollection(d *daemon, ctx context.Context) error {
 	// TODO: ????? remove from all tables in some test mode ?????
 
 	hosts, err := model.GetFullNodesHosts()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 
@@ -414,11 +414,11 @@ func firstLoad(ctx context.Context, d *daemon, parser *parser.Parser) error {
 func needLoad() (bool, error) {
 	infoBlock := &model.InfoBlock{}
 	err := infoBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return false, err
 	}
 	// we have empty blockchain, we need to load blockchain from file or other source
-	if infoBlock.BlockID == 0 || *utils.StartBlockID > 0 {
+	if err == model.RecordNotFound || *utils.StartBlockID > 0 {
 		return true, nil
 	}
 	return false, nil

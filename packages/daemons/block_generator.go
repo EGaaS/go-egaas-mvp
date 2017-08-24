@@ -57,7 +57,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 
 	fullNodes := &model.FullNode{}
 	err = fullNodes.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
-	if err != nil || fullNodes.ID == 0 {
+	if err != nil && err != model.RecordNotFound {
 		// we are not full node and can't generate new blocks
 		d.sleepTime = 10 * time.Second
 		log.Infof("we are not full node, sleep for 10 seconds")
@@ -66,7 +66,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 
 	prevBlock := &model.InfoBlock{}
 	err = prevBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		log.Errorf("can't get block: %s", err)
 		return err
 	}
@@ -86,7 +86,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 
 	nodeKey := &model.MyNodeKey{}
 	err = nodeKey.GetNodeWithMaxBlockID()
-	if err != nil || len(nodeKey.PrivateKey) < 1 {
+	if err != nil && err != model.RecordNotFound {
 		log.Errorf("bad node private key: %s", err)
 		return err
 	}
@@ -101,7 +101,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 	}
 
 	trs, err := model.GetAllUnusedTransactions()
-	if err != nil || trs == nil {
+	if err != nil || err != model.RecordNotFound {
 		return err
 	}
 	log.Debugf("transactions to put in new block: %+v", trs)
@@ -120,7 +120,6 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 		p.BlockError(err)
 		return err
 	}
-
 	return nil
 }
 

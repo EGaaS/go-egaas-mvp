@@ -28,7 +28,7 @@ func writeNextBlocks(fileName string, minToSave int) error {
 
 	infoBlock := &model.InfoBlock{}
 	err = infoBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 
@@ -42,7 +42,7 @@ func writeNextBlocks(fileName string, minToSave int) error {
 	// write the newest blocks to reserved blockchain
 	// ??? curBlockID - COUNT_BLOCK_BEFORE_SAVE ???
 	blocks, err := model.GetBlockchain(lastSavedBlockID, lastSavedBlockID+int64(minToSave))
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 

@@ -48,7 +48,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 	// check last blocks, but not more than 5
 	confirmations := &model.Confirmation{}
 	err := confirmations.GetGoodBlock(consts.MIN_CONFIRMED_NODES)
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		log.Error("get good block error: %s", err)
 		return err
 	}
@@ -56,7 +56,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 	ConfirmedBlockID := confirmations.BlockID
 	infoBlock := &model.InfoBlock{}
 	err = infoBlock.GetInfoBlock()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		log.Error("get info_block error: %v", err)
 		return err
 	}
@@ -141,17 +141,19 @@ func Confirmations(d *daemon, ctx context.Context) error {
 				log.Error("confirmation save error: %v", err)
 				return err
 			}
-		} else {
+		} else if err == model.RecordNotFound {
 			confirmation.BlockID = blockID
 			confirmation.Good = int32(st1)
 			confirmation.Bad = int32(st0)
 			confirmation.Time = int32(time.Now().Unix())
 			log.Debug("INSERT INTO confirmations ( block_id, good, bad, time ) VALUES ( %v, %v, %v, %v )", blockID, st1, st0, time.Now().Unix())
-			err = confirmation.Save()
+			err = confirmation.Create()
 			if err != nil {
 				log.Error("confirmation save error: %v", err)
 				return err
 			}
+		} else {
+			log.Error("%v", err)
 		}
 		log.Debug("blockID > startBlockID && st1 >= consts.MIN_CONFIRMED_NODES %d>%d && %d>=%d\n", blockID, startBlockID, st1, consts.MIN_CONFIRMED_NODES)
 		if blockID > startBlockID && st1 >= consts.MIN_CONFIRMED_NODES {

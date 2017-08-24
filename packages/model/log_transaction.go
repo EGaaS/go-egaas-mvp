@@ -22,11 +22,11 @@ func (lt *LogTransaction) Delete() error {
 }
 
 func (lt *LogTransaction) Get() error {
-	return handleError(DBConn.First(lt).Error)
+	return DBConn.First(lt).Error
 }
 
 func (lt *LogTransaction) GetByHash(hash []byte) error {
-	return handleError(DBConn.Where("hash = ?", hash).First(lt).Error)
+	return DBConn.Where("hash = ?", hash).First(lt).Error
 
 }
 

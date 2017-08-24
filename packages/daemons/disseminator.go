@@ -54,7 +54,7 @@ func Disseminator(d *daemon, ctx context.Context) error {
 
 	node := &model.FullNode{}
 	err = node.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		log.Errorf("can't get full_node: %s", err)
 		return err
 	}
@@ -87,11 +87,9 @@ func sendTransactions() error {
 	// get unsent transactions
 	trs, err := model.GetAllUnsentTransactions()
 
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
-	}
-
-	if trs == nil {
+	} else if err == model.RecordNotFound {
 		return nil
 	}
 
@@ -122,12 +120,12 @@ func sendTransactions() error {
 // send block and transactions hashes
 func sendHashes(fullNodeID int32) error {
 	block, err := model.BlockGetUnsent()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 
 	trs, err := model.GetAllUnsentTransactions()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 
@@ -228,7 +226,7 @@ func MarshallTrHash(tr model.Transaction) []byte {
 
 func sendPacketToAll(reqType int, buf []byte, respHand func(resp []byte, w io.Writer) error) error {
 	hosts, err := model.GetFullNodesHosts()
-	if err != nil {
+	if err != nil && err != model.RecordNotFound {
 		return err
 	}
 

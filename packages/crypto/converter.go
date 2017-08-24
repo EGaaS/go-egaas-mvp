@@ -14,7 +14,6 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 )
 
-// TODO уточнить зачем два разных хеша
 // Address gets int64 EGGAS address from the public key
 func Address(pubKey []byte) int64 {
 	h256 := sha256.Sum256(pubKey)
@@ -44,7 +43,7 @@ func PrivateToPublic(key []byte) ([]byte, error) {
 	return append(converter.FillLeft(priv.PublicKey.X.Bytes()), converter.FillLeft(priv.PublicKey.Y.Bytes())...), nil
 }
 
-// TODO убрать вместе с хексом
+// TODO should be removed
 // PrivateToPublicHex returns the hex public key for the specified hex private key.
 func PrivateToPublicHex(hexkey string) (string, error) {
 	key, err := hex.DecodeString(hexkey)
@@ -58,7 +57,6 @@ func PrivateToPublicHex(hexkey string) (string, error) {
 	return hex.EncodeToString(pubKey), nil
 }
 
-// TODO убрать отсюда
 // KeyToAddress converts a public key to EGAAS address XXXX-...-XXXX.
 func KeyToAddress(pubKey []byte) string {
 	return converter.AddressToString(Address(pubKey))

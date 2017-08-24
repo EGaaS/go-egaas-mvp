@@ -21,7 +21,7 @@ func UpdateConfig(field string, value interface{}) error {
 }
 
 func (c *Config) GetConfig() error {
-	return handleError(DBConn.First(&c).Error)
+	return DBConn.First(&c).Error
 }
 
 func (c *Config) Save() error {

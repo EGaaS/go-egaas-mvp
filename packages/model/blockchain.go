@@ -41,7 +41,7 @@ func (b *Block) IsExists() (bool, error) {
 	if query.Error == gorm.ErrRecordNotFound {
 		return false, nil
 	}
-	return !query.RecordNotFound(), handleError(query.Error)
+	return !query.RecordNotFound(), query.Error
 }
 
 func (b *Block) IsExistsID(blockID int64) (bool, error) {
@@ -49,7 +49,7 @@ func (b *Block) IsExistsID(blockID int64) (bool, error) {
 	if query.Error == gorm.ErrRecordNotFound {
 		return false, nil
 	}
-	return !query.RecordNotFound(), handleError(query.Error)
+	return !query.RecordNotFound(), query.Error
 }
 
 func (b *Block) Create() error {
@@ -57,18 +57,18 @@ func (b *Block) Create() error {
 }
 
 func (b *Block) GetBlock(blockID int64) error {
-	return handleError(DBConn.Where("id = ?", blockID).First(b).Error)
+	return DBConn.Where("id = ?", blockID).First(b).Error
 }
 
 func (b *Block) GetMaxBlock() error {
-	return handleError(DBConn.First(b).Error)
+	return DBConn.First(b).Error
 }
 
 func (b *Block) GetBlocksFrom(startFromID int64, ordering string) ([]Block, error) {
 	var err error
 	blockchain := new([]Block)
 	err = DBConn.Order("id "+ordering).Where("id > ?", startFromID).Find(&blockchain).Error
-	return *blockchain, handleError(err)
+	return *blockchain, err
 }
 
 func (b *Block) GetBlocks(startFromID int64, limit int32) ([]Block, error) {
@@ -79,7 +79,7 @@ func (b *Block) GetBlocks(startFromID int64, limit int32) ([]Block, error) {
 	} else {
 		err = DBConn.Order("id desc").Limit(limit).Find(&blockchain).Error
 	}
-	return *blockchain, handleError(err)
+	return *blockchain, err
 }
 
 func (b *Block) Delete() error {

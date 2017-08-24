@@ -31,8 +31,8 @@ import (
 
 var (
 	// data may not be updated yet at the first running
-	timeSynchro int64 // Когда первый запуск // When the first running
-	lastSBlock  int64 // последний блок // last block
+	timeSynchro int64 // When the first running
+	lastSBlock  int64 // last block
 	lastSTime   int64
 )
 

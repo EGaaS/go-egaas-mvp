@@ -13,8 +13,9 @@ type MyNodeKey struct {
 }
 
 func (mnk *MyNodeKey) GetNodeWithMaxBlockID() error {
-	blockID := int64(0)
-	err := DBConn.Raw("SELECT max(block_id) FROM my_node_keys").Row().Scan(&blockID)
+	//blockID := int64(0)
+	return DBConn.Order("block_id desc").First(mnk).Error
+	/*err := DBConn.Raw("SELECT max(block_id) FROM my_node_keys").Row().Scan(&blockID)
 	if err != nil {
 		return err
 	}
@@ -22,7 +23,7 @@ func (mnk *MyNodeKey) GetNodeWithMaxBlockID() error {
 	if err := DBConn.Where("block_id = ?", blockID).First(mnk).Error; err != nil {
 		return err
 	}
-	return nil
+	return nil*/
 }
 
 func (mnk *MyNodeKey) Create() error {
