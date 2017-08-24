@@ -73,7 +73,7 @@ func (p *Parser) generalCheck(name string) error {
 		}
 		p.PublicKeys = append(p.PublicKeys, []byte(data["public_key_0"]))
 	}
-	// for not to record too long signature 
+	// for not to record too long signature
 	// 128 is the node-key
 	if len(p.TxMap["sign"]) < 64 || len(p.TxMap["sign"]) > 5120 {
 		return utils.ErrInfoFmt("incorrect sign size %d", len(p.TxMap["sign"]))

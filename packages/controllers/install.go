@@ -198,6 +198,23 @@ func (c *Controller) Install() (string, error) {
 		utils.FirstBlock(false)
 	}
 	log.Debug("1block")
+	// If there is no key, this is the first run and the need to create them in the working directory.
+	if _, err := os.Stat(*utils.Dir + "/PrivateKey"); os.IsNotExist(err) {
+		priv, _, _ := lib.GenHexKeys()
+		err := ioutil.WriteFile(*utils.Dir+"/PrivateKey", []byte(priv), 0644)
+		if err != nil {
+			log.Error("%v", utils.ErrInfo(err))
+		}
+	}
+
+	if _, err := os.Stat(*utils.Dir + "/NodePrivateKey"); os.IsNotExist(err) {
+		priv, _, _ := lib.GenHexKeys()
+		fmt.Println("WriteFile " + *utils.Dir + "/NodePrivateKey")
+		err := ioutil.WriteFile(*utils.Dir+"/NodePrivateKey", []byte(priv), 0644)
+		if err != nil {
+			log.Error("%v", utils.ErrInfo(err))
+		}
+	}
 
 	NodePrivateKey, _ := ioutil.ReadFile(*utils.Dir + "/NodePrivateKey")
 	NodePrivateKeyStr := strings.TrimSpace(string(NodePrivateKey))
