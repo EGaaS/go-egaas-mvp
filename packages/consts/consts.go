@@ -79,7 +79,7 @@ const DATA_TYPE_BLOCK_BODY = 7
 
 const CHANGE_KEY_PERIOD = 86400 * 7
 
-const UPD_FULL_NODES_PERIOD = 60 // is for the test time, then we have to put 86400
+const UPD_FULL_NODES_PERIOD = 3600 // is for the test time, then we have to put 86400
 
 const RATE_VOTING_PERIOD = 3600
 
