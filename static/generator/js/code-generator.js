@@ -23,6 +23,11 @@ CodeGenerator.Controller = JS_CLASS({
         this.$undo = $(".js-undo");
         this.$redo = $(".js-redo");
 
+        this.instrumentPanel = new InstrumentPanel({
+            $instrumentPanel: $(".js-instrument-panel")
+        });
+
+
         this.events();
 
     },
@@ -168,6 +173,7 @@ CodeGenerator.Controller = JS_CLASS({
             })
             .off("mousedown")
             .on("mousedown", function (e) {
+                e.preventDefault();
                 e.stopPropagation();
                 self.$draggingTag = $(this);
                 self.draggingTag = {
@@ -179,12 +185,19 @@ CodeGenerator.Controller = JS_CLASS({
                 if($(this).attr("tag-params")) {
                     self.draggingTag.params = JSON.parse($(this).attr("tag-params"));
                 }
+
+                if($(this).attr("tag-body")) {
+                    self.draggingTag.body = JSON.parse($(this).attr("tag-body"));
+                }
                 // if($(this).attr("tag-nestedClassList")) {
                 //     self.draggingTag.nestedClassList = JSON.parse($(this).attr("tag-nestedClassList"));
                 // }
                 //ol, liClass
 
                 self.startDragging(e);
+            })
+            .on("click", function (e) {
+                e.preventDefault();
             });
 
         this.$trash
@@ -254,7 +267,12 @@ CodeGenerator.Controller = JS_CLASS({
         $(document.body)
             .addClass("g-no-select")
             .addClass("g-no-overflow-x");
-        this.createDraggableBag(this.$draggingTag.get(0).outerHTML);
+        var html = this.$draggingTag.get(0).outerHTML;
+
+        if(this.$draggingTag.find(".js-source-element__preview").length > 0)
+            html = this.$draggingTag.find(".js-source-element__preview").get(0).innerHTML;
+
+        this.createDraggableBag(html);
         this.$draggingTag.addClass("b-draggable_dragging");
     },
 
@@ -344,12 +362,14 @@ CodeGenerator.Controller = JS_CLASS({
             var $tag = this.$container.find('*[tag-id="'+tag.id+'"]');
             var offset = $tag.offset();
             //console.log(tag.name + " offset", '*[tag-id="'+tag.id+'"]', $tag, offset);
-            tag.coords = {
-                left: offset.left - this.containerOffset.left,
-                top: offset.top - this.containerOffset.top,
-                width: $tag.outerWidth(),
-                height: $tag.outerHeight()
-            };
+            if(offset) {
+                tag.coords = {
+                    left: offset.left - this.containerOffset.left,
+                    top: offset.top - this.containerOffset.top,
+                    width: $tag.outerWidth(),
+                    height: $tag.outerHeight()
+                };
+            }
         }
         if(tag.body) {
             for (var i = 0; i < tag.body.length; i++) {
@@ -405,6 +425,20 @@ CodeGenerator.Model = JS_CLASS({
         this.saveHistory();
     },
 
+    setIds: function (tag) {
+        if(!tag)
+            return;
+        if(!tag.id) {
+            tag.id = this.generateId();
+        }
+
+        if(tag.body) {
+            for (var i = 0; i < tag.body.length; i++) {
+                this.setIds(tag.body[i]);
+            }
+        }
+    },
+
     appendToTree: function (tag, toTag, position) {
         var move = false;
         var inserted = false;
@@ -417,7 +451,9 @@ CodeGenerator.Model = JS_CLASS({
             else {
                 console.log("new");
                 move = false;
-                tag.id = this.generateId()
+                //tag.id = this.generateId();
+                this.setIds(tag);
+
             }
 
             if(move) {
@@ -512,6 +548,7 @@ CodeGenerator.Over = JS_CLASS({
         CP(this, param);
         this.$info = this.$over.find(".js-over-info");
         this.$settings = this.$over.find(".js-over-settings");
+        this.$remove = this.$over.find(".js-over-remove");
         this.tag = null;
         this.tagObj = null;
         this.prevTag = null;
@@ -524,20 +561,33 @@ CodeGenerator.Over = JS_CLASS({
 
     events: function () {
         var self = this;
-        this.$settings.on("click", function() {
+        this.$over.on("click", function() {
             if(self.owner.dragging)
                 return;
             if(!self.tag.name)
                 return;
             console.log("settings", self.tag);
-            new TagSettingsDialog({
+            new TagSettingsPanel({
                 tag: self.tag,
                 model: self.model,
                 owner: self
             });
         });
 
+        this.$remove.on("click", function(e) {
+            e.stopPropagation();
+            if(self.owner.dragging)
+                return;
+            if(!self.tag || !self.tag.name)
+                return;
 
+            self.model.remove(self.tag);
+            self.owner.generateCode();
+            self.owner.render();
+
+            self.owner.$containerWrapper.trigger("mousemove", e);
+
+        });
     },
 
     hide: function () {
@@ -554,12 +604,18 @@ CodeGenerator.Over = JS_CLASS({
 
         if(!this.tag) {
             this.tag = this.model.json;
+            this.$settings.hide();
+            this.$remove.hide();
             // this.tag.coords = {
             //     "left": 0,
             //         "top": 0,
             //         "width": "100%",
             //         "height": "100%"
             // };
+        }
+        else {
+            this.$settings.show();
+            this.$remove.show();
         }
         if(this.prevTag != this.tag) {
             this.onOverTagChange();
@@ -621,7 +677,7 @@ CodeGenerator.Over = JS_CLASS({
         if(this.tagObj) {
             var name = "Container";
             if(this.tagObj.name) {
-                name = this.tagObj.title + ' ' + this.tagObj.name;
+                name = this.tagObj.title + ' ' + ((this.tagObj.name != this.tagObj.title) ? this.tagObj.name : "");
             }
 
             this.$info
@@ -701,17 +757,17 @@ CodeGenerator.Over = JS_CLASS({
 
 });
 
-var TagSettingsDialog = JS_CLASS({
+var TagSettingsPanel = JS_CLASS({
 
     constructor: function (param) {
         CP(this, param);
 
-        this.$dialog = $(".js-tag-settings-dialog");
-        this.$dialogBody = this.$dialog.find(".js-body");
-        this.$controls = this.$dialog.find(".js-controls");
-        this.$close = this.$dialog.find(".js-close");
-        this.$save = this.$dialog.find(".js-save");
-        this.$title = this.$dialog.find(".js-title");
+        this.$panel = $(".js-tag-settings-panel");
+        this.$panelBody = this.$panel.find(".js-body");
+        this.$controls = this.$panel.find(".js-controls");
+        this.$close = this.$panel.find(".js-close");
+        this.$save = this.$panel.find(".js-save");
+        this.$title = this.$panel.find(".js-title");
 
         this.tagObj = constructTag(this.tag);
 
@@ -724,11 +780,11 @@ var TagSettingsDialog = JS_CLASS({
 
     events: function () {
         var self = this;
-        this.$dialog.on("click", function () {
-            self.cancel();
-        });
+        // this.$panel.on("click", function () {
+        //     self.cancel();
+        // });
 
-        this.$dialogBody.on("click", function (e) {
+        this.$panelBody.on("click", function (e) {
             e.stopPropagation();
         });
 
@@ -742,11 +798,11 @@ var TagSettingsDialog = JS_CLASS({
     },
 
     show: function () {
-        this.$dialog.show();
+        this.$panel.show();
     },
 
     cancel: function () {
-        this.$dialog.hide();
+        this.$panel.hide();
     },
 
     save: function () {
@@ -757,7 +813,7 @@ var TagSettingsDialog = JS_CLASS({
             this.tag.params[control.name] = control.getValue();
         }
 
-        this.$dialog.hide();
+        //this.$panel.hide();
         this.owner.owner.generateCode();
         this.owner.owner.render();
         this.model.saveHistory();
@@ -797,32 +853,36 @@ function constructTag(item, offset) {
     if(item.type == "Template") {
         tagObj = new MainTemplate(item, offset);
     }
-    switch(item.name) {
-        case "A":
-            tagObj = new TagA(item, offset);
-            break;
-        case "P":
-            tagObj = new TagP(item, offset);
-            break;
-        case "Div":
-            tagObj = new TagDiv(item, offset);
-            break;
-        case "Image":
-            tagObj = new TagImage(item, offset);
-            break;
-        case "Li":
-            tagObj = new TagLi(item, offset);
-            break;
-        case "Divs":
-            tagObj = new TagDivs(item, offset);
-            break;
-        case "UList":
-            tagObj = new TagUList(item, offset);
-            break;
-        case "LiBegin":
-            tagObj = new TagLiBegin(item, offset);
-            break;
-    }
+
+    if(window["Tag" + item.name])
+        tagObj = new window["Tag" + item.name] (item, offset);
+
+    // switch(item.name) {
+    //     case "A":
+    //         tagObj = new TagA(item, offset);
+    //         break;
+    //     case "P":
+    //         tagObj = new TagP(item, offset);
+    //         break;
+    //     case "Div":
+    //         tagObj = new TagDiv(item, offset);
+    //         break;
+    //     case "Image":
+    //         tagObj = new TagImage(item, offset);
+    //         break;
+    //     case "Li":
+    //         tagObj = new TagLi(item, offset);
+    //         break;
+    //     case "Divs":
+    //         tagObj = new TagDivs(item, offset);
+    //         break;
+    //     case "UList":
+    //         tagObj = new TagUList(item, offset);
+    //         break;
+    //     case "LiBegin":
+    //         tagObj = new TagLiBegin(item, offset);
+    //         break;
+    // }
     return tagObj;
 }
 
@@ -870,17 +930,24 @@ var SimpleTag = JS_CLASS(Tag, {
             this.lineOffset = lineOffset;
         console.log("construct " + this.name, this.lineOffset);
     },
-    renderCode: function () {
+    renderCode: function (named) {
 
-        var code = this.renderOffset() + this.name + "{";
+        var code = this.renderOffset() + this.name + (named ? "{" : "(");
         var paramArr = [];
-        for(var paramName in this.params) {
-            if (this.params.hasOwnProperty(paramName)) {
-                paramArr.push(paramName + ' = "' + this.params[paramName] + '"');
+        for(var paramName in this.paramsType) {
+            if (this.paramsType.hasOwnProperty(paramName)) {
+                var value = "";
+                if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
+                    value = this.params[paramName];
+                if(named)
+                    paramArr.push(paramName + ' = "' + value + '"');
+                else {
+                    paramArr.push('"' + value + '"');
+                }
             }
         }
         code += paramArr.join(", ");
-        code += "}\n";
+        code += (named ? "}" : ")") + "\n";
         return code;
     }
 });
@@ -897,17 +964,23 @@ var StructureTag = JS_CLASS(Tag, {
         if(lineOffset)
             this.lineOffset = lineOffset;
     },
-    renderCode: function () {
-        var code = this.renderOffset() + this.nameBegin + "{";
+    renderCode: function (named) {
+        var code = this.renderOffset() + this.nameBegin + (named ? "{" : "(");
         var paramArr = [];
-        for(var paramName in this.params) {
-            if (this.params.hasOwnProperty(paramName)) {
-                paramArr.push(paramName + ' = "' + this.params[paramName] + '"');
+        for(var paramName in this.paramsType) {
+            if (this.paramsType.hasOwnProperty(paramName)) {
+                var value = "";
+                if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
+                    value = this.params[paramName];
+                if(named)
+                    paramArr.push(paramName + ' = "' + value + '"');
+                else {
+                    paramArr.push('"' + value + '"');
+                }
             }
         }
         code += paramArr.join(", ");
-        code += "}\n";
-
+        code += (named ? "}" : ")") + "\n";
         code += this.renderSubItems();
 
         code += this.renderOffset() + this.nameEnd + ":\n";
@@ -951,6 +1024,56 @@ var MainTemplate = JS_CLASS(StructureTag, {
 
 });
 
+var TagA = JS_CLASS(SimpleTag, {
+    name: "A",
+    title: "Link",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Link text",
+            "type": "String",
+            "obligatory": true
+        },
+        "href": {
+            "title": "URL",
+            "description": "Enter link URL",
+            "type": "String",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</a>';
+        return html;
+    }
+});
+
+var TagDiv = JS_CLASS(SimpleTag, {
+    name: "Div",
+    title: "Block",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "String",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</div>';
+        return html;
+    }
+});
+
 var TagDivs = JS_CLASS(StructureTag, {
     nameBegin: "Divs",
     nameEnd: "DivsEnd",
@@ -958,7 +1081,6 @@ var TagDivs = JS_CLASS(StructureTag, {
     paramsType: {
         "nestedClassList": {
             "title": "Class list",
-            "description": "Input CSS class list using whitespace separator",
             "description": "Input CSS class list using whitespace separator, separate class groups with commas. Example: \"row, col-xs-10 col-md-7\"",
             "type": "WhiteSpaceStringArray",
             "obligatory": false
@@ -967,7 +1089,8 @@ var TagDivs = JS_CLASS(StructureTag, {
     renderCode: function () {
         var code = this.renderOffset() + this.nameBegin + "(";
 
-        code += this.params.nestedClassList.join(", ");
+        if(this.params.nestedClassList)
+            code += this.params.nestedClassList.join(", ");
         code += ")\n";
 
         code += this.renderSubItems();
@@ -979,19 +1102,337 @@ var TagDivs = JS_CLASS(StructureTag, {
     renderHTML: function () {
         var html = '';
 
-        for(var i = 0; i < this.params.nestedClassList.length; i++) {
-            html += '<div tag-id="' + this.id + '" class="'+ this.params.nestedClassList[i] +'">';
+        if(this.params.nestedClassList) {
+            for (var i = 0; i < this.params.nestedClassList.length; i++) {
+                html += '<div tag-id="' + this.id + '" class="' + this.params.nestedClassList[i] + '">';
+            }
+        }
+        else {
+            html += '<div tag-id="' + this.id + '">';
         }
 
         html += this.renderSubItems('html');
 
-        for(i = 0; i < this.params.nestedClassList.length; i++) {
+        if(this.params.nestedClassList) {
+            for (i = 0; i < this.params.nestedClassList.length; i++) {
+                html += '</div>';
+            }
+        }
+        else {
             html += '</div>';
         }
 
         return html;
     }
 });
+
+var TagP = JS_CLASS(SimpleTag, {
+    name: "P",
+    title: "Text",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</p>';
+        return html;
+    }
+});
+
+var TagEm = JS_CLASS(SimpleTag, {
+    name: "Em",
+    title: "Cursive",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<em tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</em>';
+        return html;
+    }
+});
+
+var TagLi = JS_CLASS(SimpleTag, {
+    name: "Li",
+    title: "List element",
+    paramsType: {
+        "text": {
+            "title": "Text",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</li>';
+        return html;
+    }
+});
+
+var TagLiBegin = JS_CLASS(StructureTag, {
+    nameBegin: "LiBegin",
+    nameEnd: "LiEnd",
+    title: "Complex list element",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">';
+
+        html += this.renderSubItems('html');
+
+        html += '</li>';
+        return html;
+    }
+});
+
+var TagSmall = JS_CLASS(SimpleTag, {
+    name: "Small",
+    title: "Small",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<small tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</small>';
+        return html;
+    }
+});
+
+var TagSpan = JS_CLASS(SimpleTag, {
+    name: "Span",
+    title: "Span",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<span tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</span>';
+        return html;
+    }
+});
+
+var TagStrong = JS_CLASS(SimpleTag, {
+    name: "Strong",
+    title: "Bold",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<strong tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</strong>';
+        return html;
+    }
+});
+
+var TagLabel = JS_CLASS(SimpleTag, {
+    name: "Label",
+    title: "Label",
+    paramsType: {
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<label tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</label>';
+        return html;
+    }
+});
+
+var TagLegend = JS_CLASS(SimpleTag, {
+    name: "Legend",
+    title: "Legend",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": true
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<legend tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</legend>';
+        return html;
+    }
+});
+
+var TagTag = JS_CLASS(SimpleTag, {
+    name: "Tag",
+    title: "Tag",
+    paramsType: {
+        "tagname": {
+            "title": "Select tag name",
+            "type": "Select",
+            "values": [
+                {"name": "Header 1", "value": "h1"},
+                {"name": "Header 2", "value": "h2"},
+                {"name": "Header 3", "value": "h3"},
+                {"name": "Header 4", "value": "h4"},
+                {"name": "Header 5", "value": "h5"},
+                {"name": "Header 6", "value": "h6"},
+                {"name": "Button", "value": "button"}
+            ],
+            "obligatory": true
+        },
+        "text": {
+            "title": "Text",
+            "type": "Textarea",
+            "obligatory": false
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<' + this.params.tagname + ' tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</' + this.params.tagname + '>';
+        return html;
+    }
+});
+
+var TagImage = JS_CLASS(SimpleTag, {
+    name: "Image",
+    title: "Image",
+    paramsType: {
+        "src": {
+            "title": "Image URL",
+            "description": "Example: http://site.com/image.jpg or img/image.jpg",
+            "type": "String",
+            "obligatory": true
+        },
+        "alt": {
+            "title": "Alternative text",
+            "description": "Enter alternative image text",
+            "type": "String",
+            "obligatory": false
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<img tag-id="' + this.id + '" src="' + (this.params.src ? this.params.src : "") + '" class="' + (this.params.class ? this.params.class : "") + '" alt="' + (this.params.alt ? this.params.alt : "") + '">';
+        return html;
+    }
+});
+
+var TagImageInput = JS_CLASS(SimpleTag, {
+    name: "ImageInput",
+    title: "ImageInput",
+    paramsType: {
+        "id": {
+            "title": "Image ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "width": {
+            "title": "Image width",
+            "type": "String",
+            "obligatory": false
+        },
+        "ratio_height": {
+            "title": "Image height or aspect ratio",
+            "description": "Enter image height or aspect ratio, for example 1/2",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<button tag-id="' + this.id + '" class="btn btn-primary">Select image</button>';
+        return html;
+    }
+});
+
+var TagMarkDown = JS_CLASS(SimpleTag, {
+    name: "MarkDown",
+    title: "MarkDown",
+    paramsType: {
+        "text": {
+            "title": "Text",
+            "description": "Text to be converted to HTML",
+            "type": "Textarea",
+            "obligatory": true
+        }
+    },
+    renderHTML: function () {
+        var html = '<span tag-id="' + this.id + '">' + (this.params.text ? this.params.text : "") + '</span>';
+        return html;
+    }
+});
+
 
 var TagUList = JS_CLASS(StructureTag, {
     nameBegin: "UList",
@@ -1035,150 +1476,7 @@ var TagUList = JS_CLASS(StructureTag, {
     }
 });
 
-var TagLiBegin = JS_CLASS(StructureTag, {
-    nameBegin: "LiBegin",
-    nameEnd: "LiEnd",
-    title: "Complex list element",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        }
-    },
-    renderHTML: function () {
-        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">';
 
-        html += this.renderSubItems('html');
-
-        html += '</li>';
-        return html;
-    }
-});
-
-var TagA = JS_CLASS(SimpleTag, {
-    name: "A",
-    title: "Link",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        },
-        "text": {
-            "title": "Link text",
-            "type": "String",
-            "obligatory": true
-        },
-        "href": {
-            "title": "URL",
-            "description": "Enter link URL",
-            "type": "String",
-            "obligatory": true
-        }
-    },
-    renderHTML: function () {
-        var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</a>';
-        return html;
-    }
-});
-
-var TagP = JS_CLASS(SimpleTag, {
-    name: "P",
-    title: "Text",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        },
-        "text": {
-            "title": "Text",
-            "type": "Textarea",
-            "obligatory": true
-        }
-    },
-    renderHTML: function () {
-        var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</p>';
-        return html;
-    }
-});
-
-var TagDiv = JS_CLASS(SimpleTag, {
-    name: "Div",
-    title: "Block",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        },
-        "text": {
-            "title": "Text",
-            "type": "String",
-            "obligatory": true
-        }
-    },
-    renderHTML: function () {
-        var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</div>';
-        return html;
-    }
-});
-
-var TagImage = JS_CLASS(SimpleTag, {
-    name: "Image",
-    title: "Image",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        },
-        "src": {
-            "title": "Image URL",
-            "description": "Example: http://site.com/image.jpg или img/image.jpg",
-            "type": "String",
-            "obligatory": true
-        },
-        "alt": {
-            "title": "Alternative text",
-            "description": "Enter alternative image text",
-            "type": "String",
-            "obligatory": false
-        }
-    },
-    renderHTML: function () {
-        var html = '<img tag-id="' + this.id + '" src="' + (this.params.src ? this.params.src : "") + '" class="' + (this.params.class ? this.params.class : "") + '" alt="' + (this.params.alt ? this.params.alt : "") + '">';
-        return html;
-    }
-});
-
-var TagLi = JS_CLASS(SimpleTag, {
-    name: "Li",
-    title: "List element",
-    paramsType: {
-        "class": {
-            "title": "Element class list",
-            "description": "Input CSS class list using whitespace separator",
-            "type": "WhiteSpaceString",
-            "obligatory": false
-        },
-        "text": {
-            "title": "Text",
-            "type": "String",
-            "obligatory": true
-        }
-    },
-    renderHTML: function () {
-        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</li>';
-        return html;
-    }
-});
 
 var Control = {};
 
@@ -1308,5 +1606,345 @@ Control.Checkbox = JS_CLASS(Control.BaseController, {
 
     getValue: function(value) {
         return this.$input.prop("checked") ? this.param.onValue : this.param.offValue;
+    }
+});
+
+Control.Select = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-select",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+        if(this.param.values && this.param.values.length) {
+            for(var i = 0; i < this.param.values.length; i++) {
+                this.$input.append('<option value="'+this.param.values[i].value+'">'+this.param.values[i].name+'</option>');
+            }
+        }
+    }
+});
+
+var InstrumentPanel = JS_CLASS({
+    elements: [
+        {
+            "title": "Link",
+            "type": "tag",
+            "name": "A",
+            "params": {
+                "text": "Link URL",
+                "href": "http://"
+            }
+        },
+        {
+            "title": "Text Block",
+            "type": "tag",
+            "name": "Div",
+            "params": {
+                "text": "Block"
+
+            }
+        },
+        {
+            "title": "Nested Blocks",
+            "type": "tag",
+            "name": "Divs",
+            "params": {
+            }
+        },
+        {
+            "title": "Panel",
+            "type": "tag",
+            "name": "Divs",
+            "params": {
+                "nestedClassList": [
+                    "panel panel-primary"
+                ]
+            },
+            "body": [
+                {
+                    "type": "tag",
+                    "name": "Divs",
+                    "params": {
+                        "nestedClassList": [
+                            "panel-heading"
+                        ]
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Div",
+                            "params": {
+                                "class": "panel-title",
+                                "text": "Title"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "tag",
+                    "name": "Divs",
+                    "params": {
+                        "nestedClassList": [
+                            "panel-body"
+                        ]
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "Panel content"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "tag",
+                    "name": "Divs",
+                    "params": {
+                        "nestedClassList": [
+                            "panel-footer"
+                        ]
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "Footer"
+                            }
+                        }
+                    ]
+                }
+            ]
+
+        },
+
+        {
+            "title": "Text",
+            "type": "tag",
+            "name": "P",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Cursive Text",
+            "type": "tag",
+            "name": "Em",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Small Text",
+            "type": "tag",
+            "name": "Small",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Span",
+            "type": "tag",
+            "name": "Span",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Bold Text",
+            "type": "tag",
+            "name": "Strong",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Label",
+            "type": "tag",
+            "name": "Label",
+            "params": {
+                "text": "Label name",
+                "class": ""
+            }
+        },
+
+        {
+            "title": "Legend",
+            "type": "tag",
+            "name": "Legend",
+            "params": {
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "H1-H6 Header or Button",
+            "type": "tag",
+            "name": "Tag",
+            "params": {
+                "tagname": "h1",
+                "class": "",
+                "text": "Sample text"
+            }
+        },
+
+        {
+            "title": "Image",
+            "type": "tag",
+            "name": "Image",
+            "params": {
+                "src": "http://apla.io/images/prospects_logo.png",
+                "alt": "",
+                "class": ""
+            }
+        },
+
+        {
+            "title": "Image Upload button",
+            "type": "tag",
+            "name": "ImageInput",
+            "params": {
+                "id": "test",
+                "width": "100",
+                "ratio_height": "1/1"
+            }
+        },
+
+        {
+            "title": "MarkDown HTML ",
+            "type": "tag",
+            "name": "MarkDown",
+            "params": {
+                "text": "<b>Sample html</b><hr>"
+            }
+        },
+
+        {
+            "title": "Unordered List",
+            "type": "tag",
+            "name": "UList",
+            "params": {
+                "ol": ""
+            },
+            "body": [
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "First"}
+                },
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "Second"}
+                },
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "Third"}
+                }
+            ]
+        },
+
+        {
+            "title": "Ordered List",
+            "type": "tag",
+            "name": "UList",
+            "params": {
+                "ol": "ol"
+            },
+            "body": [
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "First"}
+                },
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "Second"}
+                },
+                {
+                    "type":"tag",
+                    "name": "Li",
+                    "params": {"text": "Third"}
+                }
+            ]
+        },
+
+        {
+            "title": "List Item",
+            "type":"tag",
+            "name": "Li",
+            "params": {"text": "New Item"}
+        },
+
+        {
+            "title": "Complex List Item",
+            "type":"tag",
+            "name": "LiBegin",
+            "params": {"class": ""},
+            "body": [
+                {
+                    "type": "tag",
+                    "name": "Image",
+                    "params": {
+                        "src": "http://apla.io/images/i19.png"
+                    }
+                },
+                {
+                    "type": "tag",
+                    "name": "Em",
+                    "params": {
+                        "class": "",
+                        "text": "New item block"
+                    }
+                }
+            ]
+        },
+
+    ],
+    $instrumentPanel: null,
+    $sourceElements: null,
+    constructor: function (param) {
+        CP(this, param);
+        this.init();
+    },
+
+    init: function () {
+        if(this.$instrumentPanel) {
+            this.$sourceElements = this.$instrumentPanel.find(".js-source-elements");
+
+            for(var i = 0; i < this.elements.length; i++) {
+                var el = this.elements[i];
+                var tag = constructTag(el);
+
+                if(!tag)
+                    continue;
+
+                var zIndex = this.elements.length - i;
+
+                var html = "<div class='js-draggable b-source-element' tag-name='"+tag.name+"' tag-params='"+ JSON.stringify(tag.params) + "'";
+                if(tag.body)
+                    html += " tag-body='"+ JSON.stringify(tag.body) +"'";
+                html += " style='z-index: "+zIndex+"'>" + tag.title;
+                html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
+
+                this.$sourceElements.append(html);
+            }
+
+        }
     }
 });

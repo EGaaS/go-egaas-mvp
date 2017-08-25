@@ -99,14 +99,23 @@ SourceElement
   = Statement
   
 Statement
-  = Tag
+  = Tags
   
-Tag
+Tags
   = A
-  / P
-  / Image
   / Div
   / Divs
+  / P
+  / Em
+  / Small
+  / Span
+  / Strong
+  / Label
+  / Legend
+  / Tag
+  / Image
+  / ImageInput
+  / MarkDown
   / UList
 
 NoSpaceArgument
@@ -178,6 +187,43 @@ A
     } 
   }
 
+Div
+  = "Div" params:Arguments  {
+    
+    var paramsObj = {
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Div",
+        id: generateId(),
+        params: paramsObj
+      }
+  } 
+  / "Div" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Div",
+        id: generateId(),
+        params: params    
+    } 
+  }  
+ 
+Divs
+  = "Divs" params:Arguments __ body:SourceElements? __ "DivsEnd:" {   
+    return {
+      type: "tag",
+      name: "Divs",
+      id: generateId(),
+      params: { "nestedClassList": params },
+      body: optionalList(body)
+    }       
+  }
+
 P
   = "P" params:Arguments  { 
     var paramsObj = {      
@@ -198,6 +244,200 @@ P
   	return {
         type: "tag",
         name: "P",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Em
+  = "Em" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Em",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Em" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Em",
+        id: generateId(),
+        params: params    
+    } 
+  }
+
+Small
+  = "Small" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Small",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Small" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Small",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Span
+  = "Span" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Span",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Span" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Span",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Strong
+  = "Strong" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Strong",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Strong" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Strong",
+        id: generateId(),
+        params: params    
+    } 
+  }  
+
+Label
+  = "Label:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "Label",
+        id: generateId(),
+        params: { "text": param }
+      }
+    }
+  / "Label" params:Arguments  {
+    
+    var paramsObj = {
+      "text": null,      
+      "class": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Label",
+        id: generateId(),
+        params: paramsObj
+      }
+  } 
+  / "Label" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Label",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Legend
+  = "Legend" params:Arguments  { 
+    var paramsObj = {      
+      "class": null,
+      "text": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Legend",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Legend" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Legend",
+        id: generateId(),
+        params: params    
+    } 
+  }   
+  
+Tag
+  = "Tag:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "Tag",
+        id: generateId(),
+        params: { "tagname": param }
+      }
+    }
+  / "Tag" params:Arguments  {
+    
+    var paramsObj = {
+      "tagname": null,
+      "text": null,      
+      "class": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Tag",
+        id: generateId(),
+        params: paramsObj
+      }
+  } 
+  / "Tag" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Tag",
         id: generateId(),
         params: params    
     } 
@@ -238,11 +478,53 @@ Image
     } 
   }
   
-Div
-  = "Div" params:Arguments  {
+ImageInput
+  = "ImageInput:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "ImageInput",
+        id: generateId(),
+        params: { "tagname": param }
+      }
+    }
+  / "ImageInput" params:Arguments  {
     
     var paramsObj = {
-      "class": null,
+      "id": null,
+      "width": null,      
+      "ratio_height": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "ImageInput",
+        id: generateId(),
+        params: paramsObj
+      }
+  } 
+  / "ImageInput" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "ImageInput",
+        id: generateId(),
+        params: params    
+    } 
+  }  
+  
+MarkDown
+  = "MarkDown:" param:NoSpaceArgument { 
+      return {
+        type: "tag",
+        name: "MarkDown",
+        id: generateId(),
+        params: { "text": param }
+      }
+    }
+  / "MarkDown" params:Arguments  {
+    
+    var paramsObj = {
       "text": null
     }
     
@@ -250,30 +532,19 @@ Div
     
     return {
         type: "tag",
-        name: "Div",
+        name: "MarkDown",
         id: generateId(),
         params: paramsObj
       }
   } 
-  / "Div" params:NamedArguments {
+  / "MarkDown" params:NamedArguments {
   	return {
         type: "tag",
-        name: "Div",
+        name: "MarkDown",
         id: generateId(),
         params: params    
     } 
-  }  
- 
-Divs
-  = "Divs" params:Arguments __ body:SourceElements? __ "DivsEnd:" {   
-    return {
-      type: "tag",
-      name: "Divs",
-      id: generateId(),
-      params: { "nestedClassList": params },
-      body: optionalList(body)
-    }       
-  }
+  } 
 
 UList
   = "UList" params:Arguments __ body:LiElements? __ "UListEnd:" {   
@@ -383,50 +654,11 @@ LiBegin
     }       
   }  
 
-  ------------
 
+  
 
-
-A(href = http)
-
-P(``b-green``, Текс абзаца)
-P(b-green, "Текс абзаца")
-P{text = Привет! проверка, class="big"}
-Image:/img/logo.png
-Image(http://egaas.org/logo.png, логотип, b-small)
-Image{src = http://egaas.org/logo.png, alt=логотип, class=b-small b-right data-title=test}
-A(b-big,тект ссылки, ``http://ya.ru``) 
-A{text=Искать в яндексе, href = "https://yandex.ru/search", class=b-big b-info}
-
-Div{text = kaka, class = f}
-
-Divs(pull-left b-red, b-panel)
-
-  P(``b-green``, Текс абзаца)
-  A(b-big,тект ссылки, ``http://ya.ru``) 
-DivsEnd:
-
-UList(b-big, ol)
-  Li:первый
-  Li:второй
-  Li(третий, b-underline)
-  LiBegin:b-big
-    A{text=Искать в яндексе, href = "https://yandex.ru/search", class=b-big b-info}
-  LiEnd:
-
-  LiBegin(b-big b-blue)
-    A{text=Искать в google, href = "https://google.com/search", class=b-big b-info}
-
-    Divs(pull-left b-red, b-panel)
-      P(``b-green``, Текс абзаца)
-      A(b-big,тект ссылки, ``http://ya.ru``) 
-    DivsEnd:
-
-  LiEnd:
-
-UListEnd:
-
-
+  
+ 
 
 -----------------
 

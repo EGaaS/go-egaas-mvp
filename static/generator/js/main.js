@@ -14,7 +14,8 @@ $(function() {
         $container: $(".js-container"),
         $containerWrapper: $(".js-container-wrapper"),
         $codeGenerated: $codeGenerated,
-        $output: $output
+        $output: $output,
+        $instrumentPanel: $(".js-instrument-panel")
     });
 
     setInterval(function () {

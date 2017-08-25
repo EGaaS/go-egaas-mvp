@@ -96,7 +96,7 @@
     padding: 2px 5px;
 }
 
-.b-over-settings:hover {
+.b-over-settings > i:hover {
     color: #000;
     cursor: pointer;
 }
@@ -148,6 +148,22 @@
 
 .b-source-element {
     cursor: move;
+    position: relative;
+    z-index: 1;
+}
+
+.b-source-element__preview {
+    position: absolute;
+    top: 20px;
+    display: none;
+    background: #FFF;
+    border: 1px solid #CCC;
+    padding: 10px;
+    z-index: 10;
+}
+
+.b-source-element:hover .b-source-element__preview {
+    display: block;
 }
 
 .b-draggable_dragging {
@@ -172,9 +188,10 @@
 }
 
 .b-trash {
-    font-size: 80px;
+    font-size: 50px;
     color: #999;
-    padding: 30px 50px;
+    padding: 20px;
+    width: 100%;
     text-align: center;
 }
 
@@ -182,33 +199,33 @@
     color: #F44;
 }
 
-.b-tag-settings-dialog {
+.b-tag-settings-panel {
     display: none;
-    position: fixed;
-    z-index: 8000;
-    top: 0; left: 0;
-    right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
+    /*position: fixed;*/
+    /*z-index: 8000;*/
+    /*top: 0; left: 0;*/
+    /*right: 0; bottom: 0;*/
+    /*background: rgba(0, 0, 0, 0.2);*/
 }
 
-.b-tag-settings-dialog__body {
+.b-tag-settings-panel__body {
     position: relative;
     background: #FFF;
-    width: 500px;
+    /*width: 500px;*/
     min-height: 400px;
-    border: 1px solid #EEE;
-    border-radius: 5px;
-    margin: 100px auto 0 auto;
-    padding: 20px;
+    /*border: 1px solid #EEE;*/
+    /*border-radius: 5px;*/
+    /*margin: 100px auto 0 auto;*/
+    /*padding: 20px;*/
 }
 
-.b-tag-settings-dialog__body__close {
+.b-tag-settings-panel__body__close {
     position: absolute;
     top: 0; right: 0;
     padding: 10px;
     cursor: pointer;
 }
 
-.b-tag-settings-dialog__body__controls {
+.b-tag-settings-panel__body__controls {
 
 }
