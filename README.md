@@ -9,6 +9,8 @@ https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/6874
 
 ### Installation v1.x - only egs-wallet
 
+[![Join the chat at https://gitter.im/go-egaas-mvp/Lobby](https://badges.gitter.im/go-egaas-mvp/Lobby.svg)](https://gitter.im/go-egaas-mvp/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Install golang >=1.6 https://golang.org/dl/<br>
 Set GOPATH<br>
 Install git https://git-scm.com/
