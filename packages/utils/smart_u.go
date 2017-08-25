@@ -147,7 +147,7 @@ func init() {
 		`LiTemplate`: LiTemplate, `LinkPage`: LinkPage, `BtnPage`: BtnPage, `UList`: UList, `UListEnd`: UListEnd, `Li`: Li,
 		`CmpTime`: CmpTime, `Title`: Title, `MarkDown`: MarkDown, `Navigation`: Navigation, `PageTitle`: PageTitle,
 		`PageEnd`: PageEnd, `StateVal`: StateVal, `Json`: JSONScript, `And`: And, `Or`: Or, `LiBegin`: LiBegin, `LiEnd`: LiEnd,
-		`TxId`: TxID, `SetVar`: SetVar, `GetList`: GetList, `GetRow`: GetRowVars, `GetOne`: GetOne, `TextHidden`: TextHidden,
+		`TxId`: TxID, `SetVar`: SetVar, `GetList`: GetList, `GetMap`: GetMap, `GetRow`: GetRowVars, `GetOne`: GetOne, `TextHidden`: TextHidden,
 		`ValueById`: ValueByID, `FullScreen`: FullScreen, `Ring`: Ring, `WiBalance`: WiBalance, `GetVar`: GetVar,
 		`WiAccount`: WiAccount, `WiCitizen`: WiCitizen, `Map`: Map, `MapPoint`: MapPoint, `StateLink`: StateLink,
 		`If`: If, `IfEnd`: IfEnd, `Else`: Else, `ElseIf`: ElseIf, `Trim`: Trim, `Date`: Date, `DateTime`: DateTime, `Now`: Now, `Input`: Input,
@@ -744,6 +744,42 @@ func GetList(vars *map[string]string, pars ...string) string {
 			(*vars)[pars[0]+ikey+key] = ival
 		}
 		//		out[item[keys[0]]] = item
+	}
+	(*vars)[pars[0]+`_list`] = strings.Join(list, `|`)
+	(*vars)[pars[0]+`_columns`] = strings.Join(cols, `|`)
+	return ``
+}
+
+// GetMap assigns the result of sql request to the variable and parse it to map
+func GetMap(vars *map[string]string, pars ...string) string {
+	// name, table, id, colname
+	if len(pars) < 4 {
+		return ``
+	}
+	value, err := DB.Single(`select `+lib.Escape(pars[3])+` from `+lib.EscapeName(pars[1])+`where id=?`,
+		StrToInt64(pars[2])).String()
+	if err != nil {
+		return err.Error()
+	}
+	ret := regexp.MustCompile(`(?is)\[([^\,]+),([^\]]+)\]`).FindAllStringSubmatch(value, -1)
+	list := make([]string, 0)
+	cols := []string{`key`, `value`}
+	for ikey, item := range ret {
+		if len(item) != 3 {
+			continue
+		}
+		key := item[1]
+		ival := item[2]
+		skey := IntToStr(ikey)
+		list = append(list, skey)
+		if strings.IndexByte(ival, '<') >= 0 {
+			ival = lib.StripTags(ival)
+		}
+		if strings.IndexByte(key, '<') >= 0 {
+			key = lib.StripTags(key)
+		}
+		(*vars)[pars[0]+skey+`key`] = key
+		(*vars)[pars[0]+skey+`value`] = ival
 	}
 	(*vars)[pars[0]+`_list`] = strings.Join(list, `|`)
 	(*vars)[pars[0]+`_columns`] = strings.Join(cols, `|`)
