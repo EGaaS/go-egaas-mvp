@@ -125,7 +125,7 @@ func (p *Parser) UpdFullNodes() error {
 		where = ` AND amount > 100000000000000000000`
 	}
 	// получаем новые данные по wallet-нодам
-	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' `+where+` GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 100`).String()
+	all, err := p.GetList(`SELECT address_vote FROM dlt_wallets WHERE address_vote !='' `+where+` GROUP BY address_vote ORDER BY sum(amount) DESC LIMIT 101`).String()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
