@@ -33,3 +33,7 @@ Run EGaaS:
 ```
 ~/egaas/go-egaas-mvp
 ```
+Open EGaaS:
+```
+http://localhost:7079/
+```
