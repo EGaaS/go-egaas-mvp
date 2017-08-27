@@ -244,14 +244,24 @@ func (p *Parser) NewStateMain(country, currency string) (id string, err error) {
 		(?, ?, ?, ?),
 		(?, ?, ?, ?)`,
 		`dashboard_default`, `FullScreen(1)
-
-
+Divs(md-4, panel panel-default elastic data-sweet-alert)
+Divs(panel-body)
+BtnPage(sys-listOfTables, Tables)
+BtnPage(sys-contracts, Contracts)
+BtnPage(sys-interface, Interface)
+DivsEnd:
+DivsEnd:
 PageEnd:
 `, `menu_default`, sid,
 
 		`government`, `FullScreen(1)
-
-
+Divs(md-4, panel panel-default elastic data-sweet-alert)
+Divs(panel-body)
+BtnPage(sys-listOfTables, Tables)
+BtnPage(sys-contracts, Contracts)
+BtnPage(sys-interface, Interface)
+DivsEnd:
+DivsEnd:
 PageEnd:
 `, `government`, sid,
 	)
@@ -286,7 +296,6 @@ MenuItem(Export, sys-export_tpl)
 MenuItem(Wallet,  sys-edit_wallet)
 MenuItem(Languages, sys-languages)
 MenuItem(Signatures, sys-signatures)
-MenuItem(Gen Keys, sys-gen_keys)
 MenuEnd:
 MenuBack(Welcome)`, sid)
 	if err != nil {
