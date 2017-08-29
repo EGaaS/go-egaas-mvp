@@ -861,28 +861,7 @@ function constructTag(item, offset) {
     //     case "A":
     //         tagObj = new TagA(item, offset);
     //         break;
-    //     case "P":
-    //         tagObj = new TagP(item, offset);
-    //         break;
-    //     case "Div":
-    //         tagObj = new TagDiv(item, offset);
-    //         break;
-    //     case "Image":
-    //         tagObj = new TagImage(item, offset);
-    //         break;
-    //     case "Li":
-    //         tagObj = new TagLi(item, offset);
-    //         break;
-    //     case "Divs":
-    //         tagObj = new TagDivs(item, offset);
-    //         break;
-    //     case "UList":
-    //         tagObj = new TagUList(item, offset);
-    //         break;
-    //     case "LiBegin":
-    //         tagObj = new TagLiBegin(item, offset);
-    //         break;
-    // }
+
     return tagObj;
 }
 
@@ -1032,7 +1011,8 @@ var TagA = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Link text",
@@ -1060,7 +1040,8 @@ var TagDiv = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Text",
@@ -1134,6 +1115,7 @@ var TagP = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
+            "helpers": ["Align", "Color", "BgColor"],
             "obligatory": false
         },
         "text": {
@@ -1156,7 +1138,8 @@ var TagEm = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Text",
@@ -1183,7 +1166,8 @@ var TagLi = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Color", "BgColor"]
         }
     },
     renderHTML: function () {
@@ -1222,7 +1206,8 @@ var TagSmall = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Text",
@@ -1244,7 +1229,8 @@ var TagSpan = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Text",
@@ -1266,7 +1252,8 @@ var TagStrong = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         },
         "text": {
             "title": "Text",
@@ -1293,7 +1280,8 @@ var TagLabel = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "BgColor"]
         }
     },
     renderHTML: function () {
@@ -1310,7 +1298,8 @@ var TagLegend = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": true
+            "obligatory": true,
+            "helpers": ["Align", "Color", "BgColor"],
         },
         "text": {
             "title": "Text",
@@ -1351,7 +1340,8 @@ var TagTag = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color", "Size"]
         }
     },
     renderHTML: function () {
@@ -1380,7 +1370,8 @@ var TagImage = JS_CLASS(SimpleTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align"]
         }
     },
     renderHTML: function () {
@@ -1445,11 +1436,12 @@ var TagUList = JS_CLASS(StructureTag, {
             "title": "Element class list",
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
-            "obligatory": false
+            "obligatory": false,
+            "helpers": ["Align", "Color"]
         },
         "ol": {
-            "title": "Numbered list",
-            "description": "Check this box for numbered list",
+            "title": "Ordered list",
+            "description": "Check this box for ordered list",
             "type": "Checkbox",
             "onValue": "ol",
             "offValue": "",
@@ -1486,6 +1478,7 @@ Control.BaseController = JS_CLASS({
     name: "",
     constructor: function (param) {
         CP(this, param);
+        this.helpers = [];
 
         this.data = this.param;
         this.data.name = this.name;
@@ -1519,6 +1512,7 @@ Control.BaseController = JS_CLASS({
     getValue: function() {
         return this.$input.val();
     }
+
 });
 
 Control.String = JS_CLASS(Control.BaseController, {
@@ -1550,7 +1544,30 @@ Control.WhiteSpaceString = JS_CLASS(Control.BaseController, {
     },
 
     init: function () {
+        if(this.param.helpers) {
+            //this.$content.append(this.param.helpers.join(", "));
+            //this.
+            for(var i = 0; i < this.param.helpers.length; i++) {
+                var helperName = this.param.helpers[i];
+                if(Helper[helperName]) {
+                    this.helpers.push(new Helper[helperName]({
+                        owner: this,
+                        $content: this.$content
+                    }));
+                }
+            }
+        }
+    },
 
+    setValue: function (value) {
+        SUPER(this,arguments);
+        this.updateHelpers(value);
+    },
+
+    updateHelpers: function (value) {
+        for(var i = 0; i < this.helpers.length; i++) {
+            this.helpers[i].updateValue(value);
+        }
     }
 });
 
@@ -1947,4 +1964,184 @@ var InstrumentPanel = JS_CLASS({
 
         }
     }
+});
+
+var Helper = {};
+
+Helper.Base = JS_CLASS( {
+    title: "",
+    constructor: function (param) {
+        CP(this, param);
+
+        this.addTitle();
+        this.init();
+    },
+    init: function () {
+
+    },
+
+    addTitle: function () {
+        this.$content.append("<h5>" + this.title + "</h5>");
+    },
+
+    addRadio: function (data) {
+        var radioTpl = "#tpl-control-radio";
+        this.$content.append(
+            $(TPL ($(radioTpl).html(), data))
+        );
+    },
+
+    updateValue: function () {
+
+    },
+
+    selectRadio: function (value) {
+        console.log("selectRadio", this.name, value);
+        this.$content.find('input[type="radio"][name="'+this.name+'"][value="'+value+'"]').prop("checked", true);
+    },
+
+    setSelectedRadio: function (value) {
+        console.log("setSelectedRadio", value);
+
+        var classArr = value.split(" ");
+        this.selectRadio("");
+        for(var i = 0; i < classArr.length; i++) {
+            var className = classArr[i].trim();
+            if(className)
+                this.selectRadio(className);
+        }
+    }
+});
+
+Helper.Radio = JS_CLASS(Helper.Base, {
+    classes: [],
+    init: function () {
+        var self = this;
+        for(var i = 0; i < this.classes.length; i++)
+            this.addRadio({
+                name: this.name,
+                value: this.classes[i].value,
+                title: this.classes[i].title,
+                class: this.classes[i].class ? this.classes[i].class : ""
+            });
+
+        this.$content.find('input[type="radio"][name="'+this.name+'"]').on("change", function() {
+            self.onSelect(this.value);
+        });
+    },
+
+    updateValue: function (value) {
+        this.setSelectedRadio(value);
+    },
+
+    onSelect: function (value) {
+        var classList = this.owner.getValue();
+        for(var i = 0; i < this.classes.length; i++) {
+            var val = this.classes[i].value;
+            if(val) {
+                classList = classList.replace(new RegExp(val, 'g'), '');
+            }
+        }
+        classList += " " + value;
+        classList = classList.replace(/\s\s+/g, ' ');
+        this.owner.setValue(classList);
+    }
+});
+
+
+Helper.Align = JS_CLASS(Helper.Radio, {
+    title: "Align",
+    name: "align",
+    classes: [
+        {
+            "title": "None",
+            "value": ""
+        },
+        {
+            "title": "Left",
+            "value": "pull-left"
+        },
+        {
+            "title": "Right",
+            "value": "pull-right"
+        }
+    ]
+});
+
+
+Helper.Color = JS_CLASS(Helper.Radio, {
+    title: "Text color",
+    name: "color",
+    classes: [
+        {
+            "title": "Default",
+            "value": ""
+        },
+        {
+            "title": "Muted",
+            "value": "text-muted",
+            "class": "text-muted"
+        },
+        {
+            "title": "Primary",
+            "value": "text-primary",
+            "class": "text-primary"
+        },
+        {
+            "title": "Success",
+            "value": "text-success",
+            "class": "text-success"
+        },
+        {
+            "title": "Info",
+            "value": "text-info",
+            "class": "text-info"
+        },
+        {
+            "title": "Warning",
+            "value": "text-warning",
+            "class": "text-warning"
+        },
+        {
+            "title": "Danger",
+            "value": "text-danger",
+            "class": "text-danger"
+        }
+    ]
+});
+
+Helper.BgColor = JS_CLASS(Helper.Radio, {
+    title: "Background color",
+    name: "bgColor",
+    classes: [
+        {
+            "title": "Default",
+            "value": ""
+        },
+        {
+            "title": "Primary",
+            "value": "bg-primary",
+            "class": "text-primary"
+        },
+        {
+            "title": "Success",
+            "value": "bg-success",
+            "class": "text-success"
+        },
+        {
+            "title": "Info",
+            "value": "bg-info",
+            "class": "text-info"
+        },
+        {
+            "title": "Warning",
+            "value": "bg-warning",
+            "class": "text-warning"
+        },
+        {
+            "title": "Danger",
+            "value": "bg-danger",
+            "class": "text-danger"
+        }
+    ]
 });
