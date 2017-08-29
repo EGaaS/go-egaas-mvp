@@ -210,6 +210,10 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			for {
 				length := utils.DecodeLength(transactionBinaryData)
 				i++
+				if i >= 20 { // We don't have transactions with more than 20 elements
+					log.Error("i > 20 %d", length)
+					return transSlice, utils.ErrInfo(fmt.Errorf("i > 20 tx %d", length))
+				}
 				if length > 0 && length < consts.MAX_TX_SIZE {
 					data := utils.BytesShift(transactionBinaryData, length)
 					returnSlice = append(returnSlice, data)
@@ -219,7 +223,7 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 					returnSlice = append(returnSlice, []byte{})
 					continue
 				}
-				if length == 0 || i >= 20 { // We don't have transactions with more than 20 elements
+				if length == 0 {
 					break
 				}
 			}
