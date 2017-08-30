@@ -51,8 +51,9 @@
 
 .b-container ul,
 .b-container ol,
-.b-container div {
-    min-height: 10px;
+.b-container div,
+.b-container form {
+    min-height: 15px;
 }
 
 .b-over {

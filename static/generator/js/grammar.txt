@@ -117,6 +117,14 @@ Tags
   / ImageInput
   / MarkDown
   / UList
+  / Form
+  / Input
+  / Textarea
+  / InputAddress
+  / InputDate
+  / InputMoney
+  / Select
+  / Source
 
 NoSpaceArgument
   = str:[a-zA-Zà-ÿÀ-ß0-9\-_\./]* { return str.join(""); }
@@ -654,11 +662,215 @@ LiBegin
     }       
   }  
 
+Form
+  = "Form" params:Arguments __ body:SourceElements? __ "FormEnd:" { 
+    var paramsObj = {      
+      "class": null      
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Form",
+        id: generateId(),
+        params: paramsObj,
+        body: optionalList(body)
+      }
+    } 
+  / "Form" params:NamedArguments __ body:SourceElements? __ "FormEnd:" {
+  	return {
+        type: "tag",
+        name: "Form",
+        id: generateId(),
+        params: params,
+        body: optionalList(body)
+    } 
+  }
 
-  
+Input
+  = "Input" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "class": null,
+      "placeholder": null,
+      "type": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Input",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Input" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Input",
+        id: generateId(),
+        params: params    
+    } 
+  }
 
+Textarea
+  = "Textarea" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "class": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Textarea",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Textarea" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Textarea",
+        id: generateId(),
+        params: params    
+    } 
+  }
+
+InputAddress
+  = "InputAddress" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "class": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "InputAddress",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "InputAddress" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "InputAddress",
+        id: generateId(),
+        params: params    
+    } 
+  }
   
- 
+InputDate
+  = "InputDate" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "class": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "InputDate",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "InputDate" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "InputDate",
+        id: generateId(),
+        params: params    
+    } 
+  }  
+  
+InputMoney
+  = "InputMoney" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "class": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "InputMoney",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "InputMoney" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "InputMoney",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Select
+  = "Select" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,
+      "list": null,
+      "class": null,
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Select",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Select" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Select",
+        id: generateId(),
+        params: params    
+    } 
+  }
+  
+Source
+  = "Source" params:Arguments  { 
+    var paramsObj = {      
+      "idname": null,      
+      "value": null
+    }
+    
+    parseArrayParamsToObject(params, paramsObj);
+    
+    return {
+        type: "tag",
+        name: "Source",
+        id: generateId(),
+        params: paramsObj
+      }
+    } 
+  / "Source" params:NamedArguments {
+  	return {
+        type: "tag",
+        name: "Source",
+        id: generateId(),
+        params: params    
+    } 
+  }
 
 -----------------
 

@@ -222,6 +222,9 @@ CodeGenerator.Controller = JS_CLASS({
             if(self.model.undo()) {
                 self.generateCode();
                 self.render();
+                if(self.over.tagSettingsPanel) {
+                    self.over.tagSettingsPanel.cancel();
+                }
             }
         });
 
@@ -229,6 +232,9 @@ CodeGenerator.Controller = JS_CLASS({
             if(self.model.redo()) {
                 self.generateCode();
                 self.render();
+                if(self.over.tagSettingsPanel) {
+                    self.over.tagSettingsPanel.cancel();
+                }
             }
         });
 
@@ -567,7 +573,7 @@ CodeGenerator.Over = JS_CLASS({
             if(!self.tag.name)
                 return;
             console.log("settings", self.tag);
-            new TagSettingsPanel({
+            self.tagSettingsPanel = new TagSettingsPanel({
                 tag: self.tag,
                 model: self.model,
                 owner: self
@@ -834,7 +840,8 @@ var TagSettingsPanel = JS_CLASS({
                     var control = new Control[param.type]({
                         $content: this.$controls,
                         name: paramName,
-                        param: param
+                        param: param,
+                        owner: this
                     });
                     control.setValue(this.tagObj.params[paramName]);
                     this.controls.push(control);
@@ -895,6 +902,13 @@ var Tag = JS_CLASS({
             return true;
         var acceptRuleArr = this.acceptRule.split(" ");
         return ($.inArray(tagName, acceptRuleArr) > -1);
+    },
+    getParam: function (name, defaultValue) {
+        if(typeof defaultValue == "undefined")
+            defaultValue = "";
+        if(!this.params)
+            return defaultValue;
+        return (this.params[name] ? this.params[name] : defaultValue);
     }
 });
 
@@ -1027,7 +1041,7 @@ var TagA = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<a tag-id="' + this.id + '" href="' + this.params.href + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</a>';
+        var html = '<a tag-id="' + this.id + '" href="' + this.getParam("href") + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</a>';
         return html;
     }
 });
@@ -1050,7 +1064,7 @@ var TagDiv = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<div tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</div>';
+        var html = '<div tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</div>';
         return html;
     }
 });
@@ -1125,7 +1139,7 @@ var TagP = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<p tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</p>';
+        var html = '<p tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</p>';
         return html;
     }
 });
@@ -1148,7 +1162,7 @@ var TagEm = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<em tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</em>';
+        var html = '<em tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</em>';
         return html;
     }
 });
@@ -1171,7 +1185,7 @@ var TagLi = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</li>';
+        var html = '<li tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</li>';
         return html;
     }
 });
@@ -1189,7 +1203,7 @@ var TagLiBegin = JS_CLASS(StructureTag, {
         }
     },
     renderHTML: function () {
-        var html = '<li tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">';
+        var html = '<li tag-id="' + this.id + '" class="' + this.getParam("class") + '">';
 
         html += this.renderSubItems('html');
 
@@ -1216,7 +1230,7 @@ var TagSmall = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<small tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</small>';
+        var html = '<small tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</small>';
         return html;
     }
 });
@@ -1239,7 +1253,7 @@ var TagSpan = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<span tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</span>';
+        var html = '<span tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</span>';
         return html;
     }
 });
@@ -1262,7 +1276,7 @@ var TagStrong = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<strong tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</strong>';
+        var html = '<strong tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</strong>';
         return html;
     }
 });
@@ -1285,7 +1299,7 @@ var TagLabel = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<label tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</label>';
+        var html = '<label tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</label>';
         return html;
     }
 });
@@ -1308,7 +1322,7 @@ var TagLegend = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<legend tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</legend>';
+        var html = '<legend tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</legend>';
         return html;
     }
 });
@@ -1333,7 +1347,7 @@ var TagTag = JS_CLASS(SimpleTag, {
         },
         "text": {
             "title": "Text",
-            "type": "Textarea",
+            "type": "String",
             "obligatory": false
         },
         "class": {
@@ -1341,11 +1355,11 @@ var TagTag = JS_CLASS(SimpleTag, {
             "description": "Input CSS class list using whitespace separator",
             "type": "WhiteSpaceString",
             "obligatory": false,
-            "helpers": ["Align", "Color", "Size"]
+            "helpers": ["Align", "Color", "BtnStyle", "BtnColor", "BtnSize"]
         }
     },
     renderHTML: function () {
-        var html = '<' + this.params.tagname + ' tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">' + (this.params.text ? this.params.text : "") + '</' + this.params.tagname + '>';
+        var html = '<' + this.params.tagname + ' tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("text") + '</' + this.params.tagname + '>';
         return html;
     }
 });
@@ -1375,7 +1389,7 @@ var TagImage = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<img tag-id="' + this.id + '" src="' + (this.params.src ? this.params.src : "") + '" class="' + (this.params.class ? this.params.class : "") + '" alt="' + (this.params.alt ? this.params.alt : "") + '">';
+        var html = '<img tag-id="' + this.id + '" src="' + this.getParam("src") + '" class="' + this.getParam("class") + '" alt="' + this.getParam("alt") + '">';
         return html;
     }
 });
@@ -1419,7 +1433,7 @@ var TagMarkDown = JS_CLASS(SimpleTag, {
         }
     },
     renderHTML: function () {
-        var html = '<span tag-id="' + this.id + '">' + (this.params.text ? this.params.text : "") + '</span>';
+        var html = '<span tag-id="' + this.id + '">' + this.getParam("text") + '</span>';
         return html;
     }
 });
@@ -1458,7 +1472,7 @@ var TagUList = JS_CLASS(StructureTag, {
         var tag = 'ul';
         if(this.params.ol == 'ol')
             tag = 'ol';
-        var html = '<' + tag + ' tag-id="' + this.id + '" class="' + (this.params.class ? this.params.class : "") + '">';
+        var html = '<' + tag + ' tag-id="' + this.id + '" class="' + this.getParam("class") + '">';
 
         html += this.renderSubItems('html');
 
@@ -1468,7 +1482,234 @@ var TagUList = JS_CLASS(StructureTag, {
     }
 });
 
+var TagForm = JS_CLASS(StructureTag, {
+    nameBegin: "Form",
+    nameEnd: "FormEnd",
+    title: "Form",
+    paramsType: {
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        }
+    },
+    renderHTML: function () {
+        var html = '<form tag-id="' + this.id + '" class="' + this.getParam("class") + '">';
 
+        html += this.renderSubItems('html');
+
+        html += '</form>';
+
+        return html;
+    }
+});
+
+var TagInput = JS_CLASS(SimpleTag, {
+    name: "Input",
+    title: "Input",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "placeholder": {
+            "title": "Placeholder",
+            "type": "String",
+            "obligatory": false
+        },
+        "type": {
+            "title": "Type",
+            "type": "String",
+            "obligatory": false
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<input placeholder="'+this.getParam("placeholder")+'" tag-id="' + this.id + '" class="' + this.getParam("class") + '" type="' + this.getParam("type", "text") + '" value="' + this.getParam("value") + '">';
+        return html;
+    }
+});
+
+var TagTextarea = JS_CLASS(SimpleTag, {
+    name: "Textarea",
+    title: "Textarea",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<textarea tag-id="' + this.id + '" class="' + this.getParam("class") + '">' + this.getParam("value") + '</textarea>';
+        return html;
+    }
+});
+
+var TagInputAddress = JS_CLASS(SimpleTag, {
+    name: "InputAddress",
+    title: "Input Address",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<input tag-id="' + this.id + '" class="' + this.getParam("class") + '" type="text" value="' + this.getParam("value") + '">';
+        return html;
+    }
+});
+
+var TagInputDate = JS_CLASS(SimpleTag, {
+    name: "InputDate",
+    title: "Input Date",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<input tag-id="' + this.id + '" class="' + this.getParam("class") + '" type="text" value="' + this.getParam("value") + '">';
+        return html;
+    }
+});
+
+var TagInputMoney = JS_CLASS(SimpleTag, {
+    name: "InputMoney",
+    title: "Input Money",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<input tag-id="' + this.id + '" class="' + this.getParam("class") + '" type="text" value="' + this.getParam("value") + '">';
+        return html;
+    }
+});
+
+var TagSelect = JS_CLASS(SimpleTag, {
+    name: "Select",
+    title: "Select",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "list": {
+            "title": "Select list items",
+            "description": "Input comma separeted list items",
+            "type": "CommaSeparatedString",
+            "obligatory": false
+        },
+        "class": {
+            "title": "Element class list",
+            "description": "Input CSS class list using whitespace separator",
+            "type": "WhiteSpaceString",
+            "obligatory": false,
+            "helpers": ["Align"]
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<select tag-id="' + this.id + '" class="' + this.getParam("class") + '"><option value="1">Select item</option></select>';
+        return html;
+    }
+});
+
+var TagSource = JS_CLASS(SimpleTag, {
+    name: "Source",
+    title: "Source",
+    paramsType: {
+        "idname": {
+            "title": "Field ID",
+            "type": "String",
+            "obligatory": true
+        },
+        "value": {
+            "title": "Value",
+            "type": "String",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<input tag-id="' + this.id + '" type="text" value="' + this.getParam("value") + '" placeholder="Start entering text...">';
+        return html;
+    }
+});
 
 var Control = {};
 
@@ -1495,11 +1736,26 @@ Control.BaseController = JS_CLASS({
             this.$description.show();
 
         this.init();
+
+        this.saveEvent();
+
         //console.log(this.data);
     },
 
     init: function() {
 
+    },
+
+    saveEvent: function () {
+        var self = this;
+        this.$input.on("change keyup", function () {
+            self.triggerChange();
+        });
+    },
+
+    triggerChange: function () {
+
+        this.owner.save();
     },
 
     setValue: function(value) {
@@ -1598,6 +1854,25 @@ Control.WhiteSpaceStringArray = JS_CLASS(Control.BaseController, {
     }
 });
 
+Control.CommaSeparatedString = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-string",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+
+    },
+
+    setValue: function (value) {
+        SUPER(this,arguments);
+    },
+
+    updateHelpers: function (value) {
+
+    }
+});
+
 Control.Checkbox = JS_CLASS(Control.BaseController, {
     tpl: "#tpl-control-checkbox",
     constructor: function (param) {
@@ -1642,327 +1917,464 @@ Control.Select = JS_CLASS(Control.BaseController, {
 });
 
 var InstrumentPanel = JS_CLASS({
-    elements: [
+    "groups": [
         {
-            "title": "Link",
-            "type": "tag",
-            "name": "A",
-            "params": {
-                "text": "Link URL",
-                "href": "http://"
-            }
-        },
-        {
-            "title": "Text Block",
-            "type": "tag",
-            "name": "Div",
-            "params": {
-                "text": "Block"
-
-            }
-        },
-        {
-            "title": "Nested Blocks",
-            "type": "tag",
-            "name": "Divs",
-            "params": {
-            }
-        },
-        {
-            "title": "Panel",
-            "type": "tag",
-            "name": "Divs",
-            "params": {
-                "nestedClassList": [
-                    "panel panel-primary"
-                ]
-            },
-            "body": [
+            "name": "HTML Elements",
+            "elements": [
                 {
+                    "title": "Link",
                     "type": "tag",
-                    "name": "Divs",
+                    "name": "A",
                     "params": {
-                        "nestedClassList": [
-                            "panel-heading"
-                        ]
-                    },
-                    "body": [
-                        {
-                            "type": "tag",
-                            "name": "Div",
-                            "params": {
-                                "class": "panel-title",
-                                "text": "Title"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "tag",
-                    "name": "Divs",
-                    "params": {
-                        "nestedClassList": [
-                            "panel-body"
-                        ]
-                    },
-                    "body": [
-                        {
-                            "type": "tag",
-                            "name": "P",
-                            "params": {
-                                "text": "Panel content"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "tag",
-                    "name": "Divs",
-                    "params": {
-                        "nestedClassList": [
-                            "panel-footer"
-                        ]
-                    },
-                    "body": [
-                        {
-                            "type": "tag",
-                            "name": "P",
-                            "params": {
-                                "text": "Footer"
-                            }
-                        }
-                    ]
-                }
-            ]
-
-        },
-
-        {
-            "title": "Text",
-            "type": "tag",
-            "name": "P",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Cursive Text",
-            "type": "tag",
-            "name": "Em",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Small Text",
-            "type": "tag",
-            "name": "Small",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Span",
-            "type": "tag",
-            "name": "Span",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Bold Text",
-            "type": "tag",
-            "name": "Strong",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Label",
-            "type": "tag",
-            "name": "Label",
-            "params": {
-                "text": "Label name",
-                "class": ""
-            }
-        },
-
-        {
-            "title": "Legend",
-            "type": "tag",
-            "name": "Legend",
-            "params": {
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "H1-H6 Header or Button",
-            "type": "tag",
-            "name": "Tag",
-            "params": {
-                "tagname": "h1",
-                "class": "",
-                "text": "Sample text"
-            }
-        },
-
-        {
-            "title": "Image",
-            "type": "tag",
-            "name": "Image",
-            "params": {
-                "src": "http://apla.io/images/prospects_logo.png",
-                "alt": "",
-                "class": ""
-            }
-        },
-
-        {
-            "title": "Image Upload button",
-            "type": "tag",
-            "name": "ImageInput",
-            "params": {
-                "id": "test",
-                "width": "100",
-                "ratio_height": "1/1"
-            }
-        },
-
-        {
-            "title": "MarkDown HTML ",
-            "type": "tag",
-            "name": "MarkDown",
-            "params": {
-                "text": "<b>Sample html</b><hr>"
-            }
-        },
-
-        {
-            "title": "Unordered List",
-            "type": "tag",
-            "name": "UList",
-            "params": {
-                "ol": ""
-            },
-            "body": [
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "First"}
-                },
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "Second"}
-                },
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "Third"}
-                }
-            ]
-        },
-
-        {
-            "title": "Ordered List",
-            "type": "tag",
-            "name": "UList",
-            "params": {
-                "ol": "ol"
-            },
-            "body": [
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "First"}
-                },
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "Second"}
-                },
-                {
-                    "type":"tag",
-                    "name": "Li",
-                    "params": {"text": "Third"}
-                }
-            ]
-        },
-
-        {
-            "title": "List Item",
-            "type":"tag",
-            "name": "Li",
-            "params": {"text": "New Item"}
-        },
-
-        {
-            "title": "Complex List Item",
-            "type":"tag",
-            "name": "LiBegin",
-            "params": {"class": ""},
-            "body": [
-                {
-                    "type": "tag",
-                    "name": "Image",
-                    "params": {
-                        "src": "http://apla.io/images/i19.png"
+                        "text": "Link URL",
+                        "href": "http://"
                     }
                 },
                 {
+                    "title": "Text Block",
+                    "type": "tag",
+                    "name": "Div",
+                    "params": {
+                        "text": "Block"
+
+                    }
+                },
+                {
+                    "title": "Nested Blocks",
+                    "type": "tag",
+                    "name": "Divs",
+                    "params": {}
+                },
+                {
+                    "title": "Panel",
+                    "type": "tag",
+                    "name": "Divs",
+                    "params": {
+                        "nestedClassList": [
+                            "panel panel-primary"
+                        ]
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Divs",
+                            "params": {
+                                "nestedClassList": [
+                                    "panel-heading"
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "Div",
+                                    "params": {
+                                        "class": "panel-title",
+                                        "text": "Title"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Divs",
+                            "params": {
+                                "nestedClassList": [
+                                    "panel-body"
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "P",
+                                    "params": {
+                                        "text": "Panel content"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Divs",
+                            "params": {
+                                "nestedClassList": [
+                                    "panel-footer"
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "P",
+                                    "params": {
+                                        "text": "Footer"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+
+                },
+
+                {
+                    "title": "Text",
+                    "type": "tag",
+                    "name": "P",
+                    "params": {
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Cursive Text",
                     "type": "tag",
                     "name": "Em",
                     "params": {
                         "class": "",
-                        "text": "New item block"
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Small Text",
+                    "type": "tag",
+                    "name": "Small",
+                    "params": {
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Span",
+                    "type": "tag",
+                    "name": "Span",
+                    "params": {
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Bold Text",
+                    "type": "tag",
+                    "name": "Strong",
+                    "params": {
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Label",
+                    "type": "tag",
+                    "name": "Label",
+                    "params": {
+                        "text": "Label name",
+                        "class": ""
+                    }
+                },
+
+                {
+                    "title": "Legend",
+                    "type": "tag",
+                    "name": "Legend",
+                    "params": {
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "H1-H6 Header or Button",
+                    "type": "tag",
+                    "name": "Tag",
+                    "params": {
+                        "tagname": "h1",
+                        "class": "",
+                        "text": "Sample text"
+                    }
+                },
+
+                {
+                    "title": "Image",
+                    "type": "tag",
+                    "name": "Image",
+                    "params": {
+                        "src": "http://apla.io/images/prospects_logo.png",
+                        "alt": "",
+                        "class": ""
+                    }
+                },
+
+                {
+                    "title": "Image Upload button",
+                    "type": "tag",
+                    "name": "ImageInput",
+                    "params": {
+                        "id": "test",
+                        "width": "100",
+                        "ratio_height": "1/1"
+                    }
+                },
+
+                {
+                    "title": "MarkDown HTML ",
+                    "type": "tag",
+                    "name": "MarkDown",
+                    "params": {
+                        "text": "<b>Sample html</b><hr>"
+                    }
+                },
+
+                {
+                    "title": "Unordered List",
+                    "type": "tag",
+                    "name": "UList",
+                    "params": {
+                        "ol": ""
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "First"}
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "Second"}
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "Third"}
+                        }
+                    ]
+                },
+
+                {
+                    "title": "Ordered List",
+                    "type": "tag",
+                    "name": "UList",
+                    "params": {
+                        "ol": "ol"
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "First"}
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "Second"}
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Li",
+                            "params": {"text": "Third"}
+                        }
+                    ]
+                },
+
+                {
+                    "title": "List Item",
+                    "type": "tag",
+                    "name": "Li",
+                    "params": {"text": "New Item"}
+                },
+
+                {
+                    "title": "Complex List Item",
+                    "type": "tag",
+                    "name": "LiBegin",
+                    "params": {"class": ""},
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Image",
+                            "params": {
+                                "src": "http://apla.io/images/i19.png"
+                            }
+                        },
+                        {
+                            "type": "tag",
+                            "name": "Em",
+                            "params": {
+                                "class": "",
+                                "text": "New item block"
+                            }
+                        }
+                    ]
+                },
+
+            ]
+        },
+        {
+            "name": "Forms",
+            "elements": [
+                {
+                    "title": "Form",
+                    "type": "tag",
+                    "name": "Form",
+                    "params": {
+                        "class": ""
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "Divs",
+                            "params": {
+                                "nestedClassList": [
+                                    "form-group"
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "Tag",
+                                    "params": {
+                                        "tagname": "button",
+                                        "class": "btn",
+                                        "text": "Submit"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Input",
+                    "type": "tag",
+                    "name": "Input",
+                    "params": {
+                        "idname": "",
+                        "class": "form-control",
+                        "placeholder": "Enter value",
+                        "type": "text",
+                        "value": ""
+                    }
+                },
+                {
+                    "title": "Textarea",
+                    "type": "tag",
+                    "name": "Textarea",
+                    "params": {
+                        "idname": "",
+                        "class": "form-control",
+                        "value": "Sample value"
+                    }
+                },
+                {
+                    "title": "Input Address",
+                    "type": "tag",
+                    "name": "InputAddress",
+                    "params": {
+                        "idname": "",
+                        "class": "form-control",
+                        "value": ""
+                    }
+                },
+                {
+                    "title": "Input Date",
+                    "type": "tag",
+                    "name": "InputDate",
+                    "params": {
+                        "idname": "",
+                        "class": "form-control",
+                        "value": "2017.12.31 23:59"
+                    }
+                },
+                {
+                    "title": "Input Money",
+                    "type": "tag",
+                    "name": "InputMoney",
+                    "params": {
+                        "idname": "",
+                        "class": "form-control",
+                        "value": "1000 RUR"
+                    }
+                },
+                {
+                    "title": "Select",
+                    "type": "tag",
+                    "name": "Select",
+                    "params": {
+                        "idname": "",
+                        "list": "First option, Second option",
+                        "class": "form-control",
+                        "value": "1"
+                    }
+                },
+                {
+                    "title": "Source",
+                    "type": "tag",
+                    "name": "Source",
+                    "params": {
+                        "idname": "",
+                        "value": ""
                     }
                 }
             ]
-        },
-
+        }
     ],
     $instrumentPanel: null,
     $sourceElements: null,
     constructor: function (param) {
         CP(this, param);
         this.init();
+        this.events();
     },
 
     init: function () {
         if(this.$instrumentPanel) {
             this.$sourceElements = this.$instrumentPanel.find(".js-source-elements");
 
-            for(var i = 0; i < this.elements.length; i++) {
-                var el = this.elements[i];
-                var tag = constructTag(el);
+            var zIndex = 500;
+            for(var g = 0; g < this.groups.length; g++) {
+                this.$sourceElements.append('<h4>' + this.groups[g].name + ' <a href="#" class="fa fa-angle-down js-open"></a><a href="#" class="fa fa-angle-up js-close" style="display: none;"></a></h4>');
+                var htmlBlock = '<div style="display: none;">';
+                for (var i = 0; i < this.groups[g].elements.length; i++) {
+                    var el = this.groups[g].elements[i];
+                    var tag = constructTag(el);
 
-                if(!tag)
-                    continue;
+                    if (!tag)
+                        continue;
 
-                var zIndex = this.elements.length - i;
+                    //var zIndex = this.groups[g].elements.length - i;
+                    zIndex--;
 
-                var html = "<div class='js-draggable b-source-element' tag-name='"+tag.name+"' tag-params='"+ JSON.stringify(tag.params) + "'";
-                if(tag.body)
-                    html += " tag-body='"+ JSON.stringify(tag.body) +"'";
-                html += " style='z-index: "+zIndex+"'>" + tag.title;
-                html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
+                    var html = "<div class='js-draggable b-source-element' tag-name='" + tag.name + "' tag-params='" + JSON.stringify(tag.params) + "'";
+                    if (tag.body)
+                        html += " tag-body='" + JSON.stringify(tag.body) + "'";
+                    html += " style='z-index: " + zIndex + "'>" + tag.title;
+                    html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
 
-                this.$sourceElements.append(html);
+                    //this.$sourceElements.append(html);
+                    htmlBlock += html;
+                }
+                htmlBlock += '<br></div>';
+                this.$sourceElements.append(htmlBlock);
             }
 
+
         }
+    },
+    events: function () {
+        this.$sourceElements.find(".js-open").on("click", function (e) {
+            e.preventDefault();
+            $(this).hide();
+            $(this).parent().find(".js-close").show();
+            $(this).parent().next().slideDown();
+        });
+
+        this.$sourceElements.find(".js-close").on("click", function (e) {
+            e.preventDefault();
+            $(this).hide();
+            $(this).parent().find(".js-open").show();
+            $(this).parent().next().slideUp();
+        });
     }
 });
 
@@ -1984,32 +2396,10 @@ Helper.Base = JS_CLASS( {
         this.$content.append("<h5>" + this.title + "</h5>");
     },
 
-    addRadio: function (data) {
-        var radioTpl = "#tpl-control-radio";
-        this.$content.append(
-            $(TPL ($(radioTpl).html(), data))
-        );
-    },
+
 
     updateValue: function () {
 
-    },
-
-    selectRadio: function (value) {
-        console.log("selectRadio", this.name, value);
-        this.$content.find('input[type="radio"][name="'+this.name+'"][value="'+value+'"]').prop("checked", true);
-    },
-
-    setSelectedRadio: function (value) {
-        console.log("setSelectedRadio", value);
-
-        var classArr = value.split(" ");
-        this.selectRadio("");
-        for(var i = 0; i < classArr.length; i++) {
-            var className = classArr[i].trim();
-            if(className)
-                this.selectRadio(className);
-        }
     }
 });
 
@@ -2030,6 +2420,30 @@ Helper.Radio = JS_CLASS(Helper.Base, {
         });
     },
 
+    addRadio: function (data) {
+        var radioTpl = "#tpl-control-radio";
+        this.$content.append(
+            $(TPL ($(radioTpl).html(), data))
+        );
+    },
+
+    selectRadio: function (value) {
+        console.log("selectRadio", this.name, value);
+        this.$content.find('input[type="radio"][name="'+this.name+'"][value="'+value+'"]').prop("checked", true);
+    },
+
+    setSelectedRadio: function (value) {
+        console.log("setSelectedRadio", value);
+
+        var classArr = value.split(" ");
+        this.selectRadio("");
+        for(var i = 0; i < classArr.length; i++) {
+            var className = classArr[i].trim();
+            if(className)
+                this.selectRadio(className);
+        }
+    },
+
     updateValue: function (value) {
         this.setSelectedRadio(value);
     },
@@ -2045,6 +2459,7 @@ Helper.Radio = JS_CLASS(Helper.Base, {
         classList += " " + value;
         classList = classList.replace(/\s\s+/g, ' ');
         this.owner.setValue(classList);
+        this.owner.triggerChange();
     }
 });
 
@@ -2142,6 +2557,75 @@ Helper.BgColor = JS_CLASS(Helper.Radio, {
             "title": "Danger",
             "value": "bg-danger",
             "class": "text-danger"
+        }
+    ]
+});
+
+Helper.BtnStyle = JS_CLASS(Helper.Radio, {
+    title: "Button Style",
+    name: "btnStyle",
+    classes: [
+        {
+            "title": "None",
+            "value": ""
+        },
+        {
+            "title": "Default",
+            "value": "btn"
+        }
+    ]
+});
+
+
+Helper.BtnColor = JS_CLASS(Helper.Radio, {
+    title: "Button Color",
+    name: "btnColor",
+    classes: [
+        {
+            "title": "None",
+            "value": ""
+        },
+        {
+            "title": "Default",
+            "value": "btn-default"
+        },
+        {
+            "title": "Primary",
+            "value": "btn-primary",
+            "class": "text-primary"
+        },
+        {
+            "title": "Success",
+            "value": "btn-success",
+            "class": "text-success"
+        },
+        {
+            "title": "Info",
+            "value": "btn-info",
+            "class": "text-info"
+        }
+    ]
+});
+
+Helper.BtnSize = JS_CLASS(Helper.Radio, {
+    title: "Button Size",
+    name: "btnSize",
+    classes: [
+        {
+            "title": "Default",
+            "value": ""
+        },
+        {
+            "title": "Large",
+            "value": "btn-lg"
+        },
+        {
+            "title": "Small",
+            "value": "btn-sm"
+        },
+        {
+            "title": "Extra Small",
+            "value": "btn-xs"
         }
     ]
 });
