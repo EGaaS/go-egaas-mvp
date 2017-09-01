@@ -27,15 +27,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 )
 
 type index struct {
 	DbOk        bool
 	Lang        map[string]string
 	Key         string
+	PKey        string
 	SetLang     string
 	Accounts    string
 	Thrust      bool
@@ -43,7 +44,7 @@ type index struct {
 	Android     bool
 	Mobile      bool
 	ShowIOSMenu bool
-	Version string
+	Version     string
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +56,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		expiration := time.Now().Add(32 * 24 * time.Hour)
 		http.SetCookie(w, &http.Cookie{Name: "ref", Value: r.Form.Get(``), Expires: expiration})
 	}
-	
+
 	parameters_ := make(map[string]interface{})
 	if len(r.PostFormValue("parameters")) > 0 {
 		err := json.Unmarshal([]byte(r.PostFormValue("parameters")), &parameters_)
@@ -155,10 +156,11 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	b := new(bytes.Buffer)
 	err = t.Execute(b, &index{
-		Version: consts.VERSION,
+		Version:     consts.VERSION,
 		DbOk:        true,
 		Lang:        globalLangReadOnly[lang],
 		Key:         key,
+		PKey:        r.FormValue(`pkey`),
 		SetLang:     setLang,
 		ShowIOSMenu: showIOSMenu,
 		IOS:         ios,
