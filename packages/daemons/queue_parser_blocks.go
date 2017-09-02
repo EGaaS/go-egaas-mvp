@@ -140,6 +140,7 @@ BEGIN:
 			}
 			continue BEGIN
 		}
+		logger.Debug(newBlockData["full_node_id"], host)
 		blockId := utils.StrToInt64(newBlockData["block_id"])
 
 		p := new(parser.Parser)

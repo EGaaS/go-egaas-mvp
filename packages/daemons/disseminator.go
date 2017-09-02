@@ -109,6 +109,9 @@ BEGIN:
 			}
 			continue
 		}
+		logger.Debug("full_node_id = %v", full_node_id)
+		logger.Debug("myWalletId = %v", myWalletId)
+		logger.Debug("myCBID = %v", myCBID)
 		if full_node_id == 0 {
 			fullNode = false
 		}
