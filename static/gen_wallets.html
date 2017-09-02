@@ -1,24 +1,13 @@
 {{ define "genWallets" }}
 
 <script>
-	var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-	console.log("iOS " + iOS);
-	
-	if (iOS) {
-		var form = $("#Transfer");
-		var message = $('<div />', {
-			"class": 'alert alert-danger text-center',
-			html: "<strong>Prohibited for ios</strong>"
-		})
-		.insertAfter(form);
-		
-		form.hide();
-	}
-	
 	var serverTime;
 	var balance = {{.Amount}} / qDLT;
 	var commission = {{.Commission}} / qDLT;
 	$("#commission").val(commission);
+	
+	$(".aside .nav li").removeClass("active");
+	$(".anonym, .anonym_money_transfer").addClass("active");
 	
 	function TransferOK() {
         allcount--;
@@ -26,19 +15,8 @@
         sendMassMoney();
 	}
 	
-	$("#walletAddress").prop("autocomplete", "off").inputmask({mask: "9999-9999-9999-9999-9999", autoUnmask: true }).focus();
-	/*$("#walletAddress").typeahead({
-		minLength: 1,
-		items: 10,
-		autoSelect: false,
-		source: function (query, process) {
-			return $.get('ajax?json=ajax_addresses', { 'address': query, 'state': 0 }, function (data) {
-				data = {"address":["0091-9569-1929-6424-8536", "0091-9569-1929-6424-8537", "0091-9569-1929-6424-8538", "0091-9569-1929-6424-8539"],"error":""};
-				return process(data.address);
-			});
-		}
-	}).focus();*/
-	
+	$("#walletAddress").inputmask("9999-9999-9999-9999-9999").focus();
+
 	$("#next").bind('click', function () {
 		$(".form-control").blur().each(function() {
 			var id = $(this).attr("id");
@@ -119,24 +97,23 @@
         sendMassMoney();
 	});
 
-    
-
 	$('#send_to_net').bind('click', function () {
-		serverTimeout(5000);
 		$.ajax({
 			type: 'POST',
 			url: 'ajax?controllerName=saveQueue',
 			data: {
 				'type' : '{{.TxType}}',
 				'time' : serverTime,
-				'walletId' : '{{.WalletID}}',
+				'walletId' : '{{.WalletId}}',
 				'citizenId' : '0',
 				'walletAddress' : allwallet,
 				'amount' : allamount * qDLT,
 				'commission' : parseFloat($('#commission').val()) * qDLT,
 				'comment' : $('#comment').val(),
 				'pubkey' : GKey.Public,
-				'signature1': $('#signature1').val()
+				'signature1': $('#signature1').val(),
+				'signature2': $('#signature2').val(),
+				'signature3': $('#signature3').val()
 			},
 			dataType: 'json',
 			crossDomain: true,
@@ -144,14 +121,16 @@
                 send_to_net_success(data, TransferOK);
 			},
 			error: function(xhr, status, error) {
-                Alert(returnLang("error"), error, "error");
+                Alert("Error", error, "error");
                 allcount = 0;
 			}
 		});
 	});	
 </script>
 
-<div class="content-heading lang" lang-id="mass_money_transfer">Mass Money Transfer</div>
+<div class="content-heading">
+   Mass Money transfer
+</div>
 <!-- START panel-->
 <div id="Transfer" class="panel panel-default keyCode_13" data-sweet-alert style="max-width:400px;">
  <div class="panel-body">
@@ -160,7 +139,7 @@
 		   <label class="control-label" for="walletAddress"><span class="lang" lang-id="wallet_address"></span> <strong class="text-danger">*</strong></label>
 		   <input type="text" class="form-control" id="walletAddress" data-type="wallet">
 		   <ul class="parsley-errors-list">
-		       <li class="parsley-required lang" lang-id="enter_correct_wallet"></li>
+		       <li class="parsley-required">Please enter correct wallet addres</li>
 		   </ul>
        </div-->
        <div class="form-group">
@@ -171,26 +150,26 @@
         </ul>
        </div>
 	   <div class="form-group">
-		   <label class="control-label" for="amount"><span class="lang" lang-id="amount"></span> <strong class="text-danger">*</strong></label>
+		   <label class="control-label" for="amount">Amount <strong class="text-danger">*</strong></label>
 		   <input type="text" class="form-control" id="amount">
 		   <ul class="parsley-errors-list">
 		       <li class="parsley-required amount"></li>
 		   </ul>
 	   </div>
 	   <div class="form-group">
-		   <label class="control-label lang" for="comment" lang-id="comment"></label>
+		   <label class="control-label" for="comment">Comment</label>
 		   <input type="text" class="form-control" id="comment">
 	   </div>
 	   <div class="form-group">
-		   <label class="control-label" for="commission"><span class="lang" lang-id="commission"></span> <strong class="text-danger">*</strong></label>
+		   <label class="control-label" for="commission">Commission <strong class="text-danger">*</strong></label>
 		   <input type="text" class="form-control" id="commission" disabled="">
 	   </div>
 	</form>
  </div>
  <div class="panel-footer">
    <div class="clearfix">
-	  <div class="pull-right buttons">
-		 <button type="button" class="submit btn btn-primary lang" id="next" disabled lang-id="send"></button>
+	  <div class="pull-right">
+		 <button type="button" class="submit btn btn-primary" id="next" disabled>Send</button>
 	  </div>
    </div>
   </div>
@@ -205,15 +184,15 @@
 		   <p class="form-control-static" data-confirm="numwallets"></p>
 	   </div>
 	   <div class="form-group">
-		   <label class="control-label lang" lang-id="amount"></label>
+		   <label class="control-label">Amount</label>
 		   <p class="form-control-static" data-confirm="amount"></p>
 	   </div>
 	   <div id="isComment" class="form-group">
-		   <label class="control-label lang" lang-id="comment"></label>
+		   <label class="control-label">Comment</label>
 		   <p class="form-control-static" data-confirm="comment"></p>
 	   </div>
 	   <div class="form-group">
-		   <label class="control-label lang" lang-id="commission"></label>
+		   <label class="control-label">Commission</label>
 		   <p class="form-control-static" data-confirm="commission"></p>
        </div>
        <input type="hidden" id="phrase" value="">
@@ -224,10 +203,10 @@
  <div class="panel-footer">
    <div class="clearfix">
 	  <div class="pull-left">
-		 <button type="button" class="btn btn-default lang" id="cancel" lang-id="cancel"></button>
+		 <button type="button" class="btn btn-default" id="cancel">Cancel</button>
 	  </div>
-	  <div class="pull-right buttons">
-		 <button type="button" class="submit btn btn-primary lang" data-tool="panel-refresh" onClick="preloader(this);" id="send" disabled lang-id="send"></button>
+	  <div class="pull-right">
+		 <button type="button" class="submit btn btn-primary" data-tool="panel-refresh" onClick="preloader(this);" id="send" disabled>Send</button>
 	  </div>
    </div>
   </div>
@@ -282,7 +261,7 @@ $("#anonymMoneyTransfer").on('input', function () {
 		if (amount.val()) {
 			amount.addClass("parsley-error");
 			amount.next(".parsley-errors-list").addClass("filled");
-			amount.next(".parsley-errors-list").find(".amount").text(returnLang("amount_should_be"));
+			amount.next(".parsley-errors-list").find(".amount").text("Amount should be from 0.00001 to 100000000");
 		} else {
 			amount.removeClass("parsley-error");
 			amount.next(".parsley-errors-list").removeClass("filled");
@@ -291,7 +270,7 @@ $("#anonymMoneyTransfer").on('input', function () {
 		if (parseFloat(amount.val()) + commission > balance) {
 			amount.addClass("parsley-error");
 			amount.next(".parsley-errors-list").addClass("filled");
-			amount.next(".parsley-errors-list").find(".amount").text(returnLang("do_not_have_that_much"));
+			amount.next(".parsley-errors-list").find(".amount").text("You don't have that much.");
 			$("#next").prop("disabled", true);
 			return false;
 		}

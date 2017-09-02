@@ -17,28 +17,30 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"github.com/shopspring/decimal"
 )
 
 type genWalletsPage struct {
-	Lang       map[string]string
-	Title      string
-	TxType     string
-	TxTypeID   int64
-	TimeNow    int64
-	WalletID   int64
-	CitizenID  int64
-	Commission string
-	Amount     string
+	Lang         map[string]string
+	Title        string
+	CountSign    int
+	CountSignArr []int
+	SignData     string
+	ShowSignData bool
+	TxType       string
+	TxTypeId     int64
+	TimeNow      int64
+	WalletId     int64
+	CitizenId    int64
+	Commission   int64
+	Amount string
 }
 
 // AnonymMoneyTransfer is a controller of the money transfer template page
 func (c *Controller) GenWallets() (string, error) {
 
 	txType := "DLTTransfer"
-	txTypeID := utils.TypeInt(txType)
+	txTypeId := utils.TypeInt(txType)
 	timeNow := utils.Time()
 
 	fPrice, err := c.Single(`SELECT value->'dlt_transfer' FROM system_parameters WHERE name = ?`, "op_price").Int64()
@@ -46,12 +48,14 @@ func (c *Controller) GenWallets() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	fuelRate := c.GetFuel()
-	if fuelRate.Cmp(decimal.New(0, 0)) <= 0 {
-		return ``, fmt.Errorf(`fuel rate must be greater than 0`)
+	fuelRate, err := c.Single(`SELECT value FROM system_parameters WHERE name = ?`, "fuel_rate").Int64()
+	if err != nil {
+		return "", utils.ErrInfo(err)
 	}
 
-	commission := decimal.New(fPrice, 0).Mul(fuelRate)
+	commission := int64(fPrice * fuelRate)
+
+	log.Debug("sessCitizenId %d SessWalletId %d SessStateId %d", c.SessCitizenId, c.SessWalletId, c.SessStateId)
 
 	amount, err := c.Single("select amount from dlt_wallets where wallet_id = ?", c.SessWalletId).String()
 	if err != nil {
@@ -61,15 +65,19 @@ func (c *Controller) GenWallets() (string, error) {
 		amount = "0"
 	}
 	TemplateStr, err := makeTemplate("gen_wallets", "genWallets", &genWalletsPage{
-		Lang:       c.Lang,
-		Title:      "anonymMoneyTransfer",
-		Amount:     amount,
-		WalletID:   c.SessWalletId,
-		CitizenID:  c.SessCitizenId,
-		Commission: commission.String(),
+		CountSignArr: c.CountSignArr,
+		CountSign:    c.CountSign,
+		Lang:         c.Lang,
+		Title:        "anonymMoneyTransfer",
+		ShowSignData: c.ShowSignData,
+		SignData:     "",
+		Amount: amount,
+		WalletId:   c.SessWalletId,
+		CitizenId:  c.SessCitizenId,
+		Commission: commission,
 		TimeNow:    timeNow,
 		TxType:     txType,
-		TxTypeID:   txTypeID})
+		TxTypeId:   txTypeId})
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
