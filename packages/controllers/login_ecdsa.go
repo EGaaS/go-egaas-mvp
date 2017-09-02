@@ -25,10 +25,11 @@ import (
 )
 
 type loginECDSAPage struct {
-	Lang   map[string]string
-	Title  string
-	States map[string]string
+	Lang    map[string]string
+	Title   string
+	States  map[string]string
 	Private string
+	Import  bool
 	/*	MyModalIdName string
 		UserID        int64
 		PoolTechWorks int
@@ -95,7 +96,6 @@ func (c *Controller) LoginECDSA() (string, error) {
 		}
 		return b.String(), nil*/
 
-
 	states := make(map[string]string)
 	data, err := c.GetList(`SELECT id FROM system_states`).String()
 	if err != nil {
@@ -108,12 +108,14 @@ func (c *Controller) LoginECDSA() (string, error) {
 		}
 		states[id] = state_name
 	}
+	pkey := c.r.FormValue("pkey")
 
 	TemplateStr, err := makeTemplate("login", "loginECDSA", &loginECDSAPage{
-		Lang:   c.Lang,
-		Title:  "Login",
-		States: states,
-		Private: "",
+		Lang:    c.Lang,
+		Title:   "Login",
+		States:  states,
+		Import:  len(pkey) > 0,
+		Private: pkey,
 		/*		MyWalletData:          MyWalletData,
 				Title:                 "modalAnonym",
 		*/})

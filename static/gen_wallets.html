@@ -1,4 +1,4 @@
-{{ define "anonymMoneyTransfer" }}
+{{ define "genWallets" }}
 
 <script>
 	var serverTime;
@@ -10,7 +10,9 @@
 	$(".anonym, .anonym_money_transfer").addClass("active");
 	
 	function TransferOK() {
-		dl_navigate0('dashboardAnonym');
+        allcount--;
+        $("#outcounter").html('Remain: <b>' + allcount + '</b>');
+        sendMassMoney();
 	}
 	
 	$("#walletAddress").inputmask("9999-9999-9999-9999-9999").focus();
@@ -20,6 +22,7 @@
 			var id = $(this).attr("id");
 			var val = $(this).val();
 			
+		
 			if (id === "comment") {
 				if (val) {
 					$("#isComment").show();
@@ -42,14 +45,89 @@
 		$("#Transfer").show();
 		$("#ConfirmTransfer").hide();
 	});
-	
-	$('#send').bind('click', function () {
-		$.get( 'ajax?controllerName=GetServerTime', function (data) {
-			serverTime = data.time;
-			$("#for-signature").val( '{{.TxTypeId}},'+serverTime+',{{.WalletId}},'+$('#walletAddress').val()+','+parseFloat($('#amount').val()) * qDLT+','+parseFloat($('#commission').val()) * qDLT+','+$('#comment').val());
+    
+    var allcount = 0;
+    var allamount = 0;
+    var allwallet = '';
+    
+    function sendMassMoney() {
+        if (allcount == 0) {
+            alert('All wallets has been created');
+            return;
+        }
+        do_phrase();
+        do_generate();
+        $.post( 'ajax?json=ajax_gen_wallet', {'phrase': $("#phrase").val(), 
+                    'private':$("#prvkey").val(), 'amount': allamount},function (data) {
+            if (data.error != "") {
+                alert(data.error);
+                return;
+            }
+            if ('04' + data.public != $("#pubkey").val()) {
+                alert('Public' + data.public + '!=' + $("#pubkey").val());
+                return;
+            }
+            console.log('data', data);            
+            serverTime = data.time;
+            allwallet = data.address;
+			$("#for-signature").val( '{{.TxTypeId}},'+serverTime+',{{.WalletId}},'+allwallet+','+ allamount * qDLT+','+parseFloat($('#commission').val()) * qDLT+','+$('#comment').val());
 			doSign();
 			$("#send_to_net").trigger("click");
 		}, "json" );
+
+    }
+
+function my_send_to_net_success(data){
+	if (typeof data.error != "undefined" && data.error.length > 0 ) {
+		Alert("Error", data.error, "error");
+	} else if (data.hash == "undefined") {
+		Alert("Error", data.result, "error");
+	} else {
+		interval = setInterval(function() {
+			$.ajax({
+				type: 'POST',
+				url: 'ajax?controllerName=txStatus',
+				data: {
+					'hash': data.hash
+				},
+				dataType: 'json',
+				crossDomain: true,
+				success: function(txStatus){
+					
+					console.log("txStatus", txStatus);
+
+					if (typeof txStatus.wait != "undefined") {
+						console.log("txStatus", txStatus);
+					} else if (typeof txStatus.error != "undefined") {
+						Alert("Error", txStatus.error, "error");
+						clearInterval(interval);
+					} else {
+						clearInterval(interval);
+						TransferOK();
+					}
+				},
+				error: function(xhr, status, error) {
+					clearInterval(interval);
+					Alert("Error", error, "error");
+				},
+			});
+		}, 1000)
+	}
+}
+
+
+	$('#send').bind('click', function () {
+        allcount = parseInt($("#numwallets").val());
+        if (allcount < 1 || allcount > 1000) {
+            alert('allcount must be >=1 && <=1000');
+            return;
+        }
+        allamount = parseFloat($("#amount").val());
+        if (allamount <=0 || allamount > 10) {
+            alert('allamount must be > 0 && <=10');
+            return;
+        }
+        sendMassMoney();
 	});
 
 	$('#send_to_net').bind('click', function () {
@@ -61,8 +139,8 @@
 				'time' : serverTime,
 				'walletId' : '{{.WalletId}}',
 				'citizenId' : '0',
-				'walletAddress' : $('#walletAddress').val(),
-				'amount' : parseFloat($('#amount').val()) * qDLT,
+				'walletAddress' : allwallet,
+				'amount' : allamount * qDLT,
 				'commission' : parseFloat($('#commission').val()) * qDLT,
 				'comment' : $('#comment').val(),
 				'pubkey' : GKey.Public,
@@ -73,29 +151,37 @@
 			dataType: 'json',
 			crossDomain: true,
 			success: function(data) {
-				send_to_net_success(data, TransferOK);
+                my_send_to_net_success(data);
 			},
 			error: function(xhr, status, error) {
-				Alert("Error", error, "error");
+                Alert("Error", error, "error");
+                allcount = 0;
 			}
 		});
 	});	
 </script>
 
 <div class="content-heading">
-   Money transfer
+   Mass Money transfer
 </div>
 <!-- START panel-->
 <div id="Transfer" class="panel panel-default keyCode_13" data-sweet-alert style="max-width:400px;">
  <div class="panel-body">
 	<form id="anonymMoneyTransfer">
-	   <div class="form-group">
-		   <label class="control-label" for="walletAddress">Wallet address <strong class="text-danger">*</strong></label>
-		   <input type="text" class="form-control" id="walletAddress">
+	   <!--div class="form-group">
+		   <label class="control-label" for="walletAddress"><span class="lang" lang-id="wallet_address"></span> <strong class="text-danger">*</strong></label>
+		   <input type="text" class="form-control" id="walletAddress" data-type="wallet">
 		   <ul class="parsley-errors-list">
 		       <li class="parsley-required">Please enter correct wallet addres</li>
 		   </ul>
-	   </div>
+       </div-->
+       <div class="form-group">
+        <label class="control-label" for="num">Number of Wallets<strong class="text-danger">*</strong></label>
+        <input type="text" class="form-control" id="numwallets">
+        <ul class="parsley-errors-list">
+            <li class="parsley-required numwallets"></li>
+        </ul>
+       </div>
 	   <div class="form-group">
 		   <label class="control-label" for="amount">Amount <strong class="text-danger">*</strong></label>
 		   <input type="text" class="form-control" id="amount">
@@ -127,8 +213,8 @@
  <div class="panel-body">
 	<form>
 	   <div class="form-group">
-		   <label class="control-label">Wallet address</label>
-		   <p class="form-control-static" data-confirm="walletAddress"></p>
+		   <label class="control-label" >Number of Wallets</label>
+		   <p class="form-control-static" data-confirm="numwallets"></p>
 	   </div>
 	   <div class="form-group">
 		   <label class="control-label">Amount</label>
@@ -141,7 +227,10 @@
 	   <div class="form-group">
 		   <label class="control-label">Commission</label>
 		   <p class="form-control-static" data-confirm="commission"></p>
-	   </div>
+       </div>
+       <input type="hidden" id="phrase" value="">
+       <input type="hidden" id="prvkey" value="">
+       <input type="hidden" id="pubkey" value="">
 	</form>
  </div>
  <div class="panel-footer">
@@ -155,8 +244,8 @@
    </div>
   </div>
 </div>
-
-<a href="#" onclick="dl_navigate0('genWallets');" style="color:#fff;padding-top:100px;">Mass Generate Wallets</a>
+<div id="outcounter">
+</div>
 <!-- END panel-->
 
 <script>
@@ -177,11 +266,11 @@ var wal = /[_-]/g;
 var reg = /[^\d\.]/g;
 
 $("#anonymMoneyTransfer").on('input', function () {
-	var wallet = $("#walletAddress");
+	var wallet = $("#numwallets");
 	var amount = $("#amount");
 	var i = 0;
 	
-	if (wallet.val().replace(wal, "").length === 20) {
+	if (wallet.val().replace(wal, "").length > 0) {
 		wallet.removeClass("parsley-error");
 		wallet.next(".parsley-errors-list").removeClass("filled");
 		i += 1;
