@@ -70,17 +70,11 @@
             console.log('data', data);            
             serverTime = data.time;
             allwallet = data.address;
-			$("#for-signature").val( '{{.TxTypeID}},'+serverTime+',{{.WalletID}},'+allwallet+','+ allamount * qDLT+','+parseFloat($('#commission').val()) * qDLT+','+$('#comment').val());
+			$("#for-signature").val( '{{.TxTypeId}},'+serverTime+',{{.WalletId}},'+allwallet+','+ allamount * qDLT+','+parseFloat($('#commission').val()) * qDLT+','+$('#comment').val());
 			doSign();
 			$("#send_to_net").trigger("click");
 		}, "json" );
 
-/*		$.get( 'ajax?controllerName=GetServerTime', function (data) {
-			serverTime = data.time;
-			$("#for-signature").val( '{{.TxTypeID}},'+serverTime+',{{.WalletID}},'+allwallet+','+ allamount * qDLT+','+parseFloat($('#commission').val()) * qDLT+','+$('#comment').val());
-			doSign();
-			$("#send_to_net").trigger("click");
-		}, "json" );*/
     }
 
 	$('#send').bind('click', function () {
