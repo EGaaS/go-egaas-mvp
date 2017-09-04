@@ -120,7 +120,10 @@ func (p *Parser) UpdFullNodes() error {
 	}
 
 	where := ``
-	if p.BlockData.BlockId > 23900 {
+	if p.BlockData.BlockId > 1604000 {
+		// min 10000 EGS ~ 5000$
+		where = ` AND amount > 10000000000000000000000`
+	} else if p.BlockData.BlockId > 23900 {
 		// min 100 EGS ~ 10$
 		where = ` AND amount > 100000000000000000000`
 	}
