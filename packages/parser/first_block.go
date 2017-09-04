@@ -55,12 +55,12 @@ func (p *FirstBlockParser) Action() error {
 	}
 
 	log.Debugf("wallet = %+v", dltWallet)
-	err := dltWallet.Create()
+	err := dltWallet.Create(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 	fullNode := &model.FullNode{WalletID: myAddress, Host: data.Host}
-	err = fullNode.Create()
+	err = fullNode.Create(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

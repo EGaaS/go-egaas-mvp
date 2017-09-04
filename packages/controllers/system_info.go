@@ -53,13 +53,6 @@ func (c *Controller) SystemInfo() (string, error) {
 		pageData.UpdFullNodes = append(pageData.UpdFullNodes, node.ToMap())
 	}
 
-	mainLock := &model.MainLock{}
-	err = mainLock.Get()
-	if err != nil && err != model.RecordNotFound {
-		return "", utils.ErrInfo(err)
-	}
-	pageData.MainLock = append(pageData.MainLock, mainLock.ToMap())
-
 	rollback := &model.Rollback{}
 	rollbacks, err := rollback.GetRollbacks(100)
 

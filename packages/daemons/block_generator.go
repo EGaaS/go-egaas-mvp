@@ -33,14 +33,11 @@ import (
 func BlockGenerator(d *daemon, ctx context.Context) error {
 	d.sleepTime = time.Second
 
-	locked, err := DbLock(ctx, d.goRoutineName)
-	if !locked || err != nil {
-		return err
-	}
-	defer DbUnlock(d.goRoutineName)
+	DBLock()
+	defer DBUnlock()
 
 	config := &model.Config{}
-	if err = config.GetConfig(); err != nil {
+	if err := config.GetConfig(); err != nil {
 		return err
 	}
 
@@ -56,7 +53,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 	}
 
 	fullNodes := &model.FullNode{}
-	err = fullNodes.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
+	err := fullNodes.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
 	if err != nil || fullNodes.ID == 0 {
 		// we are not full node and can't generate new blocks
 		d.sleepTime = 10 * time.Second
@@ -112,12 +109,10 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 		return err
 	}
 
-	p.BinaryData = blockBin
 	log.Debugf("try to parse new transactions")
-	err = p.ParseDataFull(true)
+	err = parser.InsertBlock(blockBin)
 	if err != nil {
 		log.Errorf("parser block error: %s", err)
-		p.BlockError(err)
 		return err
 	}
 

@@ -33,14 +33,11 @@ import (
 func UpdFullNodes(d *daemon, ctx context.Context) error {
 	d.sleepTime = 60 * time.Second
 
-	locked, err := DbLock(ctx, d.goRoutineName)
-	if !locked || err != nil {
-		return err
-	}
-	defer DbUnlock(d.goRoutineName)
+	DBLock()
+	defer DBUnlock()
 
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	err := infoBlock.GetInfoBlock()
 	if err != nil {
 		return err
 	}
@@ -118,7 +115,7 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 	}
 
 	queueTx.Data = data
-	err = queueTx.Save()
+	err = queueTx.Save(nil)
 	if err != nil {
 		return nil
 	}

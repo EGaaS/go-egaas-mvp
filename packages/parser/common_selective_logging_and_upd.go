@@ -139,7 +139,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 			return 0, tableID, err
 		}
 		rollback := &model.Rollback{Data: string(jsonData), BlockID: p.BlockData.BlockID}
-		err = rollback.Create()
+		err = rollback.Create(p.DbTransaction)
 		if err != nil {
 			return 0, tableID, err
 		}
@@ -169,7 +169,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 			return 0, tableID, err
 		}
 		cost += updateCost
-		err = model.Update(table, addSQLUpdate+fmt.Sprintf("rb_id = %d", rollback.RbID), addSQLWhere)
+		err = model.Update(p.DbTransaction, table, addSQLUpdate+fmt.Sprintf("rb_id = %d", rollback.RbID), addSQLWhere)
 		if err != nil {
 			return 0, tableID, err
 		}
@@ -213,7 +213,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 			return 0, tableID, err
 		}
 		cost += insertCost
-		tableID, err = model.InsertReturningLastID(table, addSQLIns0, addSQLIns1)
+		tableID, err = model.InsertReturningLastID(p.DbTransaction, table, addSQLIns0, addSQLIns1)
 		if err != nil {
 			return 0, tableID, err
 		}
@@ -226,7 +226,7 @@ func (p *Parser) selectiveLoggingAndUpd(fields []string, ivalues []interface{}, 
 			TableID:   tableID,
 		}
 
-		err = rollbackTx.Create()
+		err = rollbackTx.Create(p.DbTransaction)
 		if err != nil {
 			return 0, tableID, err
 		}

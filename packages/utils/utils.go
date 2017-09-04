@@ -894,30 +894,6 @@ func TCPConn(Addr string) (net.Conn, error) {
 	return conn, nil
 }
 
-// WriteSizeAndData writes []byte to the connection
-func WriteSizeAndData(binaryData []byte, conn net.Conn) error {
-	// в 4-х байтах пишем размер данных, которые пошлем далее
-	// record the data size in 4 bytes, which will send further
-	size := converter.DecToBin(len(binaryData), 4)
-	fmt.Println("len(binaryData)", len(binaryData))
-	_, err := conn.Write(size)
-	if err != nil {
-		return ErrInfo(err)
-	}
-	// далее шлем сами данные
-	// further send data itself
-	if len(binaryData) > 0 {
-		/*if len(binaryData) > 500000 {
-			ioutil.WriteFile("WriteSizeAndData-7-block-"+IntToStr(len(binaryData))+string(DSha256(binaryData)), binaryData, 0644)
-		}*/
-		_, err = conn.Write(binaryData)
-		if err != nil {
-			return ErrInfo(err)
-		}
-	}
-	return nil
-}
-
 // GetCurrentDir returns the current directory
 func GetCurrentDir() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -987,51 +963,6 @@ func GetBlockBody(host string, blockID int64, dataTypeBlockBody int64) ([]byte, 
 	return binaryBlock, nil
 
 }
-
-/*
-// WriteSelectiveLog writes info into SelectiveLog.txt
-func WriteSelectiveLog(text interface{}) {
-	if *LogLevel == "DEBUG" {
-		var stext string
-		switch text.(type) {
-		case string:
-			stext = text.(string)
-		case []byte:
-			stext = string(text.([]byte))
-		case error:
-			stext = fmt.Sprintf("%v", text)
-		}
-		allTransactionsStr := ""
-		allTransactions, _ := DB.GetAll("SELECT hex(hash) as hex_hash, verified, used, high_rate, for_self_use, user_id, third_var, counter, sent FROM transactions", 100)
-		for _, data := range allTransactions {
-			allTransactionsStr += data["hex_hash"] + "|" + data["verified"] + "|" + data["used"] + "|" + data["high_rate"] + "|" + data["for_self_use"] + "|" + consts.TxTypes[StrToInt(data["type"])] + "|" + data["user_id"] + "|" + data["third_var"] + "|" + data["counter"] + "|" + data["sent"] + "\n"
-		}
-		t := time.Now()
-		data := allTransactionsStr + GetParent() + " ### " + t.Format(time.StampMicro) + " ### " + stext + "\n\n"
-		//ioutil.WriteFile(*Dir+"/SelectiveLog.txt", []byte(data), 0644)
-		f, err := os.OpenFile(*Dir+"/SelectiveLog.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-		if err != nil {
-			panic(err)
-		}
-
-		defer f.Close()
-
-		if _, err = f.WriteString(data); err != nil {
-			panic(err)
-		}
-	}
-}
-*/
-
-/*
-func DaylightRestart() error {
-	log.Debug("exec", os.Args[0])
-	err := exec.Command(os.Args[0]).Start()
-	if err != nil {
-		return ErrInfo(err)
-	}
-	return nil
-}*/
 
 // GetUpdVerAndURL downloads the information about the version
 func GetUpdVerAndURL(host string) (updinfo *lib.Update, err error) {
