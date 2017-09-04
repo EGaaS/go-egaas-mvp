@@ -48,12 +48,12 @@ func (t *TcpServer) Type2() {
 		/*
 		 * Прием тр-ий от простых юзеров, а не нодов. Вызывается демоном disseminator
 		 * */
-		_, _, decryptedBinData, err := t.DecryptData(&binaryData)
+		/*_, _, decryptedBinData, err := t.DecryptData(&binaryData)
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			return
 		}
-		log.Debug("decryptedBinData: %x", decryptedBinData)
+		log.Debug("decryptedBinData: %x", decryptedBinData)*/
 		// проверим размер
 		if int64(len(binaryData)) > consts.MAX_TX_SIZE {
 			log.Debug("%v", utils.ErrInfo("len(txBinData) > max_tx_size"))
@@ -63,7 +63,7 @@ func (t *TcpServer) Type2() {
 			log.Debug("%v", utils.ErrInfo("len(binaryData) < 5"))
 			return
 		}
-		decryptedBinDataFull := decryptedBinData
+		decryptedBinDataFull := binaryData
 		err = t.ExecSql(`DELETE FROM queue_tx WHERE hex(hash) = ?`, utils.Md5(decryptedBinDataFull))
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
