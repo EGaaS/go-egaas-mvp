@@ -70,7 +70,7 @@ func (t *TcpServer) Type2() {
 			return
 		}
 		log.Debug("INSERT INTO queue_tx (hash, data) (%s, %s)", utils.Md5(decryptedBinDataFull), utils.BinToHex(decryptedBinDataFull))
-		err = t.ExecSql(`INSERT INTO queue_tx (hash, data) VALUES ([hex], ?, [hex])`, utils.Md5(decryptedBinDataFull), utils.BinToHex(decryptedBinDataFull))
+		err = t.ExecSql(`INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])`, utils.Md5(decryptedBinDataFull), utils.BinToHex(decryptedBinDataFull))
 		if err != nil {
 			log.Error("%v", utils.ErrInfo(err))
 			return
