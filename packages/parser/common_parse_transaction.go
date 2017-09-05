@@ -50,7 +50,9 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 			for {
 				length := utils.DecodeLength(transactionBinaryData)
 				i++
+				log.Debug("%v", i)
 				if i >= 20 { // у нас нет тр-ий с более чем 20 элементами
+					log.Debug("%v", i)
 					break
 				}
 				log.Debug("%v", length)
@@ -60,13 +62,14 @@ func (p *Parser) ParseTransaction(transactionBinaryData *[]byte) ([][]byte, erro
 					log.Debug("%x", data)
 					log.Debug("%s", data)
 				} else if length == 0 && len(*transactionBinaryData) > 0 {
+					log.Debug("continue")
 					returnSlice = append(returnSlice, []byte{})
 					continue
 				}
 				if length == 0  { // у нас нет тр-ий
+					log.Debug("length == 0")
 					break
 				}
-
 			}
 			log.Debug("end")
 		if len(*transactionBinaryData) > 0 {
