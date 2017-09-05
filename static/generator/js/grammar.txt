@@ -130,9 +130,11 @@ NoSpaceArgument
   = str:[a-zA-Zа-€ј-я0-9\-_\./]* { return str.join(""); }
 
 Argument
-  = '"' str:[^\"]* '"' { return str.join(""); }
-  / '``' str:[^\`]* '``' { return str.join(""); }
-  / str:[^\),"`]* { return str.join(""); }  
+  = body:Expression {
+  		return body;
+  	  return body.join ? body.join("") : body;      
+    }
+  
 //  / str:[a-zA-Zа-€ј-я0-9-\_:/\./ ]* { return str.join(""); }  
 
 Arguments
@@ -146,10 +148,12 @@ ArgumentList
     }
     
 NamedArgument
-  = name:[a-zA-Z0-9]+ _ "=" _ '"' str:[^\"]* '"' { return { name: name.join(""), value: str.join("") }; }
-  / name:[a-zA-Z0-9]+ _ "=" _ '``' str:[^\`]* '``' { return { name: name.join(""), value: str.join("") }; }
-  / name:[a-zA-Z0-9]+ _ "=" _ str:[^\},"`]* { return { name: name.join(""), value: str.join("") }; }
-//  / str:[a-zA-Zа-€ј-я0-9-\_:/\./ ]* { return str.join(""); }      
+  = name:[a-zA-Z0-9]+ _ "=" _ str:Expression { return { name: name.join(""), value: str }; }
+//  = name:[a-zA-Z0-9]+ _ "=" _ '"' str:[^\"]* '"' { return { name: name.join(""), value: str.join("") }; }
+//  / name:[a-zA-Z0-9]+ _ "=" _ '``' str:[^\`]* '``' { return { name: name.join(""), value: str.join("") }; }
+//  / name:[a-zA-Z0-9]+ _ "=" _ str:[^\},"`]* { return { name: name.join(""), value: str.join("") }; }
+//  / name:[a-zA-Z0-9]+ _ "=" _ str:Expression { return { name: name.join(""), value: str }; }
+////  / str:[a-zA-Zа-€ј-я0-9-\_:/\./ ]* { return str.join(""); }      
 
 NamedArguments //именованные аргументы func{class=big, text=hello}
   = "{" __ args:(NamedArgumentList __)? "}" {
@@ -160,6 +164,42 @@ NamedArgumentList
   = head:NamedArgument tail:(__ "," __ NamedArgument)* {
       return arrayToNamedObject(buildList(head, tail, 3));
     }
+
+Expression
+ = FunctionStr
+ / Variable
+ / Constant
+
+FunctionStr
+ = _ str:Function _ {
+	//return str;
+    return str.join ? str.join("") : str;
+    
+}
+
+Function
+ = If
+  / And
+
+Constant
+  = '"' str:[^\"]* '"' { return str.join(""); }
+  / '``' str:[^\`]* '``' { return str.join(""); }
+  / str:[^\),"`]* { return str.join(""); }
+
+Variable
+ = '#' str:[a-zA-Z-0-9_]+ '#' { return "#" + str.join("") + "#"; }
+
+If
+ = 'If(' Expression ',' Expression ',' Expression ')'
+
+And
+ = 'And(' exp:Expression _ args:(',' _ Expression)* ')' {
+ 	//return 'And(' + exp + args.join("") + ')';
+    //return 'And(' + exp + args.join("") + ')';
+    return'And(' + buildList(exp, args, 2) + ')';
+    //return args.join("?");
+    //return args;
+ }
 
 A
   = "A:" param:NoSpaceArgument { 
@@ -871,6 +911,16 @@ Source
         params: params    
     } 
   }
+
+
+
+
+
+
+
+
+
+
 
 -----------------
 
