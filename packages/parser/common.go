@@ -185,12 +185,9 @@ func (p *Parser) GetInfoBlock() error {
 	// последний успешно записанный блок
 	p.PrevBlock = new(utils.BlockData)
 	var q string
-	if p.ConfigIni["db_type"] == "mysql" || p.ConfigIni["db_type"] == "sqlite" {
-		q = "SELECT LOWER(HEX(hash)) as hash, block_id, time FROM info_block"
-	} else if p.ConfigIni["db_type"] == "postgresql" {
-		q = "SELECT encode(hash, 'HEX')  as hash, block_id, time FROM info_block"
-	}
-	err := p.QueryRow(q).Scan(&p.PrevBlock.Hash, &p.PrevBlock.BlockId, &p.PrevBlock.Time)
+	q = "SELECT encode(hash, 'HEX')  as hash, block_id, time, wallet_id FROM info_block"
+
+	err := p.QueryRow(q).Scan(&p.PrevBlock.Hash, &p.PrevBlock.BlockId, &p.PrevBlock.Time, &p.PrevBlock.WalletId)
 
 	if err != nil && err != sql.ErrNoRows {
 		return p.ErrInfo(err)

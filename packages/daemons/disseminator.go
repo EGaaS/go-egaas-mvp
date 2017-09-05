@@ -312,7 +312,7 @@ func (d *daemon) DisseminatorType1(host string, toBeSent []byte, dataType int64)
 	// шлем данные указанному хосту
 	conn, err := utils.TcpConn(host)
 	if err != nil {
-		logger.Error("%v", utils.ErrInfo(err))
+		//logger.Error("%v", utils.ErrInfo(err))
 		return
 	}
 	defer conn.Close()
