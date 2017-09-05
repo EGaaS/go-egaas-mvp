@@ -172,7 +172,7 @@ BEGIN:
 		}
 		logger.Debug("prevBlockHash %s", prevBlockHash)
 
-		sleepTime, err := d.GetSleepTime(myWalletId, myCBID, prevBlock["state_id"], prevBlock["wallet_id"])
+		sleepTime, err := d.GetSleepTime(myWalletId, prevBlock["wallet_id"])
 		if err != nil {
 			d.dbUnlock()
 			logger.Error("%v", err)

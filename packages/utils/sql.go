@@ -1513,13 +1513,8 @@ func (db *DCDB) InsertReplaceTxInQueue(data []byte) error {
 	return nil
 }
 
-func (db *DCDB) GetSleepTime(myWalletId, myCBID, prevBlockCBID, prevBlockWalletId int64) (int64, error) {
-	if prevBlockCBID == 0 {
-		prevBlockCBID = -1
-	}
-	if myCBID == 0 {
-		myCBID = -1
-	}
+func (db *DCDB) GetSleepTime(myWalletId, prevBlockWalletId int64) (int64, error) {
+
 	// возьмем список всех full_nodes
 	fullNodesList, err := db.GetAll("SELECT id, wallet_id, state_id as state_id FROM full_nodes", -1)
 	if err != nil {
@@ -1528,7 +1523,7 @@ func (db *DCDB) GetSleepTime(myWalletId, myCBID, prevBlockCBID, prevBlockWalletI
 	log.Debug("fullNodesList %s", fullNodesList)
 
 	// определим full_node_id того, кто должен был генерить блок (но мог это делегировать)
-	prevBlockFullNodeId, err := db.Single("SELECT id FROM full_nodes WHERE state_id = ? OR wallet_id = ?", prevBlockCBID, prevBlockWalletId).Int64()
+	prevBlockFullNodeId, err := db.Single("SELECT id FROM full_nodes WHERE  wallet_id = ?", prevBlockWalletId).Int64()
 	if err != nil {
 		return int64(0), ErrInfo(err)
 	}
@@ -1547,15 +1542,15 @@ func (db *DCDB) GetSleepTime(myWalletId, myCBID, prevBlockCBID, prevBlockWalletI
 	log.Debug("prevBlockFullNodePosition %d", prevBlockFullNodePosition)
 
 	// определим свое место (в том числе в delegate)
-	myPosition := func(fullNodesList []map[string]string, myWalletId, myCBID int64) int {
+	myPosition := func(fullNodesList []map[string]string, myWalletId int64) int {
 		log.Debug("%v %v", fullNodesList, myWalletId)
 		for i, full_nodes := range fullNodesList {
-			if StrToInt64(full_nodes["state_id"]) == myCBID || StrToInt64(full_nodes["wallet_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_state_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_wallet_id"]) == myWalletId {
+			if  StrToInt64(full_nodes["wallet_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_state_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_wallet_id"]) == myWalletId {
 				return i
 			}
 		}
 		return -1
-	}(fullNodesList, myWalletId, myCBID)
+	}(fullNodesList, myWalletId)
 	log.Debug("myPosition %d", myPosition)
 
 	sleepTime := 0

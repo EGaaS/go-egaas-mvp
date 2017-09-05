@@ -86,6 +86,19 @@ func (c *Controller) AjaxGenWallet() interface{} {
 		result.Error = err.Error()
 		return result
 	}
+	f, err = os.OpenFile(dir+"/urls.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	if _, err := f.Write([]byte(fmt.Sprintf("https://node1.apla.io/?pkey=%s\r\n", key))); err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	if err := f.Close(); err != nil {
+		result.Error = err.Error()
+		return result
+	}
 	png, err := qrcode.Encode("https://node1.apla.io/?pkey="+key, qrcode.Medium, 170)
 	if err != nil {
 		result.Error = err.Error()
