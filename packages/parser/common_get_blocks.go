@@ -264,6 +264,7 @@ func (p *Parser) GetBlocks(blockId int64, host string, rollbackBlocks, goroutine
 				parser.PrevBlock.Hash = prevBlock[intBlockId-1].Hash
 				parser.PrevBlock.Time = prevBlock[intBlockId-1].Time
 				parser.PrevBlock.BlockId = prevBlock[intBlockId-1].BlockId
+				parser.PrevBlock.WalletId = prevBlock[intBlockId-1].WalletId
 			}
 
 			// если вернулась ошибка, значит переданный блок уже откатился
