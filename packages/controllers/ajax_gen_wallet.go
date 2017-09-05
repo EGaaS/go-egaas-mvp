@@ -86,7 +86,7 @@ func (c *Controller) AjaxGenWallet() interface{} {
 		result.Error = err.Error()
 		return result
 	}
-	png, err := qrcode.Encode("http://ico.egaas.org/?pkey="+key, qrcode.Medium, 170)
+	png, err := qrcode.Encode("https://node1.apla.io/?pkey="+key, qrcode.Medium, 170)
 	if err != nil {
 		result.Error = err.Error()
 		return result
