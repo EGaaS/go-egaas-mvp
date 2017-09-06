@@ -22,7 +22,6 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
-	"math"
 )
 
 // CheckBlockHeader checks the block header
