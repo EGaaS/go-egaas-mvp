@@ -1394,23 +1394,61 @@ func SignECDSA(privateKey string, forSign string) (ret []byte, err error) {
 	return
 }
 
-func ParseSign(sign string) (r, s *big.Int) {
-	var off int
-	if len(sign) > 128 {
-		off = 8
-		if sign[7] == '1' {
-			off = 10
+func ParseSign(sign string) (*big.Int, *big.Int) { //(r, s *big.Int)
+	/*	var off int
+		if len(sign) > 128 {
+			off = 8
+			if sign[7] == '1' {
+				off = 10
+			}
+		} else if len(sign) < 128 {
+			return
 		}
+		all, err := hex.DecodeString(string(sign[off:]))
+		if err != nil {
+			return
+		}
+		r = new(big.Int).SetBytes(all[:32])
+		s = new(big.Int).SetBytes(all[len(all)-32:])*/
+	var (
+		binSign []byte
+		err     error
+	)
+	parse := func(bsign []byte) []byte {
+		blen := int(bsign[1])
+		if blen > len(bsign)-2 {
+			return nil
+		}
+		ret := bsign[2 : 2+blen]
+		if len(ret) > 32 {
+			ret = ret[len(ret)-32:]
+		} else if len(ret) < 32 {
+			ret = append(bytes.Repeat([]byte{0}, 32-len(ret)), ret...)
+		}
+		return ret
+	}
+	if len(sign) > 128 {
+		binSign, err = hex.DecodeString(sign)
+		if err != nil {
+			return nil, nil // ,err
+		}
+		left := parse(binSign[2:])
+		if left == nil || int(binSign[3])+6 > len(binSign) {
+			return nil, nil //, fmt.Errorf(`wrong left parsing`)
+		}
+		right := parse(binSign[4+binSign[3]:])
+		if right == nil {
+			return nil, nil //, fmt.Errorf(`wrong right parsing`)
+		}
+		sign = hex.EncodeToString(append(left, right...))
 	} else if len(sign) < 128 {
-		return
+		return nil, nil //, fmt.Errorf(`wrong len of signature %d`, len(sign))
 	}
-	all, err := hex.DecodeString(string(sign[off:]))
+	all, err := hex.DecodeString(sign[:])
 	if err != nil {
-		return
+		return nil, nil //, err
 	}
-	r = new(big.Int).SetBytes(all[:32])
-	s = new(big.Int).SetBytes(all[len(all)-32:])
-	return
+	return new(big.Int).SetBytes(all[:32]), new(big.Int).SetBytes(all[len(all)-32:])
 }
 
 func ConvertJSSign(in string) string {
