@@ -244,29 +244,29 @@ func (p *Parser) NewStateMain(country, currency string) (id string, err error) {
 		(?, ?, ?, ?),
 		(?, ?, ?, ?)`,
 		`dashboard_default`, `FullScreen(1)
-If(StateVal(type_office))
+If(StateVal(tokens_accounts_type,1))
 Else:
 Title : Basic Apps
 Divs: col-md-4
-		Divs: panel panel-default elastic
-			Divs: panel-body text-center fill-area flexbox-item-grow
-				Divs: flexbox-item-grow flex-center
-					Divs: pv-lg
-					Image("/static/img/apps/money.png", Basic, center-block img-responsive img-circle img-thumbnail thumb96 )
-					DivsEnd:
-					P(h4,Basic Apps)
-					P(text-left,"Election and Assign, Polling, Messenger, Simple Money System")
-				DivsEnd:
-			DivsEnd:
-			Divs: panel-footer
-				Divs: clearfix
-					Divs: pull-right
-						BtnPage(app-basic, Install,'',btn btn-primary lang)
-					DivsEnd:
-				DivsEnd:
-			DivsEnd:
-		DivsEnd:
-	DivsEnd:
+  Divs: panel panel-default elastic
+   Divs: panel-body text-center fill-area flexbox-item-grow
+    Divs: flexbox-item-grow flex-center
+     Divs: pv-lg
+     Image("/static/img/apps/money.png", Basic, center-block img-responsive img-circle img-thumbnail thumb96 )
+     DivsEnd:
+     P(h4,Basic Apps)
+     P(text-left,"Election and Assign, Polling, Messenger, Simple Money System")
+    DivsEnd:
+   DivsEnd:
+   Divs: panel-footer
+    Divs: clearfix
+     Divs: pull-right
+      BtnPage(app-basic, Install,'',btn btn-primary lang)
+     DivsEnd:
+    DivsEnd:
+   DivsEnd:
+  DivsEnd:
+ DivsEnd:
 IfEnd:
 PageEnd:
 `, `menu_default`, sid,
