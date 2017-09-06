@@ -1,8 +1,15 @@
 <style>
+	.carousel-inner > .item > a > img, .carousel-inner > .item > img, .img-responsive, .thumbnail > img, .thumbnail a > img {
+		max-width: 88% !important;
+	}
 	@media screen and (max-width: 767px) {
 		.navbar-brand {
 			float: left !important;
 			width: auto !important;
+		}
+		.navbar-brand .version {
+			top: 0px !important;
+			right: 5px !important;
 		}
 		.topnavbar .navbar-header .brand-logo {
 			padding: 10px 5px !important;
@@ -348,7 +355,7 @@
 		  <div class="brand-logo">
 			 <!--<span class="beta">Testing</span>-->
 			 <span class="version"></span>
-			 <img src="static/img/logo.png" alt="App Logo" class="img-responsive">
+			 <img src="static/img/logo.svg" alt="App Logo" class="img-responsive">
 		  </div>
 		  <div class="brand-logo-collapsed">
 			 <!--<span class="beta">Testing</span>-->
