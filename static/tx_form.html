@@ -125,7 +125,7 @@
 							ciz = '0' + ciz;
 							
 						//alert('Your Private key: ' + localStorage.getItem('reqPrv') + idz + ciz);
-						Alert("Citizenship Registration completed successfully!<br />Please accept our sincere congratulations!<br />Now you are a citizen of DayLight!", 'Your Private key: ' + localStorage.getItem('reqPrv') + idz + ciz, "success");
+						Alert("Membership Registration completed successfully!<br />Please accept our sincere congratulations!<br />Now you are a citizen of DayLight!", 'Your Private key: ' + localStorage.getItem('reqPrv') + idz + ciz, "success");
 					}
 //					return
 				}
@@ -265,7 +265,7 @@ function sendnet{{.Unique}}() {
 	<form role="form">
 		<!--{{.TxName}} -->{{if eq .TxName "TXCitizenRequest"}}
 		<div class="form-group">
-			<label for="countries">Country</label>
+			<label for="countries">Ecosystem</label>
 			<select id="countries" class="form-control" onChange="changeCountry(this);"></select>
 		</div>
 		{{end}}

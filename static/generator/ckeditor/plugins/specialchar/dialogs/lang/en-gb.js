@@ -14,7 +14,7 @@ CKEDITOR.plugins.setLang( 'specialchar', 'en-gb', {
 	iexcl: 'Inverted exclamation mark',
 	cent: 'Cent sign',
 	pound: 'Pound sign',
-	curren: 'Currency sign',
+	curren: 'Tokens sign',
 	yen: 'Yen sign',
 	brvbar: 'Broken bar',
 	sect: 'Section sign',

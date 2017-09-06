@@ -133,7 +133,7 @@
 					<label class="col-sm-3 control-label lang" for="phrase" lang-id="country"></label>
 					<div class="col-sm-9" id="login_state"><div id="state_box">
 						<select id="state_id" class="form-control">
-							<option value="0" class="no_citizenship lang" selected="selected" lang-id="no_citizenship">No citizenship</option>
+							<option value="0" class="no_citizenship lang" selected="selected" lang-id="no_citizenship">No membership</option>
 						</select></div>
 					</div>
 				</fieldset>
@@ -270,11 +270,11 @@ function save_phrase(el) {
 		backup = $( repeat_step ? "#rep_phrase" : "#phrase").val();
 		var Data = new Blob([backup], {type: 'text/plain;charset=utf-8;'});
 		if (navigator.msSaveBlob) {
-			navigator.msSaveBlob(Data, 'egaas.txt');
+			navigator.msSaveBlob(Data, 'aplachain.txt');
 		} else {
 			var link = document.createElement('a');
 			link.href = window.URL.createObjectURL(Data);
-			link.setAttribute('download', 'egaas.txt');
+			link.setAttribute('download', 'aplachain.txt');
 			document.body.appendChild(link);    
 			link.click();
 			document.body.removeChild(link);    

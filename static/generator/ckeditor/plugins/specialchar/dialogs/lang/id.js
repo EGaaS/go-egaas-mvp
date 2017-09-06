@@ -14,7 +14,7 @@ CKEDITOR.plugins.setLang( 'specialchar', 'id', {
 	iexcl: 'Inverted exclamation mark', // MISSING
 	cent: 'Cent sign', // MISSING
 	pound: 'Pound sign', // MISSING
-	curren: 'Currency sign', // MISSING
+	curren: 'Tokens sign', // MISSING
 	yen: 'Tanda Yen',
 	brvbar: 'Broken bar', // MISSING
 	sect: 'Section sign', // MISSING

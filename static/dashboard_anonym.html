@@ -42,7 +42,7 @@
 	});
 	
 	var amount = {{.Amount}} / qDLT;
-	$("#balance").text(amount + " EGS");
+	$("#balance").text(amount + " APL");
 
 	$.ajax({
 		type: 'POST',
@@ -86,7 +86,7 @@
 						{
 							targets: 2,
 							render: function (data) {
-								return (data / qDLT).toString().bold() + " EGS";
+								return (data / qDLT).toString().bold() + " APL";
 							}
 						},
 						{
@@ -151,7 +151,7 @@
 				  <em class="glyphicons glyphicons-wallet x3"></em>
 			   </div>
 			   <div class="col-xs-9 text-right">
-				  <div class="text-lg">EGS</div>
+				  <div class="text-lg">APL</div>
 				  <p class="m0 lang" lang-id="your_wallet"></p>
 			   </div>
 			</div>
