@@ -280,6 +280,7 @@ type Parser struct {
 	TxSmart       *tx.SmartContract
 	TxContract    *smart.Contract
 	TxHeader      *tx.Header
+	txParser      ParserInterface
 	DbTransaction *model.DbTransaction
 
 	AllPkeys map[string]string

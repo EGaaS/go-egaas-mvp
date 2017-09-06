@@ -27,6 +27,8 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/parser"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
+	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 // UpdFullNodes sends UpdFullNodes transactions
@@ -43,7 +45,8 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 	}
 
 	if infoBlock.BlockID == 0 {
-		return utils.ErrInfo("blockID == 0")
+		d.sleepTime = 10 * time.Second
+		return nil
 	}
 
 	nodeConfig := &model.Config{}
@@ -97,11 +100,23 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 		return err
 	}
 
-	data := converter.DecToBin(utils.TypeInt("UpdFullNodes"), 1)
-	data = append(data, converter.DecToBin(curTime, 4)...)
-	data = append(data, converter.EncodeLengthPlusData(myWalletID)...)
-	data = append(data, converter.EncodeLengthPlusData(0)...)
-	data = append(data, converter.EncodeLengthPlusData([]byte(binSign))...)
+	tr := tx.UpdFullNodes{
+		Header: tx.Header{
+			Type:          int(utils.TypeInt("UpdFullNodes")),
+			Time:          curTime,
+			UserID:        myWalletID,
+			StateID:       0,
+			PublicKey:     []byte("null"),
+			BinSignatures: binSign,
+		},
+	}
+
+	data, err := msgpack.Marshal(tr)
+	if err != nil {
+		return err
+	}
+
+	data = append(converter.DecToBin(int64(tr.Type), 1), data...)
 
 	hash, err := crypto.Hash(data)
 	if err != nil {
