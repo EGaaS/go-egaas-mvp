@@ -2,19 +2,21 @@
 	@media screen and (max-width: 767px) {
 		.navbar-brand {
 			float: left !important;
-			font-size: 18px !important;
-			line-height: 21px !important;
-			height: 55px !important;
+			width: auto !important;
 		}
 		.topnavbar .navbar-header .brand-logo {
-			padding: 15px 5px !important;
+			padding: 10px 5px !important;
+		}
+		.topnavbar .navbar-header .brand-logo-collapsed > img, .topnavbar .navbar-header .brand-logo > img {
+			height: 35px;
+			width: 103px;
 		}
 		.nav-wrapper .nav.navbar-nav {
-			right: 15px !important;
+			right: 0px !important;
 			left: auto !important;
 		}
 		.nav-wrapper .navbar-nav.navbar-right {
-			margin-right: 20px !important;
+			margin-right: 45px !important;
 		}
 	}
 </style>
@@ -346,7 +348,7 @@
 		  <div class="brand-logo">
 			 <!--<span class="beta">Testing</span>-->
 			 <span class="version"></span>
-			 <img src="static/img/logo.svg" alt="App Logo" class="img-responsive">
+			 <img src="static/img/logo.png" alt="App Logo" class="img-responsive">
 		  </div>
 		  <div class="brand-logo-collapsed">
 			 <!--<span class="beta">Testing</span>-->
