@@ -55,7 +55,7 @@ const (
 	MAX_INDEXES = 10 // Maximum indexes in tables
 )
 
-const ERROR_TIME = 1
+const ERROR_TIME = 3
 
 const ROUND_FIX = 0.00000000001
 
