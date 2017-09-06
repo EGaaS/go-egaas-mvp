@@ -22,6 +22,7 @@ import (
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"math"
 )
 
 // CheckBlockHeader checks the block header
@@ -77,7 +78,7 @@ func (p *Parser) CheckBlockHeader() error {
 		}
 
 		log.Debug("p.PrevBlock.Time %v + sleepTime %v - p.BlockData.Time %v > consts.ERROR_TIME %v", p.PrevBlock.Time, sleepTime, p.BlockData.Time, consts.ERROR_TIME)
-		if p.PrevBlock.Time+sleepTime-p.BlockData.Time > consts.ERROR_TIME {
+		if math.Abs(float64(p.PrevBlock.Time+sleepTime-p.BlockData.Time)) > float64(consts.ERROR_TIME) {
 			return utils.ErrInfo(fmt.Errorf("incorrect block time %d + %d - %d > %d", p.PrevBlock.Time, consts.GAPS_BETWEEN_BLOCKS, p.BlockData.Time, consts.ERROR_TIME))
 		}
 	}

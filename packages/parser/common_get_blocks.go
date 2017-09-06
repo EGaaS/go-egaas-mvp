@@ -261,6 +261,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				parser.PrevBlock.Hash = prevBlock[intBlockID-1].Hash
 				parser.PrevBlock.Time = prevBlock[intBlockID-1].Time
 				parser.PrevBlock.BlockId = prevBlock[intBlockID-1].BlockId
+				parser.PrevBlock.WalletId = prevBlock[intBlockID-1].WalletId
 			}
 
 			// If the error returned, then the transferred block is already rolled back
