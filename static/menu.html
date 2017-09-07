@@ -469,13 +469,13 @@
 			 <span data-localize="sidebar.heading.HEADER">Main Navigation</span>
 		  </li>-->
 		  <li class="anonym {{if not .Menu}}active{{end}}">
-			 <a href="#da" title="EGS-wallet" data-toggle="collapse" class="toggle-hover">
+			 <a href="#da" title="APL-wallet" data-toggle="collapse" class="toggle-hover">
 				<!--<div class="pull-right label label-info">2</div>-->
 				<em class="icon-user"></em>
-				<span>EGS-wallet</span>
+				<span>APL-wallet</span>
 			 </a>
 			 <ul id="da" class="nav sidebar-subnav collapse{{if not .Menu}} in{{end}}">
-				<li class="sidebar-subnav-header">EGS-wallet</li>
+				<li class="sidebar-subnav-header">APL-wallet</li>
 				<li class="dashboard_anonym">
 				   <a {{if not .Menu}}class="active"{{end}} href="#" title="Dashboard" onclick="dl_navigate0('dashboardAnonym'); HideMenu();">
 					  <span>Dashboard</span>
@@ -509,8 +509,8 @@
 				   </a>
 				</li>
 				 <li class="anonym_new_state">
-					 <a href="#" title="Create a new state" onClick="load_page('newState');HideMenu();">
-						 <span>Create a new state</span>
+					 <a href="#" title="Create a new ecosystem" onClick="load_page('newState');HideMenu();">
+						 <span>Create a new ecosystem</span>
 					 </a>
 				 </li>
 				 <!--<li class="anonym_map">
@@ -528,13 +528,13 @@
 
 		  {{if .Menu}}
 		  <li class="citizen active">
-			 <a href="#dc" title="Citizen" data-toggle="collapse" class="toggle-hover">
+			 <a href="#dc" title="Member" data-toggle="collapse" class="toggle-hover">
 				<em class="icon-home"></em>
-				<span>Citizen</span>
+				<span>Member</span>
 			 </a>
 			 <ul id="dc" class="nav sidebar-subnav collapse in">
 
-				<li class="sidebar-subnav-header">Citizen</li>
+				<li class="sidebar-subnav-header">Member</li>
 
 				 {{noescape .Menu}}
 
@@ -661,7 +661,7 @@
 		  {{end}}
 
 		   <li id="DemoButton">
-			   <a href="#" href="#" onClick="load_page('system_info'); HideMenu();" title="Government" data-toggle="collapse" class="toggle-hover">
+			   <a href="#" href="#" onClick="load_page('system_info'); HideMenu();" title="Ecosystem" data-toggle="collapse" class="toggle-hover">
 				   <em class="icon-map"></em>
 				   <span>System</span>
 			   </a>

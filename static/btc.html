@@ -89,7 +89,7 @@
 						<td>Block Height</td>
 						<td>TxIndex</td>
 						<td>BTC</td>
-						<td>EGS</td>
+						<td>APL</td>
 						<td>Time</td>
 						<td>Status</td>
 					</tr>
@@ -102,7 +102,7 @@
 						<td style="text-align:right">{{.balance}}</td>
 						<td>{{.summary}}</td>
 						<td>{{.etime}}</td>
-						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
+						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for APL{{end}} {{if eq .status "3"}}completed{{end}}
 						</td>
 					</tr>
 					{{end}} {{end}}
@@ -120,17 +120,17 @@
 			<table class="table table-striped table-bordered table-hover">
 				<thead>
 					<tr>
-						<td>EGS/BTC</td>
+						<td>APL/BTC</td>
 						<td>Bonus</td>
 						<td>Bonus 2</td>
 						<td>Remaining Time</td>
-						<td style="text-align:right;">Remaining EGS</td>
+						<td style="text-align:right;">Remaining APL</td>
 					</tr>
 				</thead>
 				<tbody>
 					{{range .Stat}}
 					<tr>
-						<td>1 EGS = {{.Btc}} BTC</td>
+						<td>1 APL = {{.Btc}} BTC</td>
 						<td>{{if gt .Bonus 0}}{{.Bonus}}%{{end}}</td>
 						<td>{{if gt .Bonus2 0}}{{.Bonus2}}%{{end}}</td>
 						<td>{{if .Finished}}Finished{{else}}{{.Day}}d {{.Hour}}h {{.Minute}}m{{end}}</td>
@@ -156,7 +156,7 @@
 						<td>Wallet</td>
 						<td>BTC Address<br>Block / TxIndex</td>
 						<td>BTC</td>
-						<td>EGS</td>
+						<td>APL</td>
 						<td>Time</td>
 						<td>Status</td>
 					</tr>
@@ -172,7 +172,7 @@
 						<td style="text-align:right">{{.balance}}</td>
 						<td>{{.summary}}</td>
 						<td>{{.etime}}</td>
-						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for EGS{{end}} {{if eq .status "3"}}completed{{end}}
+						<td>{{if eq .status "1"}}waiting for BTC confirmation{{end}}{{if eq .status "2"}}waiting for APL{{end}} {{if eq .status "3"}}completed{{end}}
 						</td>
 					</tr>
 					{{end}}

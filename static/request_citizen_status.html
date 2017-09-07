@@ -1,17 +1,17 @@
 {{ define "requestCitizenStatus" }}
 
 	<div class="content-heading">
-		Request for citizen status
+		Request for member status
 	</div>
 
 	<div id="new_state_request">
 		<div class="panel panel-default" data-sweet-alert>
 			<div class="panel-body">
-				You can create your own state or community, create and manage smart laws, etc. in version 0.1, which can be downloaded
+				You can create your own ecosystem or community, create and manage smart laws, etc. in version 0.1, which can be downloaded
 				{{if .Thrust}}
-				<a href="#" onclick='THRUST.remote.send("http://egaas.org/en/download.html#private"); load_page("requestCitizenStatus"); HideMenu();' target="_blank">
+				<a href="#" onclick='THRUST.remote.send("http://apla.io/en/download.html#private"); load_page("requestCitizenStatus"); HideMenu();' target="_blank">
 					{{else}}
-				<a href="http://egaas.org/#/download/#private"  onclick="load_page('requestCitizenStatus'); HideMenu(); " target="_blank">
+				<a href="http://apla.io/#/download/#private"  onclick="load_page('requestCitizenStatus'); HideMenu(); " target="_blank">
 				{{end}}
 					here</a>.
 			</div>
