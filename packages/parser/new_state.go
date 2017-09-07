@@ -155,16 +155,16 @@ func (p *Parser) NewStateMain(country, currency string) (id string, err error) {
 		"changing_smart_contracts", sid, "", psid,
 		"changing_menu", sid, "", psid,
 		"changing_page", sid, "", psid,
-		"tokens_name", currency, "", psid,
+		"currency_name", currency, "", psid,
 		"gender_list", "male,female", "", psid,
 		"money_digit", "0", "", psid,
 		"tx_fiat_limit", "10", "", psid,
-		"ecosystem_name", country, "", psid,
-		"founder_account", p.TxWalletID, "", psid,
-		"apl_spending", p.TxWalletID, "", psid,
-		"ecosystem_flag", "", "", psid,
-		"coords", ``, "", psid,
-		"membership_price", "1000000", "", psid)
+		"state_name", country, "", psid,
+		"gov_account", p.TxWalletID, "", psid,
+		"dlt_spending", p.TxWalletID, "", psid,
+		"state_flag", "", "", psid,
+		"state_coords", ``, "", psid,
+		"citizenship_price", "1000000", "", psid)
 	if err != nil {
 		return
 	}
