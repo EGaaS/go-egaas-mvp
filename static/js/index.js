@@ -797,7 +797,7 @@ function Alert(title, text, type, Confirm, no, yes, fullScreen, ConfirmStatus, C
 					}
 				} else {
 					if (type == "error") {
-						window.open("mailto:bugs@egaas.org?subject=Report an error - " + hist[hist.length - 1][0] + "('" + hist[hist.length - 1][1] + "')" + "&body=" + text, "_blank");
+						window.open("mailto:bugs@apla.io?subject=Report an error - " + hist[hist.length - 1][0] + "('" + hist[hist.length - 1][1] + "')" + "&body=" + text, "_blank");
 					} else {
 						if (Cancel) {
 							Cancel();

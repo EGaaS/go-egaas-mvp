@@ -58,7 +58,7 @@
 		<button id="clipboard" type="button" class="btn btn-primary lang" data-clipboard-action="copy" data-clipboard-text="" onClick="preloader(this);" lang-id="copy_clipboard"></button>		
 	  </div>
 	  <div class="pull-right">
-		<a id="dwn" href="" class="btn btn-primary lang" download="aplachain.txt" onclick="return backup_download()" lang-id="download_file"></a>
+		<a id="dwn" href="" class="btn btn-primary lang" download="apla.txt" onclick="return backup_download()" lang-id="download_file"></a>
 	  </div>
    </div>
   </div>
@@ -80,11 +80,11 @@ function check_pass() {
 function backup_download() {	
 	var Data = new Blob([backup], {type: 'text/plain;charset=utf-8;'});
 	if (navigator.msSaveBlob) {
-		navigator.msSaveBlob(Data, 'aplachain.txt');
+		navigator.msSaveBlob(Data, 'apla.txt');
 	} else {
 		var link = document.createElement('a');
 		link.href = window.URL.createObjectURL(Data);
-		link.setAttribute('download', 'aplachain.txt');
+		link.setAttribute('download', 'apla.txt');
 		document.body.appendChild(link);    
 		link.click();
 		document.body.removeChild(link);    

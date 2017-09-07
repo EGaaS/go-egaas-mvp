@@ -17,7 +17,7 @@ Lang = {
 	"password": "Password",
 	"repeat_password": "Repeat password",
 	"next": "Next",
-	"egaas_successfully_installed": "Aplachain has been successfully installed! Please close this window and re-start the application.",
+	"egaas_successfully_installed": "Apla has been successfully installed! Please close this window and re-start the application.",
 	"cannot_connect_server": "Cannot connect to the server.<br />Please try again later.",
 	"login": "Login",
 	"country": "Ecosystem",
