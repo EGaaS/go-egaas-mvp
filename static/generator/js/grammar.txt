@@ -100,6 +100,7 @@ SourceElement
   
 Statement
   = Tags
+  / FunctionStr
   
 Tags
   = A
@@ -180,17 +181,28 @@ FunctionStr
 Function
  = If
   / And
+  / Or
+  / CmpTime
+  / Mult
+  / Trim
+  / Address
+  / Money
+  / Date
+  / DateTime
+  / Now
+  / GetVar
+  / SetVar
 
 Constant
   = '"' str:[^\"]* '"' { return str.join(""); }
   / '``' str:[^\`]* '``' { return str.join(""); }
-  / str:[^\),"`]* { return str.join(""); }
+  / str:[^\(\),"`]* { return str.join(""); }
 
 Variable
  = '#' str:[a-zA-Z-0-9_]+ '#' { return "#" + str.join("") + "#"; }
 
 If
- = 'If(' Expression ',' Expression ',' Expression ')'
+ = 'If(' _ Expression _ ',' _ Expression _ ',' _ Expression _ ')'
 
 And
  = 'And(' exp:Expression _ args:(',' _ Expression)* ')' {
@@ -200,6 +212,50 @@ And
     //return args.join("?");
     //return args;
  }
+ 
+Or
+ = 'Or(' exp:Expression _ args:(',' _ Expression)* ')' {
+ 	return'Or(' + buildList(exp, args, 2) + ')';    
+ } 
+ 
+CmpTime
+ = 'CmpTime(' _ Expression _ ',' _ Expression _ ')'
+ 
+Mult
+ = 'Mult(' _ Expression _ ',' _ Expression _ ')'
+
+Trim
+ = 'Trim(' _ Expression _ ')'
+
+Address
+ = 'Address(' _ Expression _ ')'
+
+Money
+ = 'Money(' _ Expression _ ')'
+ 
+Date
+ = 'Date(' exp:Expression _ args:(',' _ Expression)* ')' {
+ 	return'Date(' + buildList(exp, args, 2) + ')';    
+ } 
+ 
+DateTime
+ = 'DateTime(' exp:Expression _ args:(',' _ Expression)* ')' {
+ 	return'DateTime(' + buildList(exp, args, 2) + ')';    
+ } 
+ 
+Now
+ = 'Now(' exp:Expression _ args:(',' _ Expression)* ')' {
+ 	return'Now(' + buildList(exp, args, 2) + ')';    
+ } 
+
+GetVar
+ = 'GetVar(' _ Expression _ ')'
+
+SetVar
+ = 'SetVar(' _ args:NamedArgument _ ')' {
+ 	return 'SetVar(' + args.name + "=" + args.value + ')'
+    }
+
 
 A
   = "A:" param:NoSpaceArgument { 
@@ -911,12 +967,6 @@ Source
         params: params    
     } 
   }
-
-
-
-
-
-
 
 
 
