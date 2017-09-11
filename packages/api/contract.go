@@ -19,8 +19,11 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
+	"github.com/EGaaS/go-egaas-mvp/packages/script"
+	"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/sql"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 )
@@ -49,9 +52,15 @@ type contractListResult struct {
 func checkID(data *apiData) (id string, err error) {
 	id = data.params[`id`].(string)
 	if id[0] > '9' {
-		id, err = sql.DB.Single(`SELECT id FROM "`+getPrefix(data)+`_smart_contracts" WHERE name = ?`, id).String()
-		if err == nil && len(id) == 0 {
-			err = fmt.Errorf(`incorrect id %s of the contract`, data.params[`id`].(string))
+		var state uint32
+		prefix := getPrefix(data)
+		if prefix != `global` {
+			state = uint32(converter.StrToInt64(prefix))
+		}
+		if contract := smart.GetContract(id, state); contract != nil {
+			id = converter.Int64ToStr((*contract).Block.Info.(*script.ContractInfo).TableID)
+		} else {
+			err = fmt.Errorf(`incorrect id %s of the contract`, id)
 		}
 	}
 	return
@@ -64,9 +73,9 @@ func getContract(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	}
 	dataContract, err := sql.DB.OneRow(`SELECT * FROM "`+getPrefix(data)+`_smart_contracts" WHERE id = ?`, id).String()
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &contractResult{ID: dataContract["id"], Name: dataContract["name"], Active: dataContract["active"],
+	data.result = &contractResult{ID: dataContract["id"], Name: strings.Join(smart.ContractsList(dataContract[`value`]), `,`), Active: dataContract["active"],
 		Wallet: dataContract["wallet"], Value: dataContract["value"], Conditions: dataContract["conditions"]}
 	return nil
 }
@@ -75,10 +84,9 @@ func txPreNewContract(w http.ResponseWriter, r *http.Request, data *apiData) err
 	v := tx.NewContract{
 		Header:     getSignHeader(`NewContract`, data),
 		Global:     converter.Int64ToStr(data.params[`global`].(int64)),
-		Name:       data.params[`name`].(string),
 		Value:      data.params[`value`].(string),
 		Conditions: data.params[`conditions`].(string),
-		Wallet: data.params[`wallet`].(string),
+		Wallet:     data.params[`wallet`].(string),
 	}
 	data.result = &forSign{Time: converter.Int64ToStr(v.Time), ForSign: v.ForSign()}
 	return nil
@@ -111,7 +119,7 @@ func txContract(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	}
 	header, err := getHeader(txName, data)
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusBadRequest)
 	}
 
 	var toSerialize interface{}
@@ -128,7 +136,6 @@ func txContract(w http.ResponseWriter, r *http.Request, data *apiData) error {
 		toSerialize = tx.NewContract{
 			Header:     header,
 			Global:     converter.Int64ToStr(data.params[`global`].(int64)),
-			Name:       data.params[`name`].(string),
 			Value:      data.params[`value`].(string),
 			Conditions: data.params[`conditions`].(string),
 			Wallet:     data.params[`wallet`].(string),
@@ -136,7 +143,7 @@ func txContract(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	}
 	hash, err := sendEmbeddedTx(header.Type, header.UserID, toSerialize)
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 	data.result = hash
 	return nil
@@ -165,7 +172,7 @@ func txActivateContract(w http.ResponseWriter, r *http.Request, data *apiData) e
 	}
 	header, err := getHeader(txName, data)
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusBadRequest)
 	}
 
 	var toSerialize interface{}
@@ -177,7 +184,7 @@ func txActivateContract(w http.ResponseWriter, r *http.Request, data *apiData) e
 	}
 	hash, err := sendEmbeddedTx(header.Type, header.UserID, toSerialize)
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 	data.result = hash
 	return nil
@@ -194,13 +201,13 @@ func contractList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	outList := make([]contractItem, 0)
 	count, err := sql.DB.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_smart_contracts"`).String()
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	list, err := sql.DB.GetAll(`SELECT * FROM "`+getPrefix(data)+`_smart_contracts" order by id`+
 		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusConflict)
+		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
@@ -211,7 +218,8 @@ func contractList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 		if val[`active`] != `NULL` {
 			active = `1`
 		}
-		outList = append(outList, contractItem{ID: val[`id`], Name: val[`name`], Wallet: wallet, Active: active})
+		outList = append(outList, contractItem{ID: val[`id`], Name: strings.Join(smart.ContractsList(val[`value`]), `,`),
+			Wallet: wallet, Active: active})
 	}
 	data.result = &contractListResult{Count: count, List: outList}
 	return nil

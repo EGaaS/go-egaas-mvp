@@ -19,6 +19,7 @@ package smart
 import (
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -216,6 +217,22 @@ func (contract *Contract) GetFunc(name string) *script.Block {
 	return nil
 }
 
+// GetSettings returns the string value of the settings
+func (contract *Contract) GetSettings(name string) string {
+	cblock := (*contract).Block.Info.(*script.ContractInfo)
+	if cblock.Settings != nil {
+		if val, ok := cblock.Settings[name]; ok {
+			switch ret := val.(type) {
+			case string:
+				return ret
+			default:
+				return fmt.Sprintf("%v", ret)
+			}
+		}
+	}
+	return ``
+}
+
 // TxJSON returns JSON data which has been generated from Tx data and extended variables
 func TxJSON(contract *Contract) string {
 	lines := make([]string, 0)
@@ -244,4 +261,15 @@ func Float(v interface{}) (ret float64) {
 		}
 	}
 	return
+}
+
+func ContractsList(value string) []string {
+	list := make([]string, 0)
+	re := regexp.MustCompile(`contract[\s]*([\d\w_]+)[\s]*{`)
+	for _, item := range re.FindAllStringSubmatch(value, -1) {
+		if len(item) > 1 {
+			list = append(list, item[1])
+		}
+	}
+	return list
 }

@@ -19,15 +19,19 @@ package controllers
 const nGenerator = `generator`
 
 type generatorPage struct {
-	Data *CommonPage
+	Data   *CommonPage
+	Params map[string]string
 }
 
 func init() {
 	newPage(nGenerator)
 }
 
-// GenCitizen is a control for creating a new citizen
+// Generator is a control for creating a new citizen
 func (c *Controller) Generator() (string, error) {
-	pageData := generatorPage{Data: c.Data}
+	pageData := generatorPage{Data: c.Data, Params: make(map[string]string)}
+	for key, val := range c.r.Form {
+		pageData.Params[key] = val[0]
+	}
 	return proceedTemplate(c, nGenerator, &pageData)
 }

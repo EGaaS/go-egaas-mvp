@@ -480,7 +480,7 @@ CREATE SEQUENCE global_smart_contracts_id_seq START WITH 1;
 CREATE TABLE "global_smart_contracts" (
 "id" bigint NOT NULL  default nextval('global_smart_contracts_id_seq'),
 "name" varchar(100)  NOT NULL DEFAULT '',
-"value" bytea  NOT NULL DEFAULT '',
+"value" text  NOT NULL DEFAULT '',
 "wallet_id" bigint  NOT NULL DEFAULT '0',
 "active" character(1) NOT NULL DEFAULT '0',
 "conditions" text  NOT NULL DEFAULT '',
@@ -491,12 +491,10 @@ ALTER SEQUENCE "global_smart_contracts_id_seq" owned by "global_smart_contracts"
 ALTER TABLE ONLY "global_smart_contracts" ADD CONSTRAINT global_smart_contracts_pkey PRIMARY KEY (id);
 CREATE INDEX global_smart_contracts_index_name ON "global_smart_contracts" (name);
 
-INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VALUES ('DLTTransfer',
-  'contract DLTTransfer {
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract DLTTransfer {
     data {
         Recipient string
         Amount    string
-        Commission  string
         Comment     string "optional"
     }
 
@@ -505,31 +503,561 @@ INSERT INTO global_smart_contracts ("name", "value", "active", "conditions") VAL
         if $recipient == 0 {
             error Sprintf("Recipient %s is invalid", $Recipient)
         }
-        var total fuel cost money
-        fuel = Money(SysParamString(`fuel_rate`))
-        cost = Money(SysCost(`dlt_transfer`))
-        $commission = Money($Commission)
-        if $commission < cost*fuel {
-            error Sprintf("Commission %v < %v", $commission, cost*fuel)
-        }
+        var total money
         $amount = Money($Amount) 
         if $amount == 0 {
             error "Amount is zero"
         }
         total = Money(DBStringExt(`dlt_wallets`, `amount`, $wallet, "wallet_id"))
-        if $amount + $commission >= total {
-            error Sprintf("Money is not enough %v < %v",total, $amount + $commission)
+        if $amount >= total {
+            error Sprintf("Money is not enough %v < %v",total, $amount)
         }
     }
 
     action {
-        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`-amount`, $amount+$commission)
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`-amount`, $amount)
         DBUpdateExt(`dlt_wallets`, "wallet_id", $recipient,`+amount`, $amount)
-        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $recipient, $amount, $commission, $Comment, $block_time, $block)
-        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet_block,`+amount`, $commission)
-        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, commission, comment, time, block_id`, $wallet, $wallet_block, $commission, 0, `Commission`, $block_time, $block)
+        DBInsert(`dlt_transactions`, `sender_wallet_id, recipient_wallet_id, amount, comment, time, block_id`, $wallet, $recipient, $amount, $Comment, $block_time, $block)
     }
 }', '1','ContractAccess("@0UpdateDLTTranfer")');
+INSERT INTO global_smart_contracts ( "value", "active", "conditions") VALUES ('contract DLTChangeHostVote {
+    data {
+        Host        string
+	AddressVote string
+	FuelRate    string
+    }
+
+    conditions {
+        var lastUpd int
+	    lastUpd = DBIntExt(`dlt_wallets`, `last_forging_data_upd`, $wallet, `wallet_id`)
+	    if $time-lastUpd < 600 {
+		    warning "txTime - lastForgingDataUpd < 600 sec"
+	    }
+    }
+
+    action {
+        DBUpdateExt(`dlt_wallets`, "wallet_id", $wallet,`host,address_vote,fuel_rate,last_forging_data_upd`, $Host, $AddressVote, $FuelRate, $block_time)
+    }
+}', '1','ContractAccess("@0UpdateDLTChangeHostVote")');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ( 'contract NewMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBInsert(PrefixTable(`menu`, $Global), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractAccess("@0UpdateNewMenu")');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(PrefixTable(`menu`,$Global), $Name, `conditions`)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`menu`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ( "value", "active", "conditions") VALUES ('contract AppendMenu {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    }
+
+    conditions {
+        EvalCondition(PrefixTable(`menu`,$Global), $Name, `conditions`)
+    }
+
+    action {
+        var table string
+        table = PrefixTable(`menu`, $Global)
+        DBUpdateExt(table, `name`, $Name, `value`, DBStringExt(table, `value`, $Name, `name`) + "\r\n" + $Value )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Menu       string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,$state)
+       	if HasPrefix($Name, `sys-`) || HasPrefix($Name, `app-`) {
+	    	error `The name cannot start with sys- or app-`
+	    }
+    }
+
+    action {
+        DBInsert(PrefixTable(`pages`, $Global), `name,value,menu,conditions`, $Name, $Value, $Menu, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Menu      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(PrefixTable(`pages`,$Global), $Name, `conditions`)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`pages`, $Global), `name`, $Name, `value,menu,conditions`, $Value, $Menu, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract AppendPage {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    }
+
+    conditions {
+        EvalCondition(PrefixTable(`pages`,$Global), $Name, `conditions`)
+    }
+
+    action {
+        var value, table string
+        table = PrefixTable(`pages`, $Global)
+        value = DBStringExt(table, `value`, $Name, `name`)
+       	if Contains(value, `PageEnd:`) {
+		   value = Replace(value, "PageEnd:", $Value) + "\r\nPageEnd:"
+    	} else {
+    		value = value + "\r\n" + $Value
+    	}
+        DBUpdateExt(table, `name`, $Name, `value`,  value )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewStateParameters {
+    data {
+        Name string
+        Value string
+        Conditions string
+    }
+    conditions {
+        ValidateCondition($Conditions, $state)
+    }
+    action {
+        DBInsert(Table(`state_parameters`), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditStateParameters {
+    data {
+        Name string
+        Value string
+        Conditions string
+    }
+    conditions {
+        EvalCondition(Table(`state_parameters`), $Name, `conditions`)
+        ValidateCondition($Conditions, $state)
+        var exist int
+       	if $Name == `state_name` {
+    		exist = FindEcosystem($Value)
+    		if exist > 0 && exist != $state {
+    			warning Sprintf(`State %s already exists`, $Value)
+    		}
+    	}
+    }
+    action {
+        DBUpdateExt(Table(`state_parameters`), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewLang {
+    data {
+        Name  string
+        Trans string
+    }
+
+    conditions {
+        EvalCondition(Table(`state_parameters`), `changing_language`, `value`)
+        var exist string
+        exist = DBStringExt(Table(`languages`), `name`, $Name, `name`)
+        if exist {
+            error Sprintf("The language resource %s already exists", $Name)
+        }
+    }
+
+    action {
+        DBInsert(Table(`languages`), `name,res`, $Name, $Trans )
+        UpdateLang($Name, $Trans)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditLang {
+    data {
+        Name  string
+        Trans string
+    }
+
+    conditions {
+        EvalCondition(Table(`state_parameters`), `changing_language`, `value`)
+    }
+
+    action {
+        DBUpdateExt(Table(`languages`), `name`, $Name, `res`, $Trans )
+        UpdateLang($Name, $Trans)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewSign {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,$state)
+        var exist string
+        exist = DBStringExt(PrefixTable(`signatures`, $Global), `name`, $Name, `name`)
+        if exist {
+            error Sprintf("The signature %s already exists", $Name)
+        }
+    }
+
+    action {
+        DBInsert(PrefixTable(`signatures`, $Global), `name,value,conditions`, $Name, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditSign {
+    data {
+        Global     int
+    	Name       string
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        var state int
+        
+        EvalCondition(PrefixTable(`signatures`,$Global), $Name, `conditions`)
+        if $Global == 0 {
+            state = $state
+        }
+        ValidateCondition($Conditions,state)
+    }
+
+    action {
+        DBUpdateExt(PrefixTable(`signatures`, $Global), `name`, $Name, `value,conditions`, $Value, $Conditions )
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract UpdFullNodes {
+    data {
+
+    }
+
+    conditions {
+        var prev int
+        var nodekey bytes
+        prev = DBInt(`upd_full_nodes`, `time`, 1)
+	    if $time-prev < SysParamInt(`upd_full_nodes_period`) {
+		    warning Sprintf("txTime - upd_full_nodes < UPD_FULL_NODES_PERIOD")
+	    }
+	    nodekey = bytes(DBStringExt(`dlt_wallets`, `node_public_key`, $wallet, `wallet_id`))
+	    if !nodekey {
+	        error `len(node_key) == 0`
+	    }
+    }
+
+    action {
+        var list array
+        list = DBGetList("dlt_wallets", "address_vote", 0, SysParamInt(`number_of_dlt_nodes`), "sum(amount) DESC", "address_vote != ? and amount > ? GROUP BY address_vote", ``, `10000000000000000000000`)
+        var i int
+        var out string
+        while i<Len(list) {
+            var row, item map
+            item = list[i]
+            row = DBRowExt(`dlt_wallets`, `host, wallet_id`, item[`address_vote`], `wallet_id`)
+            if i > 0 {
+                out = out + `,`
+            }
+            out = out + Sprintf(`[%q,%q]`, row[`host`],row[`wallet_id`])
+            i = i+1
+        }
+        UpdateSysParam(`full_nodes`, `[`+out+`]`, ``)
+    }
+}', '1','ContractAccess("@0UpdateUpdFullNodes")');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccess {
+    data {
+        State int
+    }
+
+    conditions {
+        if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+	    var adata map
+	    adata = DBRowExt("system_restore_access", "*", $State, `state_id`)
+    	if !adata[`state_id`] {
+	    	error "incorrect system_restore_access"
+	    }
+	    if adata["active"] == `0` {
+		    error "active = 0"
+	    }
+	    if adata["close"] == `1` {
+		    error "close = 1"
+	    }
+    	if $time-Int(adata["time"]) < 86400 * 7 {
+		        error "CHANGE_KEY_PERIOD"
+	    }
+    }
+
+    action {
+        var value string
+    	value = `$citizen=` + DBStringExt(`system_restore_access`,`citizen_id`, $State, `state_id`)
+
+        DBUpdateExt(Str($State)+`_state_parameters`, `name`,  "changing_tables", "value,conditions", value, value)
+        DBUpdateExt(Str($State)+`_state_parameters`, `name`,  "changing_smart_contracts", "value,conditions", value, value)
+        DBUpdateExt(`system_restore_access`, `state_id`,  $State, "close", 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessActive {
+    data {
+        Secret string
+    }
+
+    conditions {
+        $active = 1
+        if Substr($Secret,0, 1) == `0`  { // 30
+            $active = 0
+        }
+       	if Size($Secret) > 2048 {
+		   error "len secret > 2048"
+	    }
+	    var active int
+        active = DBIntExt(`system_restore_access`, `active`, $state, `state_id`)
+		if active == $active {
+	    	error "active"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "active,secret", $active, $Secret)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessClose {
+    data {
+
+    }
+
+    conditions {
+	    if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+		if DBIntExt(`system_restore_access`, `close`, $state, `state_id`) == 1 {
+	    	error "close"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "close", 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract RestoreAccessRequest {
+    data {
+    }
+    conditions {
+	    if $wallet != SysParamInt(`recovery_address`) {
+		    error "wallet != recovery_address"
+	    }
+	    var adata map
+	    adata = DBRowExt("system_restore_access", "*", $state, `state_id`)
+    	if !adata[`state_id`] {
+	    	error "incorrect system_restore_access"
+	    }
+	    if adata["active"] == `0` {
+		    error "active = 0"
+	    }
+	    EvalCondition(Table(`state_parameters`), `restore_access_condition`, `conditions`)
+    }
+
+    action {
+        DBUpdateExt(`system_restore_access`, `state_id`,  $state, "time,close,citizen_id", $block_time, 1, $wallet)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract NewContract {
+    data {
+        Global     int
+    	Value      string
+    	Conditions string
+    	Wallet       string "optional"
+    }
+
+    conditions {
+        $istate = 0
+        if $Global == 0 {
+            $istate = $state
+        }
+        ValidateCondition($Conditions,$istate)
+        $walletContract = $wallet
+       	if $Wallet {
+		    $walletContract = AddressToId($Wallet)
+		    if $walletContract == 0 {
+			   error Sprintf(`wrong wallet %s`, $Wallet)
+		    }
+	    }
+	    var list array
+	    list = ContractsList($Value)
+	    var i int
+	    while i < Len(list) {
+	        if IsContract(list[i], $istate) {
+	            warning Sprintf(`Contract %s exists`, list[i] )
+	        }
+	        i = i + 1
+	    }
+    }
+
+    action {
+        var root, id int
+        root = CompileContract($Value, $istate, 0)
+        id = DBInsert(PrefixTable(`smart_contracts`, $Global), `value,conditions, wallet_id`, $Value, $Conditions, $walletContract)
+        FlushContract(root, id, false)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract EditContract {
+    data {
+        Global     int
+        Id         int
+    	Value      string
+    	Conditions string
+    }
+
+    conditions {
+        $cur = DBRow(PrefixTable(`smart_contracts`, $Global), `id,value,conditions,active`, $Id)
+        if Int($cur[`id`]) != $Id {
+            error Sprintf(`Contract %d does not exist`, $Id)
+        }
+        Eval($cur[`conditions`])
+        $istate = 0
+        if $Global == 0 {
+            $istate = $state
+        }
+        ValidateCondition($Conditions,$istate)
+	    var list, curlist array
+	    list = ContractsList($Value)
+	    curlist = ContractsList($cur[`value`])
+	    if Len(list) != Len(curlist) {
+	        error `Contracts cannot be removed or inserted`
+	    }
+	    var i int
+	    while i < Len(list) {
+	        var j int
+	        var ok bool
+	        while j < Len(curlist) {
+	            if curlist[j] == list[i] {
+	                ok = true
+	                break
+	            }
+	            j = j + 1 
+	        }
+	        if !ok {
+	            error `Contracts names cannot be changed`
+	        }
+	        i = i + 1
+	    }
+    }
+
+    action {
+        var root int
+        root = CompileContract($Value, $istate, $Id)
+        DBUpdate(PrefixTable(`smart_contracts`, $Global), $Id, `value,conditions`, $Value, $Conditions)
+        FlushContract(root, $Id, Int($cur[`active`]) == 1)
+    }
+}', '1','ContractConditions(`MainCondition`)');
+
+INSERT INTO global_smart_contracts ("value", "active", "conditions") VALUES ('contract ActivateContract {
+    data {
+        Global     int
+        Id         int
+    }
+
+    conditions {
+        $cur = DBRow(PrefixTable(`smart_contracts`, $Global), `id,conditions,active`, $Id)
+        if Int($cur[`id`]) != $Id {
+            error Sprintf(`Contract %d does not exist`, $Id)
+        }
+        if Int($cur[`active`]) == 1 {
+            error Sprintf(`The contract %d has been already activated`, $Id)
+        }
+        Eval($cur[`conditions`])
+    }
+
+    action {
+        var istate int
+        if $Global == 0 {
+            istate = $state
+        }
+        DBUpdate(PrefixTable(`smart_contracts`, $Global), $Id, `active`, 1)
+        Activate($Id, istate)
+    }
+}', '1','ContractConditions(`MainCondition`)');
 
 CREATE TABLE "global_tables" (
 "name" varchar(255)  NOT NULL DEFAULT '',
@@ -540,12 +1068,30 @@ CREATE TABLE "global_tables" (
 ALTER TABLE ONLY "global_tables" ADD CONSTRAINT global_tables_pkey PRIMARY KEY (name);
 
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_wallets', 
-        '{"insert": "ContractAccess(\"@0NewWallet\")", "update": {"*": "false","amount": "ContractAccess(\"@0DLTTransfer\")"}, "new_column": "ContractAccess(\"@0NewWalletColumn\")", "general_update": "ContractAccess(\"@0UpdateDltWallet\")"}',
+        '{"insert": "ContractAccess(\"@0NewWallet\")", "update": {"*": "false","amount": "ContractAccess(\"@0DLTTransfer\")",
+        "host": "ContractAccess(\"@0DLTChangeHostVote\")","address_vote": "ContractAccess(\"@0DLTChangeHostVote\")",
+        "fuel_rate": "ContractAccess(\"@0DLTChangeHostVote\")","last_forging_data_upd": "ContractAccess(\"@0DLTChangeHostVote\")"
+        }, 
+        "new_column": "ContractAccess(\"@0NewWalletColumn\")", "general_update": "ContractAccess(\"@0UpdateDltWallet\")"}',
         'false');
 INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('dlt_transactions', 
         '{"insert": "ContractAccess(\"@0DLTTransfer\")", "update": {"*": "false"}, "new_column": "ContractAccess(\"@0NewDLTColumn\")", "general_update": "ContractAccess(\"@0UpdateDltTransactions\")"}',
         'false');
-
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_menu', 
+        '{"insert": "ContractAccess(\"@0NewMenu\")", "update": {"*": "ContractAccess(\"@0EditMenu\", \"@0AppendMenu\")"}, "new_column": "ContractAccess(\"@0NewMenuColumn\")", "general_update": "ContractAccess(\"@0UpdateNewMenu\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_pages', 
+        '{"insert": "ContractAccess(\"@0NewPage\")", "update": {"*": "ContractAccess(\"@0EditPage\", \"@0AppendPage\")"}, "new_column": "ContractAccess(\"@0NewPageColumn\")", "general_update": "ContractAccess(\"@0UpdateNewPage\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_signatures', 
+        '{"insert": "ContractAccess(\"@0NewSign\")", "update": {"*": "ContractAccess(\"@0EditSign\")"}, "new_column": "ContractAccess(\"@0NewSignColumn\")", "general_update": "ContractAccess(\"@0UpdateNewSign\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('system_restore_access', 
+        '{"insert": "ContractAccess(\"@0RestoreAccess\")", "update": {"*": "ContractAccess(\"@0RestoreAccess\", \"@0RestoreAccessActive\", \"@0RestoreAccessClose\", \"@0RestoreAccessRequest\")"}, "new_column": "ContractAccess(\"@0NewRestoreAccessColumn\")", "general_update": "ContractAccess(\"@0UpdateRestoreAccess\")"}',
+        'false');
+INSERT INTO global_tables ("name", "columns_and_permissions", "conditions") VALUES ('global_smart_contracts', 
+        '{"insert": "ContractAccess(\"@0NewContract\")", "update": {"*": "ContractAccess(\"@0EditContract\", \"@0ActivateContract\")"}, "new_column": "ContractAccess(\"@0NewContractColumn\")", "general_update": "ContractConditions(`MainCondition`)"}',
+        'false');
 
 DROP SEQUENCE IF EXISTS system_states_id_seq CASCADE;
 CREATE SEQUENCE system_states_id_seq START WITH 1;
@@ -587,3 +1133,4 @@ DROP TABLE IF EXISTS "system_restore_access"; CREATE TABLE "system_restore_acces
 );
 ALTER SEQUENCE system_restore_access_id_seq owned by system_restore_access.id;
 ALTER TABLE ONLY "system_restore_access" ADD CONSTRAINT system_restore_access_pkey PRIMARY KEY (id);
+CREATE INDEX "system_restore_access_state" ON "system_restore_access" (state_id);
