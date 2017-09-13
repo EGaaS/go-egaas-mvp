@@ -17,6 +17,7 @@
 package exchangeapi
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -29,6 +30,7 @@ import (
 type HistOper struct {
 	BlockId string `json:"block_id"`
 	Dif     string `json:"dif"`
+	Hash    string `json:"txhash"`
 	Amount  string `json:"amount"`
 	EGS     string `json:"egs"`
 	Time    string `json:"time"`
@@ -54,9 +56,9 @@ func history(r *http.Request) interface{} {
 	if count == 0 {
 		count = 50
 	}
-	if count > 200 {
+	/*	if count > 200 {
 		count = 200
-	}
+	}*/
 	list := make([]HistOper, 0)
 	current, err := utils.DB.OneRow(`select amount, rb_id from dlt_wallets where wallet_id=?`, wallet).String()
 	if err != nil {
@@ -64,6 +66,12 @@ func history(r *http.Request) interface{} {
 		return result
 	}
 	rb := utils.StrToInt64(current[`rb_id`])
+	var (
+		prev_block_id string
+		prev_list     []map[string]string
+		prev_off      int
+		prev_hash     string
+	)
 	if len(current) > 0 && rb != 0 {
 		balance, _ := decimal.NewFromString(current[`amount`])
 		for len(list) < count && rb > 0 {
@@ -94,9 +102,21 @@ func history(r *http.Request) interface{} {
 					sign = `-`
 				}
 				dt := time.Unix(utils.StrToInt64(prev[`time`]), 0)
-
+				if prev_block_id != prev[`block_id`] {
+					prev_block_id = prev[`block_id`]
+					prev_list, _ = utils.DB.GetAll(`select tx_hash from rollback_tx where block_id=? and table_name='dlt_wallets' and
+						    table_id=? order by id desc`,
+						-1, prev_block_id, wallet)
+					prev_off = 0
+				}
+				if prev_off < len(prev_list) {
+					prev_hash = hex.EncodeToString([]byte(prev_list[prev_off][`tx_hash`]))
+					prev_off++
+				} else {
+					prev_hash = ``
+				}
 				list = append(list, HistOper{BlockId: prev[`block_id`], Dif: sign + lib.EGSMoney(dif.String()),
-					Amount: balance.String(), EGS: lib.EGSMoney(balance.String()), Time: dt.Format(`02.01.2006 15:04:05`)})
+					Hash: prev_hash, Amount: balance.String(), EGS: lib.EGSMoney(balance.String()), Time: dt.Format(`02.01.2006 15:04:05`)})
 				balance = val
 
 			}
@@ -109,10 +129,23 @@ func history(r *http.Request) interface{} {
 			return result
 		}
 		if len(first) > 0 {
+			if prev_block_id != first[`block_id`] {
+				prev_block_id = first[`block_id`]
+				prev_list, _ = utils.DB.GetAll(`select tx_hash from rollback_tx where block_id=? and table_name='dlt_wallets' and
+						table_id=? order by id desc`,
+					-1, prev_block_id, wallet)
+				prev_off = 0
+			}
+			if prev_off < len(prev_list) {
+				prev_hash = hex.EncodeToString([]byte(prev_list[prev_off][`tx_hash`]))
+				prev_off++
+			} else {
+				prev_hash = ``
+			}
 			dt := time.Unix(utils.StrToInt64(first[`time`]), 0)
 			list = append(list, HistOper{BlockId: first[`block_id`], Dif: `+` + lib.EGSMoney(first[`amount`]),
-				Amount: first[`amount`],
-				EGS:    lib.EGSMoney(first[`amount`]), Time: dt.Format(`02.01.2006 15:04:05`)})
+				Amount: first[`amount`], Hash: prev_hash,
+				EGS: lib.EGSMoney(first[`amount`]), Time: dt.Format(`02.01.2006 15:04:05`)})
 		}
 	}
 	result.Items = list

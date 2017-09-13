@@ -1545,7 +1545,7 @@ func (db *DCDB) GetSleepTime(myWalletId, prevBlockWalletId int64) (int64, error)
 	myPosition := func(fullNodesList []map[string]string, myWalletId int64) int {
 		log.Debug("%v %v", fullNodesList, myWalletId)
 		for i, full_nodes := range fullNodesList {
-			if  StrToInt64(full_nodes["wallet_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_state_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_wallet_id"]) == myWalletId {
+			if StrToInt64(full_nodes["wallet_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_state_id"]) == myWalletId || StrToInt64(full_nodes["final_delegate_wallet_id"]) == myWalletId {
 				return i
 			}
 		}
@@ -1597,17 +1597,17 @@ func (db *DCDB) CheckStateName(stateId int64) (bool, error) {
 	return false, fmt.Errorf("null stateId")
 }
 
-func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (err error) {
-	md5 := Md5(data)
+func (db *DCDB) SendTx(txType int64, adminWallet int64, data []byte) (md5 []byte, err error) {
+	md5 = Md5(data)
 	err = db.ExecSql(`INSERT INTO transactions_status (
 			hash, time,	type, wallet_id, citizen_id	) VALUES (
 			[hex], ?, ?, ?, ? )`, md5, time.Now().Unix(), txType, adminWallet, adminWallet)
 	if err != nil {
-		return err
+		return
 	}
 	err = db.ExecSql("INSERT INTO queue_tx (hash, data) VALUES ([hex], [hex])", md5, hex.EncodeToString(data))
 	if err != nil {
-		return err
+		return
 	}
 	return
 }

@@ -30,6 +30,7 @@ import (
 )
 
 type Send struct {
+	Hash  string `json:"txhash"`
 	Error string `json:"error"`
 }
 
@@ -134,10 +135,11 @@ func send(r *http.Request) interface{} {
 	data = append(data, utils.EncodeLengthPlusData([]byte(`api`))...)
 	data = append(data, utils.EncodeLengthPlusData(lib.PrivateToPublic(priv))...)
 	data = append(data, binsign...)
-	err = utils.DB.SendTx(txType, sender, data)
+	hash, err := utils.DB.SendTx(txType, sender, data)
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
+	result.Hash = string(hash)
 	return result
 }

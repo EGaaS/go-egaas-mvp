@@ -372,6 +372,7 @@ func Start(dir string, thrustWindowLoder *window.Window) {
 		http.HandleFunc(HandleHttpHost+"/exchangeapi/send", exchangeapi.Api)
 		http.HandleFunc(HandleHttpHost+"/exchangeapi/balance", exchangeapi.Api)
 		http.HandleFunc(HandleHttpHost+"/exchangeapi/history", exchangeapi.Api)
+		http.HandleFunc(HandleHttpHost+"/exchangeapi/txstatus", exchangeapi.Api)
 		//http.HandleFunc(HandleHttpHost+"/ajaxjson", controllers.AjaxJson)
 		//http.HandleFunc(HandleHttpHost+"/tools", controllers.Tools)
 		//http.Handle(HandleHttpHost+"/public/", noDirListing(http.FileServer(http.Dir(*utils.Dir))))
