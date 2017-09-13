@@ -25,8 +25,7 @@ import (
 
 type TXInfo struct {
 	BlockId          string `json:"block_id"`
-	Bad              int64  `json:"bad"`
-	Good             int64  `json:"good"`
+	Confirmations    string  `json:"confirmations"`
 	Hash             string `json:"txhash"`
 	Amount           string `json:"amount"`
 	EGS              string `json:"egs"`
@@ -59,14 +58,6 @@ func txstatus(r *http.Request) interface{} {
 	result.Hash = r.FormValue(`hash`)
 	result.BlockId = tx["block_id"]
 	result.Time = tx["time"]
-	conf, err := utils.DB.OneRow(`select * from confirmations where block_id=?`,
-		tx["block_id"]).String()
-	if err != nil {
-		result.Error = err.Error()
-		return result
-	}
-	result.Bad = utils.StrToInt64(conf[`bad`])
-	result.Good = utils.StrToInt64(conf[`good`])
 	list, err := utils.DB.GetAll(`select table_id from rollback_tx where block_id=? and table_name='dlt_wallets' and
 						    tx_hash=[hex] order by id`,
 		-1, tx["block_id"], r.FormValue(`hash`))
@@ -80,6 +71,23 @@ func txstatus(r *http.Request) interface{} {
 		result.Error = err.Error()
 		return result
 	}
+	conf, err := utils.DB.OneRow(`select * from confirmations where block_id=?`,
+		tx["block_id"]).String()
+	if err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	bad := float64(utils.StrToInt64(conf[`bad`]))
+	good := float64(utils.StrToInt64(conf[`good`]))
+	if good/bad > (good+bad)*0.51 {
+		max, err := utils.DB.Single(`select max(id) from block_chain`).Int64()
+		if err != nil {
+			result.Error = err.Error()
+			return result
+		}
+		result.Confirmations = utils.Int64ToStr(max - utils.StrToInt64(result.BlockId))
+	}
+
 	if len(txitem[`amount`]) > 0 {
 		result.Amount = txitem[`amount`]
 		result.EGS = lib.EGSMoney(result.Amount)
