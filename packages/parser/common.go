@@ -136,7 +136,7 @@ func IsState(transaction *model.DbTransaction, country string) (int64, error) {
 	for _, id := range ids {
 		sp := &model.StateParameter{}
 		sp.SetTablePrefix(converter.Int64ToStr(id))
-		err = sp.GetByNameTransaction(transaction,"state_name")
+		err = sp.GetByNameTransaction(transaction, "state_name")
 		if err != nil {
 			return 0, err
 		}
@@ -388,7 +388,7 @@ func InsertIntoBlockchain(transaction *model.DbTransaction, block *Block) error 
 	}
 	err = b.Create(transaction)
 	if err != nil {
-		fmt.Println(err)
+		log.Errorf("can't create block: %s", err)
 		return err
 	}
 	return nil
@@ -710,7 +710,7 @@ func (p *Parser) payFPrice() error {
 		}
 	}
 	egs := p.TxUsedCost.Mul(fuel)
-	fmt.Printf("Pay fuel=%v fromID=%d toID=%d cost=%v egs=%v", fuel, fromID, toID, p.TxUsedCost, egs)
+	fmt.Printf("Pay fuel=%v fromID=%d toID=%d cost=%v egs=%v\n", fuel, fromID, toID, p.TxUsedCost, egs)
 	if egs.Cmp(decimal.New(0, 0)) == 0 { // Is it possible to pay nothing?
 		return nil
 	}

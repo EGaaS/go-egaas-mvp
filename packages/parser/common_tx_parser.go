@@ -19,6 +19,9 @@ package parser
 import (
 	"errors"
 
+	"fmt"
+	"time"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 	"github.com/EGaaS/go-egaas-mvp/packages/logging"
@@ -71,11 +74,7 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 		return utils.ErrInfo(err)
 	}
 
-	log.Debugf("wallet id for transaction - %d", walletID)
-
-	log.Debug("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES (%s, %s, %v, %v, %v, %v, %v, %v)", hash, converter.BinToHex(binaryTx), 0, int8(txType), walletID, citizenID, 0, counter)
 	logging.WriteSelectiveLog("INSERT INTO transactions (hash, data, for_self_use, type, wallet_id, citizen_id, third_var, counter) VALUES ([hex], [hex], ?, ?, ?, ?, ?, ?)")
-	// вставляем с verified=1
 	// put with verified=1
 	newTx := &model.Transaction{
 		Hash:      hash,
@@ -91,10 +90,9 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 		logging.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
 	}
-	logging.WriteSelectiveLog("result insert")
 	log.Debug("INSERT INTO transactions - OK")
-	// удалим тр-ию из очереди (с verified=0)
-	// remove transaction from the turn (with verified=0)
+
+	// remove transaction from the queue (with verified=0)
 	err = p.DeleteQueueTx(hash)
 	if err != nil {
 		return utils.ErrInfo(err)
@@ -130,7 +128,7 @@ func (p *Parser) processBadTransaction(hash []byte, errText string) error {
 
 // DeleteQueueTx deletes a transaction from the queue
 func (p *Parser) DeleteQueueTx(hashHex []byte) error {
-	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %s", hashHex)
+	log.Debug("DELETE FROM queue_tx WHERE hex(hash) = %x", hashHex)
 	delQueueTx := &model.QueueTx{Hash: hashHex}
 	err := delQueueTx.DeleteTx()
 	if err != nil {
@@ -138,7 +136,7 @@ func (p *Parser) DeleteQueueTx(hashHex []byte) error {
 	}
 	// т.к. мы обрабатываем в queue_parser_tx тр-ии с verified=0, то после их обработки их нужно удалять.
 	// Because we process transactions with verified=0 in queue_parser_tx, after processing we need to delete them
-	logging.WriteSelectiveLog("DELETE FROM transactions WHERE hex(hash) = " + string(hashHex) + " AND verified=0 AND used = 0")
+	logging.WriteSelectiveLog("DELETE FROM transactions WHERE hex(hash) = " + string(converter.BinToHex(hashHex)) + " AND verified=0 AND used = 0")
 	_, err = model.DeleteTransactionIfUnused(hashHex)
 	if err != nil {
 		logging.WriteSelectiveLog(err)
@@ -151,26 +149,22 @@ func (p *Parser) DeleteQueueTx(hashHex []byte) error {
 func (p *Parser) AllTxParser() error {
 	all, err := model.GetAllUnverifiedAndUnusedTransactions()
 	for _, data := range all {
-		log.Debug("hash: %x", data.Hash)
 		err = p.TxParser(data.Hash, data.Data, false)
 		if err != nil {
 			log.Errorf("transaction parser error: %s", err)
-			/*
-				TODO: log bad transaction
-				itx := &model.IncorrectTx{
-					Time: time.Now().Unix(),
-					Hash: converter.BinToHex(data.Hash),
-					Err:  fmt.Sprintf("%s", err),
-				}
-				err0 := itx.Create()
-				if err0 != nil {
-					log.Error("can't insert incorrect transaction: %v", utils.ErrInfo(err0))
-				}
-			*/
-			// TODO: return after first bad transaction ?
+			itx := &model.IncorrectTx{
+				Time: time.Now().Unix(),
+				Hash: data.Hash,
+				Err:  fmt.Sprintf("%s", err),
+			}
+			err0 := itx.Create()
+			if err0 != nil {
+				log.Error("can't insert incorrect transaction: %v", utils.ErrInfo(err0))
+			}
+
 			return utils.ErrInfo(err)
 		}
-		log.Debugf("transaction parsed successfully")
+		log.Debugf("transaction %x parsed successfully", data.Hash)
 	}
 	return nil
 }
