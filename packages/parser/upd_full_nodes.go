@@ -50,7 +50,7 @@ func (p *UpdFullNodesParser) Validate() error {
 
 	// We check to see if the time elapsed since the last update
 	ufn := &model.UpdFullNode{}
-	err = ufn.Read()
+	err = ufn.Read(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -91,7 +91,7 @@ func (p *UpdFullNodesParser) Action() error {
 	// выбирем ноды, где wallet_id
 	// choose nodes where wallet_id is
 	fns := &model.FullNode{}
-	nodes, err := fns.GetAllFullNodesHasWalletID()
+	nodes, err := fns.GetAllFullNodesHasWalletID(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -112,7 +112,7 @@ func (p *UpdFullNodesParser) Action() error {
 		BlockID:             p.BlockData.BlockID,
 		PrevRbID:            converter.StrToInt64(data[0]["rb_id"]),
 	}
-	err = rbFN.Create()
+	err = rbFN.Create(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -145,7 +145,7 @@ func (p *UpdFullNodesParser) Action() error {
 	}
 	for _, addressVote := range all {
 		wallet := &model.DltWallet{}
-		err := wallet.GetWallet(int64(converter.StringToAddress(addressVote)))
+		err := wallet.GetWalletTransaction(p.DbTransaction, int64(converter.StringToAddress(addressVote)))
 		if err != nil {
 			return p.ErrInfo(err)
 		}
