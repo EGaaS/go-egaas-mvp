@@ -143,7 +143,7 @@ BEGIN:
 				logger.Info("answer == hash (%s = %s)", answer, hash)
 				if answer == hash {
 					st1++
-				} else {
+				} else if len(answer)>0 {
 					st0++
 				}
 				logger.Info("st0 %v  st1 %v", st0, st1)
