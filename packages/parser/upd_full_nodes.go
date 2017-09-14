@@ -24,7 +24,10 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils/tx"
 
+	"strconv"
+
 	"github.com/EGaaS/go-egaas-mvp/packages/config/syspar"
+	"github.com/jinzhu/gorm"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
@@ -67,11 +70,11 @@ func (p *UpdFullNodesParser) Validate() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	nodePublicKey := []byte(wallet.PublicKey)
+	nodePublicKey := []byte(wallet.NodePublicKey)
 	if len(nodePublicKey) == 0 {
 		return utils.ErrInfoFmt("len(nodePublicKey) = 0")
 	}
-	CheckSignResult, err := utils.CheckSign([][]byte{nodePublicKey}, p.UpdFullNodes.ForSign(), p.UpdFullNodes.BinSignatures, false)
+	CheckSignResult, err := utils.CheckSign([][]byte{nodePublicKey}, p.UpdFullNodes.ForSign(), p.UpdFullNodes.BinSignatures, true)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -120,23 +123,11 @@ func (p *UpdFullNodesParser) Action() error {
 	// удаляем где wallet_id
 	// delete where the wallet_id is
 	fn := &model.FullNode{}
-	err = fn.DeleteNodesWithWallets()
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-	maxID, err := fn.GetMaxID()
+	err = fn.DeleteNodesWithWallets(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	// обновляем AI
-	// update the AI
-	err = model.SetAI("full_nodes", int64(maxID+1))
-	if err != nil {
-		return p.ErrInfo(err)
-	}
-
-	// получаем новые данные по wallet-нодам
 	// obtain new data on wallet-nodes
 	dw := &model.DltWallet{}
 	all, err := dw.GetAddressVotes()
@@ -160,9 +151,12 @@ func (p *UpdFullNodesParser) Action() error {
 
 	w := &model.DltWallet{}
 	if err := w.GetNewFuelRate(); err != nil {
-		return p.ErrInfo(err)
+		if err == gorm.ErrRecordNotFound {
+			return nil
+		}
+		return err
 	}
-	newRate := string(w.FuelRate)
+	newRate := strconv.FormatInt(w.FuelRate, 10)
 	if len(newRate) > 0 {
 		_, _, err = p.selectiveLoggingAndUpd([]string{"value"}, []interface{}{newRate}, "system_parameters", []string{"name"}, []string{"fuel_rate"}, true)
 		if err != nil {
@@ -199,12 +193,12 @@ func (p *UpdFullNodesParser) Rollback() error {
 	// удаляем новые данные
 	// delete new data
 	fn := &model.FullNode{}
-	err = fn.DeleteNodesWithWallets()
+	err = fn.DeleteNodesWithWallets(p.DbTransaction)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
 
-	maxID, err := fn.GetMaxID()
+	maxID, err := fn.GetMaxID(nil)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

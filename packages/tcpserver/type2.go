@@ -27,6 +27,7 @@ import (
 	"github.com/EGaaS/go-egaas-mvp/packages/crypto"
 	"github.com/EGaaS/go-egaas-mvp/packages/model"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
+	"encoding/hex"
 )
 
 // Type2 serves requests from disseminator
@@ -106,7 +107,7 @@ func DecryptData(binaryTx *[]byte) ([]byte, []byte, []byte, error) {
 		return nil, nil, nil, utils.ErrInfo("len(nodePrivateKey) == 0")
 	}
 
-	block, _ := pem.Decode([]byte(nodeKey.PrivateKey))
+	block, _ := pem.Decode([]byte(hex.EncodeToString(nodeKey.PrivateKey)))
 	if block == nil || block.Type != "RSA PRIVATE KEY" {
 		return nil, nil, nil, utils.ErrInfo("No valid PEM data found")
 	}

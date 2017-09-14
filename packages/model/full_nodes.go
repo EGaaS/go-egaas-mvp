@@ -1,6 +1,10 @@
 package model
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/jinzhu/gorm"
+)
 
 type FullNode struct {
 	ID                    int32  `gorm:"primary_key;not_null"`
@@ -38,8 +42,8 @@ func (fn *FullNode) GetRbIDFullNodesWithWallet() error {
 	return handleError(DBConn.Where("wallet_id != 0").First(fn).Error)
 }
 
-func (fn *FullNode) DeleteNodesWithWallets() error {
-	return DBConn.Exec("DELETE FROM full_nodes WHERE wallet_id != 0").Error
+func (fn *FullNode) DeleteNodesWithWallets(transaction *DbTransaction) error {
+	return getDB(transaction).Exec("DELETE FROM full_nodes WHERE wallet_id != 0").Error
 }
 
 func (fn *FullNode) FindNodeById(nodeid int64) error {
@@ -92,11 +96,13 @@ func (fn *FullNode) ToMap() map[string]string {
 	return result
 }
 
-func (fn *FullNode) GetMaxID() (int32, error) {
-	result := int32(-1)
-	err := DBConn.Raw("SELECT max(id) FROM full_nodes").Row().Scan(&result)
-	if err != nil {
-		return 0, err
+func (fn *FullNode) GetMaxID(transaction *DbTransaction) (int32, error) {
+	err := getDB(transaction).Last(fn).Error
+	if err == nil {
+		return fn.ID, nil
 	}
-	return result, nil
+	if err == gorm.ErrRecordNotFound {
+		return -1, nil
+	}
+	return -1, err
 }

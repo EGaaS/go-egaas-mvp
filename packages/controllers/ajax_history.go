@@ -59,8 +59,10 @@ func (c *Controller) AjaxHistory() interface{} {
 			transactions, err := wt.Get(walletID, walletID, c.SessAddress, length, converter.StrToInt(c.r.FormValue("start")))
 			if err != nil {
 				log.Error("get transactions error: %s", err)
+			} else {
+				log.Debugf("transactions history: %+v", transactions)
 			}
-			history := make([]map[string]string, 0)
+			history = make([]map[string]string, 0)
 
 			for _, transaction := range transactions {
 				block := &model.Block{}
