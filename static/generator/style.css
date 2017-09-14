@@ -188,6 +188,23 @@
     -padding: 10px;
 }
 
+.b-draggable-helper {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 8001;
+    min-width: 30px;
+    min-height: 20px;
+    opacity: 0.7;
+    border: 1px solid rgba(80, 179, 77, 0.7);
+    background: rgba(125, 255, 167, 0.2);
+}
+
+.b-draggable-helper__inner {
+    position: relative;
+    padding: 0 10px;
+}
+
 .b-trash {
     font-size: 50px;
     color: #999;
@@ -229,4 +246,9 @@
 
 .b-tag-settings-panel__body__controls {
 
+}
+
+.i-code {
+    font-style: italic;
+    color: #3f8edf;
 }

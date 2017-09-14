@@ -19,6 +19,9 @@ CodeGenerator.Controller = JS_CLASS({
         this.$bag = this.$containerWrapper.find(".js-draggable-bag");
         this.$bagInner = this.$bag.find(".js-draggable-bag__inner");
 
+        this.$helper = this.$containerWrapper.find(".js-draggable-helper");
+        this.$helperInner = this.$helper.find(".js-draggable-helper__inner");
+
         this.$trash = $(".js-trash");
         this.$undo = $(".js-undo");
         this.$redo = $(".js-redo");
@@ -70,6 +73,22 @@ CodeGenerator.Controller = JS_CLASS({
         this.$bag
             .show()
             .css("top", y + 3 - $(window).scrollTop())
+            .css("left", x + 3 - $(window).scrollLeft());
+    },
+
+    createDraggableHelper: function (html) {
+        this.$helperInner.html(html);
+    },
+
+    removeDraggableHelper: function () {
+        if(this.$helper)
+            this.$helper.hide();
+    },
+
+    moveDraggableHelper: function (x, y) {
+        this.$helper
+            .show()
+            .css("top", y - 23 - $(window).scrollTop())
             .css("left", x + 3 - $(window).scrollLeft());
     },
 
@@ -189,6 +208,10 @@ CodeGenerator.Controller = JS_CLASS({
                 if($(this).attr("tag-body")) {
                     self.draggingTag.body = JSON.parse($(this).attr("tag-body"));
                 }
+
+                if($(this).attr("tag-body-else")) {
+                    self.draggingTag.bodyElse = JSON.parse($(this).attr("tag-body-else"));
+                }
                 // if($(this).attr("tag-nestedClassList")) {
                 //     self.draggingTag.nestedClassList = JSON.parse($(this).attr("tag-nestedClassList"));
                 // }
@@ -243,7 +266,20 @@ CodeGenerator.Controller = JS_CLASS({
     onBodyMouseMove: function (e) {
         if(!this.dragging)
             return;
+
+        if(this.over.tag && this.over.tag.name == "If") {
+            if(this.over.insidePosition) {
+                this.createDraggableHelper(this.over.insidePosition);
+                this.moveDraggableHelper(e.pageX, e.pageY);
+            }
+        }
+        else {
+            this.removeDraggableHelper();
+        }
+
+
         this.moveDraggableBag(e.pageX, e.pageY);
+
     },
 
     onBodyMouseUp: function (e) {
@@ -294,6 +330,7 @@ CodeGenerator.Controller = JS_CLASS({
             .removeClass("g-no-select")
             .removeClass("g-no-overflow-x");
         this.removeDraggableBag();
+        this.removeDraggableHelper();
         this.startDraggingX = null;
         this.startDraggingY = null;
 
@@ -313,7 +350,7 @@ CodeGenerator.Controller = JS_CLASS({
         if(overTag && this.draggingTag && overTag.id && overTag.id === this.draggingTag.id)
             return;
         //console.log("drop", overTag, this.draggingTag, overTag.id, this.draggingTag.id, overTag.id === this.draggingTag.id);
-        this.model.appendToTree(this.draggingTag, overTag, this.over.position);
+        this.model.appendToTree(this.draggingTag, overTag, this.over.position, this.over.insidePosition);
 
         this.generateCode();
         this.render();
@@ -373,15 +410,48 @@ CodeGenerator.Controller = JS_CLASS({
                     left: offset.left - this.containerOffset.left,
                     top: offset.top - this.containerOffset.top,
                     width: $tag.outerWidth(),
-                    height: $tag.outerHeight()
+                    height: $tag.outerHeight(),
+                    labels: {}
                 };
+
+                var $labelIf = $tag.children('div[tag-label="if"]');
+
+                if($labelIf.length) {
+                    var offset = $labelIf.offset();
+                    tag.coords.labels.if = {
+                        left: offset.left - this.containerOffset.left,
+                        top: offset.top - this.containerOffset.top,
+                        width: $labelIf.outerWidth(),
+                        height: $labelIf.outerHeight()
+                    }
+                }
+
+                var $labelElse = $tag.children('div[tag-label="else"]');
+                if($labelElse.length) {
+                    var offset = $labelElse.offset();
+                    tag.coords.labels.else = {
+                        left: offset.left - this.containerOffset.left,
+                        top: offset.top - this.containerOffset.top,
+                        width: $labelElse.outerWidth(),
+                        height: $labelElse.outerHeight()
+                    }
+                }
             }
         }
-        if(tag.body) {
-            for (var i = 0; i < tag.body.length; i++) {
-                this.calcTagCoords(tag.body[i]);
+
+        var bodies = (new StructureTag()).bodies;
+
+        if(bodies) {
+            for(var b = 0; b < bodies.length; b++) {
+                var body = bodies[b];
+                if(tag[body]) {
+                    for (var i = 0; i < tag[body].length; i++) {
+                        this.calcTagCoords(tag[body][i]);
+                    }
+                }
             }
         }
+
     },
 
 
@@ -438,14 +508,21 @@ CodeGenerator.Model = JS_CLASS({
             tag.id = this.generateId();
         }
 
-        if(tag.body) {
-            for (var i = 0; i < tag.body.length; i++) {
-                this.setIds(tag.body[i]);
+        var bodies = (new StructureTag()).bodies;
+
+        if(bodies) {
+            for(var b = 0; b < bodies.length; b++) {
+                var body = bodies[b];
+                if(tag[body]) {
+                    for (var i = 0; i < tag[body].length; i++) {
+                        this.setIds(tag[body][i]);
+                    }
+                }
             }
         }
     },
 
-    appendToTree: function (tag, toTag, position) {
+    appendToTree: function (tag, toTag, position, insidePosition) {
         var move = false;
         var inserted = false;
         if(toTag) {
@@ -468,8 +545,8 @@ CodeGenerator.Model = JS_CLASS({
                 console.log("remove from prev pos", this.findInfo);
 
                 if (this.findInfo.el && this.findInfo.parent) {
-                    this.findInfo.parent.body.splice(this.findInfo.parentPosition, 1);
-                    console.log("this.findInfo.parent.body.splice(" + this.findInfo.parentPosition + ", 1)");
+                    this.findInfo.parent[this.findInfo.parentBody].splice(this.findInfo.parentPosition, 1);
+                    console.log("this.findInfo.parent[" + this.findInfo.parentBody + "].splice(" + this.findInfo.parentPosition + ", 1)");
                     console.log("parent: ", this.findInfo.parent);
                 }
             }
@@ -479,19 +556,28 @@ CodeGenerator.Model = JS_CLASS({
             if (this.findInfo.el) {
                 console.log("appendToTree found", this.findInfo);
                 if(position == "inside") {
-                    this.findInfo.el.body.push(tag);
+                    var body = "body";
+                    if(insidePosition) {
+                        if(insidePosition == "else") {
+                            body = "bodyElse";
+                        }
+                    }
+
+                    if(!this.findInfo.el[body])
+                        this.findInfo.el[body] = [];
+                    this.findInfo.el[body].push(tag);
                     //inserted = true;
                 }
                 if(position == "before") {
                     var newPosition = this.findInfo.parentPosition - 1;
                     if(newPosition < 0)
                         newPosition = 0;
-                    this.findInfo.parent.body.splice(newPosition, 0, tag);
+                    this.findInfo.parent[this.findInfo.parentBody].splice(newPosition, 0, tag);
                     //inserted = true;
                 }
                 if(position == "after") {
                     var newPosition = this.findInfo.parentPosition + 1;
-                    this.findInfo.parent.body.splice(newPosition, 0, tag);
+                    this.findInfo.parent[this.findInfo.parentBody].splice(newPosition, 0, tag);
                     //inserted = true;
                 }
             }
@@ -506,7 +592,7 @@ CodeGenerator.Model = JS_CLASS({
         this.findElementById(this.json, tag.id);
         console.log("remove tag", this.findInfo);
         if (this.findInfo.el && this.findInfo.parent) {
-            this.findInfo.parent.body.splice(this.findInfo.parentPosition, 1);
+            this.findInfo.parent[this.findInfo.parentBody].splice(this.findInfo.parentPosition, 1);
             this.saveHistory();
         }
     },
@@ -519,7 +605,8 @@ CodeGenerator.Model = JS_CLASS({
         this.findInfo = {
             el: null,
             parent: null,
-            parentPosition: 0
+            parentPosition: 0,
+            parentBody: "body"
         };
         console.log("findElementById", el, id);
         this.findNextElementById(el, id);
@@ -532,16 +619,35 @@ CodeGenerator.Model = JS_CLASS({
             this.findInfo.el = el;
             return;
         }
-        if (el.body) {
 
-            for (var i = 0; i < el.body.length; i++) {
-                if(this.findInfo.el)
-                    break;
-                this.findInfo.parent = el;
-                this.findInfo.parentPosition = i;
-                this.findNextElementById(el.body[i], id);
+        var bodies = (new StructureTag()).bodies;
+
+        if(bodies) {
+            for (var b = 0; b < bodies.length; b++) {
+                var body = bodies[b];
+                if (el[body]) {
+                    for (var i = 0; i < el[body].length; i++) {
+                        if(this.findInfo.el)
+                            break;
+                        this.findInfo.parent = el;
+                        this.findInfo.parentPosition = i;
+                        this.findInfo.parentBody = body;
+                        this.findNextElementById(el[body][i], id);
+                    }
+                }
             }
         }
+
+        // if (el.body) {
+        //
+        //     for (var i = 0; i < el.body.length; i++) {
+        //         if(this.findInfo.el)
+        //             break;
+        //         this.findInfo.parent = el;
+        //         this.findInfo.parentPosition = i;
+        //         this.findNextElementById(el.body[i], id);
+        //     }
+        // }
     },
 
     generateId: function() {
@@ -560,6 +666,7 @@ CodeGenerator.Over = JS_CLASS({
         this.prevTag = null;
         this.parentTag = null;
         this.position = null; //inside, before, after
+        this.insidePosition = null; //if, else, elseIf
         this.canDrop = false;
         this.mode = "view"; //"drag"
         this.events();
@@ -636,9 +743,24 @@ CodeGenerator.Over = JS_CLASS({
         }
         //return this.tag;
     },
+    isLabelOver: function (x, y, labels, label) {
+        var coords = labels[label];
+
+        if(coords) {
+            if (x >= coords.left && x <= coords.left + coords.width
+                && y >= coords.top && y <= coords.top + coords.height) {
+                return true;
+            }
+        }
+
+        return false;
+    },
     findNextOverTag: function (x, y, tag) {
         if(tag) {
             if (tag.id && tag.coords) {
+
+                //todo search labels if, else
+
                 if (x >= tag.coords.left && x <= tag.coords.left + tag.coords.width
                     && y >= tag.coords.top && y <= tag.coords.top + tag.coords.height) {
 
@@ -658,14 +780,40 @@ CodeGenerator.Over = JS_CLASS({
                             this.position = "after";
                         }
                     }
+
+                    if(tag.coords.labels) {
+                        this.insidePosition = null;
+
+                        if(this.isLabelOver(x, y, tag.coords.labels, "if")) {
+                            this.position = "inside";
+                            this.insidePosition = "if";
+                        }
+
+                        if(this.isLabelOver(x, y, tag.coords.labels, "else")) {
+                            this.position = "inside";
+                            this.insidePosition = "else";
+                        }
+                    }
+                }
+
+
+
+            }
+
+            var bodies = (new StructureTag()).bodies;
+
+            if(bodies) {
+                for (var b = 0; b < bodies.length; b++) {
+                    var body = bodies[b];
+                    if (tag[body]) {
+                        for (var i = 0; i < tag[body].length; i++) {
+                            this.tmpParentOverTag = tag;
+                            this.findNextOverTag(x, y, tag[body][i]);
+                        }
+                    }
                 }
             }
-            if (tag.body) {
-                for (var i = 0; i < tag.body.length; i++) {
-                    this.tmpParentOverTag = tag;
-                    this.findNextOverTag(x, y, tag.body[i]);
-                }
-            }
+
         }
     },
 
@@ -932,10 +1080,13 @@ var SimpleTag = JS_CLASS(Tag, {
                 var value = "";
                 if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
                     value = this.params[paramName];
-                if(named)
-                    paramArr.push(paramName + ' = "' + value + '"');
+                if(named) {
+                    //paramArr.push(paramName + ' = "' + value + '"');
+                    paramArr.push(paramName + ' = ' + value);
+                }
                 else {
-                    paramArr.push('"' + value + '"');
+                    //paramArr.push('"' + value + '"');
+                    paramArr.push(value);
                 }
             }
         }
@@ -952,6 +1103,7 @@ var StructureTag = JS_CLASS(Tag, {
     lineOffset: 0,
     acceptRule: "*",
     exceptRule: "Li LiBegin",
+    bodies: ["body", "bodyElse", "bodyElseIf"],
     constructor: function (param, lineOffset) {
         CP(this, param);
         if(lineOffset)
@@ -965,10 +1117,13 @@ var StructureTag = JS_CLASS(Tag, {
                 var value = "";
                 if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
                     value = this.params[paramName];
-                if(named)
-                    paramArr.push(paramName + ' = "' + value + '"');
+                if(named) {
+                    //paramArr.push(paramName + ' = "' + value + '"');
+                    paramArr.push(paramName + ' = ' + value);
+                }
                 else {
-                    paramArr.push('"' + value + '"');
+                    //paramArr.push('"' + value + '"');
+                    paramArr.push(value);
                 }
             }
         }
@@ -980,11 +1135,13 @@ var StructureTag = JS_CLASS(Tag, {
         return code;
     },
 
-    renderSubItems: function (returnType) {
+    renderSubItems: function (returnType, body) {
         var code = "";
-        if(this.body) {
-            for(var i = 0; i < this.body.length; i++) {
-                var item = this.body[i];
+        if(!body)
+            body = "body";
+        if(this[body]) {
+            for(var i = 0; i < this[body].length; i++) {
+                var item = this[body][i];
 
                 var tagObj = constructTag(item, this.lineOffset + 1);
 
@@ -1711,6 +1868,65 @@ var TagSource = JS_CLASS(SimpleTag, {
     }
 });
 
+var TagIf = JS_CLASS(StructureTag, {
+    nameBegin: "If",
+    nameEnd: "IfEnd",
+    title: "If",
+    paramsType: {
+        "condition": {
+            "title": "Condition",
+            "description": "Input rule, for example: GetVar(myvar)",
+            "type": "String",
+            "obligatory": true
+        },
+        "else": {
+            "title": "Else block",
+            "type": "Checkbox",
+            "obligatory": false
+        }
+    },
+    renderHTML: function () {
+        var html = '<div tag-id="' + this.id + '">';
+        html += '<div class="i-code js-tag-label" tag-label="if">If('+ this.getParam("condition") +')</div>';
+
+        html += this.renderSubItems('html');
+
+        if(this.getParam("else")) {
+            html += '<div class="i-code js-tag-label" tag-label="else">Else</div>';
+            html += this.renderSubItems('html', 'bodyElse');
+        }
+
+        html += '<div class="i-code">IfEnd</div>';
+        html += '</div>';
+
+        return html;
+    },
+
+    renderCode: function (named) {
+        var code = this.renderOffset() + this.nameBegin + "(" + this.getParam("condition") + ")" + "\n";
+        code += this.renderSubItems();
+
+        if(this.getParam("else")) {
+            var elseCode = this.renderSubItems('code', 'bodyElse');
+            if (elseCode) {
+                code += this.renderOffset() + "Else:" + "\n";
+                code += elseCode;
+            }
+        }
+
+        if(this.getParam("elseIf")) {
+            var elseIfCode = this.renderSubItems('code', 'bodyElseIf');
+            if (elseIfCode) {
+                code += this.renderOffset() + "ElseIf(" + this.getParam("conditionElse") + ")" + "\n";
+                code += elseIfCode;
+            }
+        }
+
+        code += this.renderOffset() + this.nameEnd + ":\n";
+        return code;
+    },
+});
+
 var Control = {};
 
 Control.BaseController = JS_CLASS({
@@ -2317,7 +2533,58 @@ var InstrumentPanel = JS_CLASS({
                     }
                 }
             ]
+        },
+        {
+            "name": "Condition",
+            "elements": [
+                {
+                    "title": "If",
+                    "type": "tag",
+                    "name": "If",
+                    "params": {
+                        "condition": "#varname#",
+                        "else": 0
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "If true"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "title": "If .. Else",
+                    "type": "tag",
+                    "name": "If",
+                    "params": {
+                        "condition": "#varname#",
+                        "else": 1
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "If true text"
+                            }
+                        }
+                    ],
+                    "bodyElse": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "If false text"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
+
     ],
     $instrumentPanel: null,
     $sourceElements: null,
@@ -2348,6 +2615,8 @@ var InstrumentPanel = JS_CLASS({
                     var html = "<div class='js-draggable b-source-element' tag-name='" + tag.name + "' tag-params='" + JSON.stringify(tag.params) + "'";
                     if (tag.body)
                         html += " tag-body='" + JSON.stringify(tag.body) + "'";
+                    if (tag.bodyElse)
+                        html += " tag-body-else='" + JSON.stringify(tag.bodyElse) + "'";
                     html += " style='z-index: " + zIndex + "'>" + tag.title;
                     html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
 
@@ -2434,6 +2703,8 @@ Helper.Radio = JS_CLASS(Helper.Base, {
 
     setSelectedRadio: function (value) {
         console.log("setSelectedRadio", value);
+        if(!value)
+            value = "";
 
         var classArr = value.split(" ");
         this.selectRadio("");
