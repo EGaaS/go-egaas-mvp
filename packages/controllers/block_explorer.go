@@ -22,12 +22,28 @@ import (
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
+	"github.com/EGaaS/go-egaas-mvp/packages/exchangeapi"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	//"github.com/EGaaS/go-egaas-mvp/packages/smart"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 )
 
 const NBlockExplorer = `block_explorer`
+
+type TXExplorer struct {
+	Hash             string
+	Sender           string
+	SenderAddress    string
+	Recipient        string
+	RecipientAddress string
+	Comment          string
+	Amount           string
+	EGS              string
+	Commission       string
+	CommissionEGS    string
+	ComWallet        string
+	ComAddress       string
+}
 
 type blockExplorerPage struct {
 	Data       *CommonPage
@@ -36,7 +52,9 @@ type blockExplorerPage struct {
 	BlockId    int64
 	Public     bool
 	BlockData  map[string]string
+	TXs        []TXExplorer
 	SinglePage int64
+	History    exchangeapi.History
 }
 
 func init() {
@@ -47,9 +65,9 @@ func (c *Controller) BlockExplorer() (string, error) {
 	pageData := blockExplorerPage{Data: c.Data}
 
 	blockId := utils.StrToInt64(c.r.FormValue("blockId"))
+	walletId := c.r.FormValue("wallet")
 	pageData.SinglePage = utils.StrToInt64(c.r.FormValue("singlePage"))
 	pageData.Public = strings.HasPrefix(c.r.URL.String(), `/blockexplorer`)
-
 	if blockId > 0 {
 		pageData.BlockId = blockId
 		blockInfo, err := c.OneRow(`SELECT b.* FROM block_chain as b
@@ -58,6 +76,7 @@ func (c *Controller) BlockExplorer() (string, error) {
 			return "", utils.ErrInfo(err)
 		}
 		if len(blockInfo) > 0 {
+			var transfer bool
 			blockInfo[`hash`] = hex.EncodeToString([]byte(blockInfo[`hash`]))
 			blockInfo[`size`] = utils.IntToStr(len(blockInfo[`data`]))
 			if len(blockInfo[`wallet_id`]) > 0 {
@@ -95,6 +114,9 @@ func (c *Controller) BlockExplorer() (string, error) {
 				if itype < 128 {
 					if stype, ok := consts.TxTypes[itype]; ok {
 						name = stype
+						if name == `DLTTransfer` {
+							transfer = true
+						}
 					} else {
 						name = fmt.Sprintf("unknown %d", itype)
 					}
@@ -117,8 +139,46 @@ func (c *Controller) BlockExplorer() (string, error) {
 			}
 			blockInfo[`data`] = out
 			blockInfo[`tx_list`] = strings.Join(txlist, `, `)
+			if transfer {
+				tx, _ := utils.DB.GetAll(`select table_id, tx_hash from rollback_tx where block_id=? and table_name='dlt_transactions' order by id`,
+					-1, blockId)
+				var txexp TXExplorer
+				for _, itx := range tx {
+					if txexp.Hash != hex.EncodeToString([]byte(itx[`tx_hash`])) {
+						if len(txexp.Hash) > 0 {
+							pageData.TXs = append(pageData.TXs, txexp)
+						}
+						txexp = TXExplorer{
+							Hash: hex.EncodeToString([]byte(itx[`tx_hash`])),
+						}
+					}
+					item, err := utils.DB.OneRow(`select * from dlt_transactions where id=?`, itx[`table_id`]).String()
+					if err == nil && len(item) > 0 {
+						if len(txexp.Sender) == 0 {
+							txexp.Sender = item[`sender_wallet_id`]
+							txexp.SenderAddress = lib.AddressToString(uint64(utils.StrToInt64(txexp.Sender)))
+							txexp.Recipient = item[`recipient_wallet_id`]
+							txexp.RecipientAddress = lib.AddressToString(uint64(utils.StrToInt64(txexp.Recipient)))
+							txexp.Amount = item[`amount`]
+							txexp.EGS = lib.EGSMoney(item[`amount`])
+							txexp.Comment = item[`comment`]
+						} else {
+							txexp.Commission = item[`amount`]
+							txexp.CommissionEGS = lib.EGSMoney(item[`amount`])
+							txexp.ComWallet = item[`recipient_wallet_id`]
+							txexp.ComAddress = lib.AddressToString(uint64(utils.StrToInt64(txexp.ComWallet)))
+						}
+					}
+				}
+				if len(txexp.Hash) > 0 {
+					pageData.TXs = append(pageData.TXs, txexp)
+				}
+			}
 		}
 		pageData.BlockData = blockInfo
+	} else if len(walletId) != 0 {
+		pageData.SinglePage = 0
+		pageData.History = exchangeapi.GetHistory(c.r)
 	} else {
 		latest := utils.StrToInt64(c.r.FormValue("latest"))
 		if latest > 0 {

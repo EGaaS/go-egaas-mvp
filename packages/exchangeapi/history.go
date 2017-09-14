@@ -38,8 +38,13 @@ type HistOper struct {
 }
 
 type History struct {
-	Error string     `json:"error"`
-	Items []HistOper `json:"history"`
+	Error  string     `json:"error"`
+	Items  []HistOper `json:"history"`
+	Wallet string     `json:"wallet"`
+}
+
+func GetHistory(r *http.Request) History {
+	return history(r).(History)
 }
 
 func history(r *http.Request) interface{} {
@@ -52,6 +57,7 @@ func history(r *http.Request) interface{} {
 		result.Error = `Wallet is invalid`
 		return result
 	}
+	result.Wallet = lib.AddressToString(uint64(wallet))
 	count := int(utils.StrToInt64(r.FormValue(`count`)))
 	if count == 0 {
 		count = 50

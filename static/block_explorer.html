@@ -84,6 +84,39 @@
 				{{end}}
 			  </tbody>
 		   </table>
+		   {{if .TXs}}
+		   <div class="table-responsive">
+			<table id="tx_explorer" class="table table-striped table-hover">
+			   <thead>
+				  <tr>
+					 <th>TX hash</th>
+					 <th>Sender</th>
+					 <th>Recipient</th>
+					 <th>Amount</th>
+					 <th>Comment</th>
+                  </tr>
+			   </thead>
+			   <tbody>
+				 {{range .TXs}}
+				  <tr>
+					 <td>{{.Hash}}</td>
+					 <td><a href="" onclick="return wallet_detail('{{.SenderAddress}}')">{{.SenderAddress}}</a><br>{{.Sender}}</td>
+					 <td><a href="" onclick="return wallet_detail('{{.RecipientAddress}}')">{{.RecipientAddress}}</a><br>{{.Recipient}}</td>
+					 <td>{{.Amount}}<br>{{.EGS}} EGS</td>
+					 <td>{{.Comment}}</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>{{.SenderAddress}}<br>{{.Sender}}</td>
+						<td>{{.ComAddress}}<br>{{.ComWallet}}</td>
+						<td>{{.Commission}}<br>{{.CommissionEGS}} EGS</td>
+						<td>Commission</td>
+					   </tr>
+					{{end}}
+			   </tbody>
+			</table>
+		</div>		   		
+		   {{end}}
 		</div>
 	 </div>
 	 <div class="panel-footer">
@@ -101,6 +134,44 @@
 	</div>
 	<!-- END panel-->
 {{else}}
+{{if .History.Items}}
+<div class="content-heading">
+   Wallet {{.History.Wallet}} History
+</div>
+<!-- START panel-->
+<div class="panel panel-default">
+ <div class="panel-body">
+   <!-- START table responsive-->
+   <div class="table-responsive">
+	   <table id="block_explorer" class="table table-striped table-hover">
+		  <thead>
+			 <tr>
+				<th>Block ID</th>
+				<th>TX hash</th>
+				<th>Dif</th>
+				<th>Amount</th>
+				<th>EGS</th>
+				<th>Time</th>
+			</tr>
+		  </thead>
+		  <tbody>
+			{{range .History.Items}}
+			 <tr>
+				<td><a href="" onclick="return block_detail({{.BlockId}})">{{.BlockId}}</a></td>
+				<td>{{.Hash}}</td>
+				<td>{{.Dif}}</td>
+				<td>{{.Amount}}</td>
+				<td>{{.EGS}} EGS</td>
+				<td>{{.Time}}</td>
+			</tr>
+			{{end}}
+		  </tbody>
+	   </table>
+   </div>
+   <!-- END table responsive-->
+  </div>
+</div>
+{{end}}
 
 {{if .SinglePage}}
 	<div class="content-heading">
@@ -114,6 +185,7 @@
 	<div class="panel panel-default">
 	 <div class="panel-body">
 	{{end}}
+	{{if .List}}
 	   <!-- START table responsive-->
 	   <div class="table-responsive">
 		   <table id="block_explorer" class="table table-striped table-hover">
@@ -141,6 +213,7 @@
 			  </tbody>
 		   </table>
 	   </div>
+	   {{end}}
 	   <!-- END table responsive-->
 	{{if .SinglePage}}
 	  </div>
@@ -166,6 +239,14 @@
 	    window.location = "blockexplorer?blockId=" + id;
 		{{else}}
 	    $("#dl_content").load("content?page=blockExplorer", { blockId: id }, function() {});
+		{{end}}
+		return false
+	}
+	function wallet_detail( id ) {
+		{{if .Public}}
+	    window.location = "blockexplorer?wallet=" + id;
+		{{else}}
+	    $("#dl_content").load("content?page=blockExplorer", { wallet: id }, function() {});
 		{{end}}
 		return false
 	}
