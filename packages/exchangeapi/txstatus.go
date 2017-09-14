@@ -25,7 +25,7 @@ import (
 
 type TXInfo struct {
 	BlockId          string `json:"block_id"`
-	Confirmations    string  `json:"confirmations"`
+	Confirmations    string `json:"confirmations"`
 	Hash             string `json:"txhash"`
 	Amount           string `json:"amount"`
 	EGS              string `json:"egs"`
@@ -35,6 +35,10 @@ type TXInfo struct {
 	SenderAddress    string `json:"sender_address"`
 	RecipientAddress string `json:"recipient_address"`
 	Error            string `json:"error"`
+}
+
+func TXStatus(r *http.Request) TXInfo {
+	return txstatus(r).(TXInfo)
 }
 
 func txstatus(r *http.Request) interface{} {

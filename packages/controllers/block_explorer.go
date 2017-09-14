@@ -55,6 +55,7 @@ type blockExplorerPage struct {
 	TXs        []TXExplorer
 	SinglePage int64
 	History    exchangeapi.History
+	TX         exchangeapi.TXInfo
 }
 
 func init() {
@@ -66,6 +67,7 @@ func (c *Controller) BlockExplorer() (string, error) {
 
 	blockId := utils.StrToInt64(c.r.FormValue("blockId"))
 	walletId := c.r.FormValue("wallet")
+	hash := c.r.FormValue("hash")
 	pageData.SinglePage = utils.StrToInt64(c.r.FormValue("singlePage"))
 	pageData.Public = strings.HasPrefix(c.r.URL.String(), `/blockexplorer`)
 	if blockId > 0 {
@@ -179,6 +181,9 @@ func (c *Controller) BlockExplorer() (string, error) {
 	} else if len(walletId) != 0 {
 		pageData.SinglePage = 0
 		pageData.History = exchangeapi.GetHistory(c.r)
+	} else if len(hash) != 0 {
+		pageData.SinglePage = 0
+		pageData.TX = exchangeapi.TXStatus(c.r)
 	} else {
 		latest := utils.StrToInt64(c.r.FormValue("latest"))
 		if latest > 0 {
