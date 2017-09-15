@@ -107,8 +107,8 @@
 					</tr>
 					<tr>
 						<td></td>
-						<td>{{.SenderAddress}}<br>{{.Sender}}</td>
-						<td>{{.ComAddress}}<br>{{.ComWallet}}</td>
+						<td><a href="" onclick="return wallet_detail('{{.SenderAddress}}')">{{.SenderAddress}}</a><br>{{.Sender}}</td>
+						<td><a href="" onclick="return wallet_detail('{{.ComAddress}}')">{{.ComAddress}}</a><br>{{.ComWallet}}</td>
 						<td>{{.Commission}}<br>{{.CommissionEGS}} EGS</td>
 						<td>Commission</td>
 					   </tr>
@@ -222,7 +222,7 @@
 		 </tr>
 		 <tr>
 			<td class="thead">Commission Wallet</td>
-			<td>{{.TX.ComAddress}} / {{.TX.ComWallet}}</td>
+			<td><a href="" onclick="return wallet_detail('{{.TX.ComAddress}}')">{{.TX.ComAddress}}</a> / {{.TX.ComWallet}}</td>
 		 </tr>
 		</tbody>
 	 </table>
