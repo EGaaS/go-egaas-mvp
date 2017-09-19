@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 )
 
@@ -29,6 +30,17 @@ func DoubleHash(msg []byte) ([]byte, error) {
 	switch hashProv {
 	case _SHA256:
 		return hashDoubleSHA256(msg), nil
+	default:
+		return nil, UnknownProviderError
+	}
+}
+
+func HMAC(secret string, message string) ([]byte, error) {
+	switch hmacProv {
+	case _SHA256:
+		key := sha256.Sum256([]byte(secret))
+		hash := hmac.New(sha256.New, key[:])
+		return hash.Sum([]byte(message)), nil
 	default:
 		return nil, UnknownProviderError
 	}

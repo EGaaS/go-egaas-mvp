@@ -53,6 +53,7 @@ var (
 	ellipticSize = elliptic256
 	signProv     = _ECDSA
 	checksumProv = _CRC64
+	hmacProv     = _SHA256
 )
 
 func Encrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
