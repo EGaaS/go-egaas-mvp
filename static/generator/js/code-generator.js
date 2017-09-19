@@ -209,8 +209,12 @@ CodeGenerator.Controller = JS_CLASS({
                     self.draggingTag.body = JSON.parse($(this).attr("tag-body"));
                 }
 
+                if($(this).attr("tag-elseIfs")) {
+                    self.draggingTag.elseIfs = JSON.parse($(this).attr("tag-elseIfs"));
+                }
+
                 if($(this).attr("tag-body-else")) {
-                    self.draggingTag.bodyElse = JSON.parse($(this).attr("tag-body-else"));
+                    self.draggingTag.elseBody = JSON.parse($(this).attr("tag-body-else"));
                 }
                 // if($(this).attr("tag-nestedClassList")) {
                 //     self.draggingTag.nestedClassList = JSON.parse($(this).attr("tag-nestedClassList"));
@@ -350,7 +354,8 @@ CodeGenerator.Controller = JS_CLASS({
         if(overTag && this.draggingTag && overTag.id && overTag.id === this.draggingTag.id)
             return;
         //console.log("drop", overTag, this.draggingTag, overTag.id, this.draggingTag.id, overTag.id === this.draggingTag.id);
-        this.model.appendToTree(this.draggingTag, overTag, this.over.position, this.over.insidePosition);
+        //this.model.appendToTree(this.draggingTag, overTag, this.over.position, this.over.insidePosition);
+        this.model.appendToTree(this.draggingTag, overTag, this.over);
 
         this.generateCode();
         this.render();
@@ -426,6 +431,24 @@ CodeGenerator.Controller = JS_CLASS({
                     }
                 }
 
+                if(tag.elseIfs && tag.elseIfs.length) {
+                    for(var i = 0; i < tag.elseIfs.length; i++) {
+                        var $labelElseIf = $tag.children('div[tag-label="elseIf"][tag-label-elseIf-index="' + i + '"]');
+                        if($labelElseIf.length) {
+                            var offset = $labelElseIf.offset();
+                            if(typeof tag.coords.labels.elseIfs == "undefined")
+                                tag.coords.labels.elseIfs = [];
+                            tag.coords.labels.elseIfs.push({
+                                left: offset.left - this.containerOffset.left,
+                                top: offset.top - this.containerOffset.top,
+                                width: $labelElseIf.outerWidth(),
+                                height: $labelElseIf.outerHeight()
+                            });
+                        }
+                    }
+                }
+
+
                 var $labelElse = $tag.children('div[tag-label="else"]');
                 if($labelElse.length) {
                     var offset = $labelElse.offset();
@@ -439,6 +462,8 @@ CodeGenerator.Controller = JS_CLASS({
             }
         }
 
+
+
         var bodies = (new StructureTag()).bodies;
 
         if(bodies) {
@@ -448,6 +473,13 @@ CodeGenerator.Controller = JS_CLASS({
                     for (var i = 0; i < tag[body].length; i++) {
                         this.calcTagCoords(tag[body][i]);
                     }
+                }
+            }
+        }
+        if(tag.elseIfs && tag.elseIfs.length) {
+            for (var i = 0; i < tag.elseIfs.length; i++) {
+                for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
+                    this.calcTagCoords(tag.elseIfs[i].body[j]);
                 }
             }
         }
@@ -520,9 +552,17 @@ CodeGenerator.Model = JS_CLASS({
                 }
             }
         }
+
+        if(tag.elseIfs && tag.elseIfs.length) {
+            for (var i = 0; i < tag.elseIfs.length; i++) {
+                for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
+                    this.setIds(tag.elseIfs[i].body[j]);
+                }
+            }
+        }
     },
 
-    appendToTree: function (tag, toTag, position, insidePosition) {
+    appendToTree: function (tag, toTag, over) {
         var move = false;
         var inserted = false;
         if(toTag) {
@@ -545,8 +585,15 @@ CodeGenerator.Model = JS_CLASS({
                 console.log("remove from prev pos", this.findInfo);
 
                 if (this.findInfo.el && this.findInfo.parent) {
-                    this.findInfo.parent[this.findInfo.parentBody].splice(this.findInfo.parentPosition, 1);
-                    console.log("this.findInfo.parent[" + this.findInfo.parentBody + "].splice(" + this.findInfo.parentPosition + ", 1)");
+                    var arr = this.findInfo.parent[this.findInfo.parentBody];
+                    if(this.findInfo.parentBody == "elseIfs") {
+                        arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+                    }
+
+                    arr.splice(this.findInfo.parentPosition, 1);
+
+
+                    //console.log("this.findInfo.parent[" + this.findInfo.parentBody + "].splice(" + this.findInfo.parentPosition + ", 1)");
                     console.log("parent: ", this.findInfo.parent);
                 }
             }
@@ -555,36 +602,53 @@ CodeGenerator.Model = JS_CLASS({
             this.findElementById(this.json, toTag.id);
             if (this.findInfo.el) {
                 console.log("appendToTree found", this.findInfo);
-                if(position == "inside") {
+                if(over.position == "inside") {
                     var body = "body";
-                    if(insidePosition) {
-                        if(insidePosition == "else") {
-                            body = "bodyElse";
+                    if(over.insidePosition) {
+                        if(over.insidePosition == "else") {
+                            body = "elseBody";
+                        }
+                        if(over.insidePosition == "elseIf") {
+                            body = "elseIfs";
                         }
                     }
 
                     if(!this.findInfo.el[body])
                         this.findInfo.el[body] = [];
-                    this.findInfo.el[body].push(tag);
+
+                    var arr = this.findInfo.el[body];
+
+                    if(over.elseIfIndex !== null) {
+                        arr = this.findInfo.el[body][over.elseIfIndex].body;
+                    }
+
+
+                    arr.push(tag);
                     //inserted = true;
                 }
-                if(position == "before") {
-                    var newPosition = this.findInfo.parentPosition - 1;
-                    if(newPosition < 0)
-                        newPosition = 0;
-                    this.findInfo.parent[this.findInfo.parentBody].splice(newPosition, 0, tag);
-                    //inserted = true;
-                }
-                if(position == "after") {
-                    var newPosition = this.findInfo.parentPosition + 1;
-                    this.findInfo.parent[this.findInfo.parentBody].splice(newPosition, 0, tag);
-                    //inserted = true;
+
+                var arr;
+                if(over.position == "before" || over.position == "after") {
+                    arr = this.findInfo.parent[this.findInfo.parentBody];
+
+                    if(this.findInfo.parentBody == "elseIfs") {
+                        arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+                    }
+
+                    var newPosition;
+                    if(over.position == "before") {
+                        var newPosition = this.findInfo.parentPosition - 1;
+                        if(newPosition < 0)
+                            newPosition = 0;
+                    }
+                    if(over.position == "after") {
+                        newPosition = this.findInfo.parentPosition + 1;
+                    }
+                    arr.splice(newPosition, 0, tag);
                 }
             }
 
             this.saveHistory();
-
-
         }
     },
 
@@ -592,7 +656,11 @@ CodeGenerator.Model = JS_CLASS({
         this.findElementById(this.json, tag.id);
         console.log("remove tag", this.findInfo);
         if (this.findInfo.el && this.findInfo.parent) {
-            this.findInfo.parent[this.findInfo.parentBody].splice(this.findInfo.parentPosition, 1);
+            var arr = this.findInfo.parent[this.findInfo.parentBody];
+            if(this.findInfo.parentBody == "elseIfs") {
+                arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+            }
+            arr.splice(this.findInfo.parentPosition, 1);
             this.saveHistory();
         }
     },
@@ -606,6 +674,7 @@ CodeGenerator.Model = JS_CLASS({
             el: null,
             parent: null,
             parentPosition: 0,
+            parentElseIfPosition: 0,
             parentBody: "body"
         };
         console.log("findElementById", el, id);
@@ -634,6 +703,20 @@ CodeGenerator.Model = JS_CLASS({
                         this.findInfo.parentBody = body;
                         this.findNextElementById(el[body][i], id);
                     }
+                }
+            }
+        }
+
+        if(el.elseIfs && el.elseIfs.length) {
+            for (var i = 0; i < el.elseIfs.length; i++) {
+                for (var j = 0; j < el.elseIfs[i].body.length; j++) {
+                    if(this.findInfo.el)
+                        break;
+                    this.findInfo.parent = el;
+                    this.findInfo.parentElseIfPosition = i;
+                    this.findInfo.parentPosition = j;
+                    this.findInfo.parentBody = "elseIfs";
+                    this.findNextElementById(el.elseIfs[i].body[j], id);
                 }
             }
         }
@@ -667,6 +750,7 @@ CodeGenerator.Over = JS_CLASS({
         this.parentTag = null;
         this.position = null; //inside, before, after
         this.insidePosition = null; //if, else, elseIf
+        this.elseIfIndex = null; //elseIf index
         this.canDrop = false;
         this.mode = "view"; //"drag"
         this.events();
@@ -743,8 +827,10 @@ CodeGenerator.Over = JS_CLASS({
         }
         //return this.tag;
     },
-    isLabelOver: function (x, y, labels, label) {
+    isLabelOver: function (x, y, labels, label, index) {
         var coords = labels[label];
+        if(typeof index !== "undefined")
+            coords = labels[label][index];
 
         if(coords) {
             if (x >= coords.left && x <= coords.left + coords.width
@@ -783,10 +869,21 @@ CodeGenerator.Over = JS_CLASS({
 
                     if(tag.coords.labels) {
                         this.insidePosition = null;
+                        this.elseIfIndex = null;
 
                         if(this.isLabelOver(x, y, tag.coords.labels, "if")) {
                             this.position = "inside";
                             this.insidePosition = "if";
+                        }
+
+                        if(tag.elseIfs && tag.elseIfs.length) {
+                            for(var i = 0; i < tag.elseIfs.length; i++) {
+                                if (this.isLabelOver(x, y, tag.coords.labels, "elseIfs", i)) {
+                                    this.position = "inside";
+                                    this.insidePosition = "elseIf";
+                                    this.elseIfIndex = i;
+                                }
+                            }
                         }
 
                         if(this.isLabelOver(x, y, tag.coords.labels, "else")) {
@@ -814,6 +911,14 @@ CodeGenerator.Over = JS_CLASS({
                 }
             }
 
+            if(tag.elseIfs && tag.elseIfs.length) {
+                for (var i = 0; i < tag.elseIfs.length; i++) {
+                    for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
+                        this.tmpParentOverTag = tag;
+                        this.findNextOverTag(x, y, tag.elseIfs[i].body[j]);
+                    }
+                }
+            }
         }
     },
 
@@ -1081,12 +1186,16 @@ var SimpleTag = JS_CLASS(Tag, {
                 if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
                     value = this.params[paramName];
                 if(named) {
-                    //paramArr.push(paramName + ' = "' + value + '"');
-                    paramArr.push(paramName + ' = ' + value);
+                    if(value.indexOf(",") >= 0)
+                        paramArr.push(paramName + ' = "' + value + '"');
+                    else
+                        paramArr.push(paramName + ' = ' + value);
                 }
                 else {
-                    //paramArr.push('"' + value + '"');
-                    paramArr.push(value);
+                    if(value.indexOf(",") >= 0)
+                        paramArr.push('"' + value + '"');
+                    else
+                        paramArr.push(value);
                 }
             }
         }
@@ -1103,11 +1212,14 @@ var StructureTag = JS_CLASS(Tag, {
     lineOffset: 0,
     acceptRule: "*",
     exceptRule: "Li LiBegin",
-    bodies: ["body", "bodyElse", "bodyElseIf"],
+    bodies: ["body", "elseBody"],
     constructor: function (param, lineOffset) {
         CP(this, param);
         if(lineOffset)
             this.lineOffset = lineOffset;
+    },
+    bodyList: function () {
+
     },
     renderCode: function (named) {
         var code = this.renderOffset() + this.nameBegin + (named ? "{" : "(");
@@ -1118,12 +1230,16 @@ var StructureTag = JS_CLASS(Tag, {
                 if(typeof this.params[paramName] !== "undefined" && this.params[paramName] !== null)
                     value = this.params[paramName];
                 if(named) {
-                    //paramArr.push(paramName + ' = "' + value + '"');
-                    paramArr.push(paramName + ' = ' + value);
+                    if(value.indexOf(",") >= 0)
+                        paramArr.push(paramName + ' = "' + value + '"');
+                    else
+                        paramArr.push(paramName + ' = ' + value);
                 }
                 else {
-                    //paramArr.push('"' + value + '"');
-                    paramArr.push(value);
+                    if(value.indexOf(",") >= 0)
+                        paramArr.push('"' + value + '"');
+                    else
+                        paramArr.push(value);
                 }
             }
         }
@@ -1135,13 +1251,22 @@ var StructureTag = JS_CLASS(Tag, {
         return code;
     },
 
-    renderSubItems: function (returnType, body) {
+    renderSubItems: function (returnType, body, index) {
         var code = "";
         if(!body)
             body = "body";
-        if(this[body]) {
-            for(var i = 0; i < this[body].length; i++) {
-                var item = this[body][i];
+
+        var arr;
+
+        if(typeof index !== "undefined") {
+            arr = this[body][index].body;
+        }
+        else
+            arr = this[body];
+
+        if(arr) {
+            for(var i = 0; i < arr.length; i++) {
+                var item = arr[i];
 
                 var tagObj = constructTag(item, this.lineOffset + 1);
 
@@ -1882,7 +2007,9 @@ var TagIf = JS_CLASS(StructureTag, {
         "else": {
             "title": "Else block",
             "type": "Checkbox",
-            "obligatory": false
+            "obligatory": false,
+            "onValue": true,
+            "offValue": false
         }
     },
     renderHTML: function () {
@@ -1891,9 +2018,16 @@ var TagIf = JS_CLASS(StructureTag, {
 
         html += this.renderSubItems('html');
 
+        if(this.elseIfs && this.elseIfs.length) {
+            for(var i = 0; i < this.elseIfs.length; i++) {
+                html += '<div class="i-code js-tag-label" tag-label="elseIf" tag-label-elseIf-index="' + i + '">ElseIf(' + this.elseIfs[i].condition + ')</div>';
+                html += this.renderSubItems('html', 'elseIfs', i);
+            }
+        }
+
         if(this.getParam("else")) {
             html += '<div class="i-code js-tag-label" tag-label="else">Else</div>';
-            html += this.renderSubItems('html', 'bodyElse');
+            html += this.renderSubItems('html', 'elseBody');
         }
 
         html += '<div class="i-code">IfEnd</div>';
@@ -1906,25 +2040,24 @@ var TagIf = JS_CLASS(StructureTag, {
         var code = this.renderOffset() + this.nameBegin + "(" + this.getParam("condition") + ")" + "\n";
         code += this.renderSubItems();
 
+        if(this.elseIfs && this.elseIfs.length) {
+            for(var i = 0; i < this.elseIfs.length; i++) {
+                code += this.renderOffset() + "ElseIf(" + this.elseIfs[i].condition + ")\n";
+                code += this.renderSubItems('code', 'elseIfs', i);
+            }
+        }
+
         if(this.getParam("else")) {
-            var elseCode = this.renderSubItems('code', 'bodyElse');
+            var elseCode = this.renderSubItems('code', 'elseBody');
             if (elseCode) {
                 code += this.renderOffset() + "Else:" + "\n";
                 code += elseCode;
             }
         }
 
-        if(this.getParam("elseIf")) {
-            var elseIfCode = this.renderSubItems('code', 'bodyElseIf');
-            if (elseIfCode) {
-                code += this.renderOffset() + "ElseIf(" + this.getParam("conditionElse") + ")" + "\n";
-                code += elseIfCode;
-            }
-        }
-
         code += this.renderOffset() + this.nameEnd + ":\n";
         return code;
-    },
+    }
 });
 
 var Control = {};
@@ -2543,7 +2676,7 @@ var InstrumentPanel = JS_CLASS({
                     "name": "If",
                     "params": {
                         "condition": "#varname#",
-                        "else": 0
+                        "else": false
                     },
                     "body": [
                         {
@@ -2561,7 +2694,7 @@ var InstrumentPanel = JS_CLASS({
                     "name": "If",
                     "params": {
                         "condition": "#varname#",
-                        "else": 1
+                        "else": true
                     },
                     "body": [
                         {
@@ -2572,7 +2705,60 @@ var InstrumentPanel = JS_CLASS({
                             }
                         }
                     ],
-                    "bodyElse": [
+                    "elseBody": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "If false text"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "title": "If .. ElseIf .. Else",
+                    "type": "tag",
+                    "name": "If",
+                    "params": {
+                        "condition": "#varname#",
+                        "else": true
+                    },
+                    "body": [
+                        {
+                            "type": "tag",
+                            "name": "P",
+                            "params": {
+                                "text": "If true text"
+                            }
+                        }
+                    ],
+                    "elseIfs": [
+                        {
+                            "condition": "#elseIfCondition1#",
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "P",
+                                    "params": {
+                                        "text": "IfElse 1 text"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "condition": "#elseIfCondition2#",
+                            "body": [
+                                {
+                                    "type": "tag",
+                                    "name": "P",
+                                    "params": {
+                                        "text": "IfElse 2 text"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "elseBody": [
                         {
                             "type": "tag",
                             "name": "P",
@@ -2615,8 +2801,10 @@ var InstrumentPanel = JS_CLASS({
                     var html = "<div class='js-draggable b-source-element' tag-name='" + tag.name + "' tag-params='" + JSON.stringify(tag.params) + "'";
                     if (tag.body)
                         html += " tag-body='" + JSON.stringify(tag.body) + "'";
-                    if (tag.bodyElse)
-                        html += " tag-body-else='" + JSON.stringify(tag.bodyElse) + "'";
+                    if (tag.elseBody)
+                        html += " tag-body-else='" + JSON.stringify(tag.elseBody) + "'";
+                    if (tag.elseIfs && tag.elseIfs.length)
+                        html += " tag-elseIfs='" + JSON.stringify(tag.elseIfs) + "'";
                     html += " style='z-index: " + zIndex + "'>" + tag.title;
                     html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
 

@@ -985,7 +985,7 @@ IfBlock
       }
   }
   
-  / "If(" __ condition:Argument __ ")" __ body:SourceElements? __ "Else:" __ bodyElse:SourceElements? __ "IfEnd:" { 
+/*  / "If(" __ condition:Argument __ ")" __ body:SourceElements? __ "Else:" __ bodyElse:SourceElements? __ "IfEnd:" { 
         
     return {
         type: "tag",
@@ -1000,8 +1000,8 @@ IfBlock
         bodyElse: optionalList(bodyElse)
       }
   }
-  
-  / "If(" __ condition:Argument __ ")" __ body:SourceElements? __ "ElseIf(" __ conditionElse:Argument __ ")" __ bodyElse:SourceElements? __ "IfEnd:" { 
+*/
+/*  / "If(" __ condition:Argument __ ")" __ body:SourceElements? __ "ElseIf(" __ conditionElse:Argument __ ")" __ bodyElse:SourceElements? __ "IfEnd:" { 
     
     return {
         type: "tag",
@@ -1035,25 +1035,42 @@ IfBlock
         bodyElse: optionalList(bodyElse)
       }
   }    
+*/
 
-/*
-/ "If(" __ condition:Argument __ ")" __ body:SourceElements? __ else_:("ElseIf(" __ conditionElse:Argument __ ")" __ bodyElse:SourceElements? __ )* "IfEnd:" { 
+/ "If(" __ condition:Argument __ ")" __ body:SourceElements? __ elseIfs:(ElseIf)* __ else_:(Else)? __ "IfEnd:" { 
     var paramsObj = {      
       "condition": null      
-    }   
+    }
+    
+    var elseBody = optionalList(else_);
     
     
     return {
         type: "condition",
         name: "If",
         id: generateId(),
-        condition: condition,
-        conditionElse: else_,
-        body: optionalList(body),
-        //bodyElse: optionalList(bodyElse)
+        params: {
+        	condition: condition,
+            else: else_ !== null,
+        },
+        body: optionalList(body),        
+        elseBody: elseBody,
+        elseIfs: optionalList(elseIfs)
       }
   }   
-  */
+
+ElseIf
+ = "ElseIf(" condition:Argument ")" __ body:SourceElements? __ {
+ 	return {
+       condition: condition,
+       body: optionalList(body)
+    }
+ }
+ 
+Else
+ = "Else:" __ body:SourceElements? __ {
+ 	return optionalList(body)
+ } 
 
 -----------------
 
