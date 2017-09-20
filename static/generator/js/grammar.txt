@@ -1050,12 +1050,12 @@ IfBlock
         name: "If",
         id: generateId(),
         params: {
-        	condition: condition,
+            condition: condition,
             else: else_ !== null,
+            elseIfs: optionalList(elseIfs)
         },
         body: optionalList(body),        
-        elseBody: elseBody,
-        elseIfs: optionalList(elseIfs)
+        elseBody: elseBody        
       }
   }   
 

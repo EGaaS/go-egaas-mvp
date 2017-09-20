@@ -36,6 +36,9 @@ CodeGenerator.Controller = JS_CLASS({
     },
 
     setJsonData: function (json) {
+        if(this.over.tagSettingsPanel) {
+            this.over.tagSettingsPanel.cancel();
+        }
         this.model.setJsonData(json);
     },
 
@@ -198,6 +201,7 @@ CodeGenerator.Controller = JS_CLASS({
                 self.draggingTag = {
                     "type": "tag",
                     "name": $(this).attr("tag-name"),
+                    "params": {},
                     "body": []
                 };
 
@@ -210,7 +214,7 @@ CodeGenerator.Controller = JS_CLASS({
                 }
 
                 if($(this).attr("tag-elseIfs")) {
-                    self.draggingTag.elseIfs = JSON.parse($(this).attr("tag-elseIfs"));
+                    self.draggingTag.params.elseIfs = JSON.parse($(this).attr("tag-elseIfs"));
                 }
 
                 if($(this).attr("tag-body-else")) {
@@ -431,8 +435,8 @@ CodeGenerator.Controller = JS_CLASS({
                     }
                 }
 
-                if(tag.elseIfs && tag.elseIfs.length) {
-                    for(var i = 0; i < tag.elseIfs.length; i++) {
+                if(tag.params && tag.params.elseIfs && tag.params.elseIfs.length) {
+                    for(var i = 0; i < tag.params.elseIfs.length; i++) {
                         var $labelElseIf = $tag.children('div[tag-label="elseIf"][tag-label-elseIf-index="' + i + '"]');
                         if($labelElseIf.length) {
                             var offset = $labelElseIf.offset();
@@ -476,10 +480,10 @@ CodeGenerator.Controller = JS_CLASS({
                 }
             }
         }
-        if(tag.elseIfs && tag.elseIfs.length) {
-            for (var i = 0; i < tag.elseIfs.length; i++) {
-                for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
-                    this.calcTagCoords(tag.elseIfs[i].body[j]);
+        if(tag.params && tag.params.elseIfs && tag.params.elseIfs.length) {
+            for (var i = 0; i < tag.params.elseIfs.length; i++) {
+                for (var j = 0; j < tag.params.elseIfs[i].body.length; j++) {
+                    this.calcTagCoords(tag.params.elseIfs[i].body[j]);
                 }
             }
         }
@@ -553,10 +557,10 @@ CodeGenerator.Model = JS_CLASS({
             }
         }
 
-        if(tag.elseIfs && tag.elseIfs.length) {
-            for (var i = 0; i < tag.elseIfs.length; i++) {
-                for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
-                    this.setIds(tag.elseIfs[i].body[j]);
+        if(tag.params && tag.params.elseIfs && tag.params.elseIfs.length) {
+            for (var i = 0; i < tag.params.elseIfs.length; i++) {
+                for (var j = 0; j < tag.params.elseIfs[i].body.length; j++) {
+                    this.setIds(tag.params.elseIfs[i].body[j]);
                 }
             }
         }
@@ -587,7 +591,7 @@ CodeGenerator.Model = JS_CLASS({
                 if (this.findInfo.el && this.findInfo.parent) {
                     var arr = this.findInfo.parent[this.findInfo.parentBody];
                     if(this.findInfo.parentBody == "elseIfs") {
-                        arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+                        arr = this.findInfo.parent.params.elseIfs[this.findInfo.parentElseIfPosition].body;
                     }
 
                     arr.splice(this.findInfo.parentPosition, 1);
@@ -604,24 +608,33 @@ CodeGenerator.Model = JS_CLASS({
                 console.log("appendToTree found", this.findInfo);
                 if(over.position == "inside") {
                     var body = "body";
+
+                    var arr;
+
                     if(over.insidePosition) {
                         if(over.insidePosition == "else") {
                             body = "elseBody";
                         }
                         if(over.insidePosition == "elseIf") {
-                            body = "elseIfs";
+                            //body = "elseIfs";
+                            if(!this.findInfo.el.params.elseIfs)
+                                this.findInfo.el.params.elseIfs = [];
+                            //arr = this.findInfo.el.params[body];
+                            if(over.elseIfIndex !== null) {
+                                arr = this.findInfo.el.params.elseIfs[over.elseIfIndex].body;
+                            }
                         }
                     }
 
-                    if(!this.findInfo.el[body])
-                        this.findInfo.el[body] = [];
-
-                    var arr = this.findInfo.el[body];
-
-                    if(over.elseIfIndex !== null) {
-                        arr = this.findInfo.el[body][over.elseIfIndex].body;
+                    if(typeof arr === "undefined") {
+                        arr = this.findInfo.el[body];
+                        if (!this.findInfo.el[body])
+                            this.findInfo.el[body] = [];
                     }
 
+                    // if(over.elseIfIndex !== null) {
+                    //     arr = this.findInfo.el[body][over.elseIfIndex].body;
+                    // }
 
                     arr.push(tag);
                     //inserted = true;
@@ -632,7 +645,7 @@ CodeGenerator.Model = JS_CLASS({
                     arr = this.findInfo.parent[this.findInfo.parentBody];
 
                     if(this.findInfo.parentBody == "elseIfs") {
-                        arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+                        arr = this.findInfo.parent.params.elseIfs[this.findInfo.parentElseIfPosition].body;
                     }
 
                     var newPosition;
@@ -658,7 +671,7 @@ CodeGenerator.Model = JS_CLASS({
         if (this.findInfo.el && this.findInfo.parent) {
             var arr = this.findInfo.parent[this.findInfo.parentBody];
             if(this.findInfo.parentBody == "elseIfs") {
-                arr = this.findInfo.parent[this.findInfo.parentBody][this.findInfo.parentElseIfPosition].body;
+                arr = this.findInfo.parent.params.elseIfs[this.findInfo.parentElseIfPosition].body;
             }
             arr.splice(this.findInfo.parentPosition, 1);
             this.saveHistory();
@@ -707,16 +720,16 @@ CodeGenerator.Model = JS_CLASS({
             }
         }
 
-        if(el.elseIfs && el.elseIfs.length) {
-            for (var i = 0; i < el.elseIfs.length; i++) {
-                for (var j = 0; j < el.elseIfs[i].body.length; j++) {
+        if(el.params && el.params.elseIfs && el.params.elseIfs.length) {
+            for (var i = 0; i < el.params.elseIfs.length; i++) {
+                for (var j = 0; j < el.params.elseIfs[i].body.length; j++) {
                     if(this.findInfo.el)
                         break;
                     this.findInfo.parent = el;
                     this.findInfo.parentElseIfPosition = i;
                     this.findInfo.parentPosition = j;
                     this.findInfo.parentBody = "elseIfs";
-                    this.findNextElementById(el.elseIfs[i].body[j], id);
+                    this.findNextElementById(el.params.elseIfs[i].body[j], id);
                 }
             }
         }
@@ -876,8 +889,8 @@ CodeGenerator.Over = JS_CLASS({
                             this.insidePosition = "if";
                         }
 
-                        if(tag.elseIfs && tag.elseIfs.length) {
-                            for(var i = 0; i < tag.elseIfs.length; i++) {
+                        if(tag.params && tag.params.elseIfs && tag.params.elseIfs.length) {
+                            for(var i = 0; i < tag.params.elseIfs.length; i++) {
                                 if (this.isLabelOver(x, y, tag.coords.labels, "elseIfs", i)) {
                                     this.position = "inside";
                                     this.insidePosition = "elseIf";
@@ -911,11 +924,11 @@ CodeGenerator.Over = JS_CLASS({
                 }
             }
 
-            if(tag.elseIfs && tag.elseIfs.length) {
-                for (var i = 0; i < tag.elseIfs.length; i++) {
-                    for (var j = 0; j < tag.elseIfs[i].body.length; j++) {
+            if(tag.params && tag.params.elseIfs && tag.params.elseIfs.length) {
+                for (var i = 0; i < tag.params.elseIfs.length; i++) {
+                    for (var j = 0; j < tag.params.elseIfs[i].body.length; j++) {
                         this.tmpParentOverTag = tag;
-                        this.findNextOverTag(x, y, tag.elseIfs[i].body[j]);
+                        this.findNextOverTag(x, y, tag.params.elseIfs[i].body[j]);
                     }
                 }
             }
@@ -1258,9 +1271,11 @@ var StructureTag = JS_CLASS(Tag, {
 
         var arr;
 
-        if(typeof index !== "undefined") {
-            arr = this[body][index].body;
-        }
+        if(body == "elseIfs")
+            arr = this.params.elseIfs[index].body;
+        // if(typeof index !== "undefined") {
+        //     arr = this[body][index].body;
+        // }
         else
             arr = this[body];
 
@@ -2004,6 +2019,11 @@ var TagIf = JS_CLASS(StructureTag, {
             "type": "String",
             "obligatory": true
         },
+        "elseIfs": {
+            "title": "ElseIf",
+            "type": "ElseIfs",
+            "obligatory": false
+        },
         "else": {
             "title": "Else block",
             "type": "Checkbox",
@@ -2018,9 +2038,9 @@ var TagIf = JS_CLASS(StructureTag, {
 
         html += this.renderSubItems('html');
 
-        if(this.elseIfs && this.elseIfs.length) {
-            for(var i = 0; i < this.elseIfs.length; i++) {
-                html += '<div class="i-code js-tag-label" tag-label="elseIf" tag-label-elseIf-index="' + i + '">ElseIf(' + this.elseIfs[i].condition + ')</div>';
+        if(this.getParam("elseIfs") && this.getParam("elseIfs").length) {
+            for(var i = 0; i < this.getParam("elseIfs").length; i++) {
+                html += '<div class="i-code js-tag-label" tag-label="elseIf" tag-label-elseIf-index="' + i + '">ElseIf(' + this.getParam("elseIfs")[i].condition + ')</div>';
                 html += this.renderSubItems('html', 'elseIfs', i);
             }
         }
@@ -2040,9 +2060,9 @@ var TagIf = JS_CLASS(StructureTag, {
         var code = this.renderOffset() + this.nameBegin + "(" + this.getParam("condition") + ")" + "\n";
         code += this.renderSubItems();
 
-        if(this.elseIfs && this.elseIfs.length) {
-            for(var i = 0; i < this.elseIfs.length; i++) {
-                code += this.renderOffset() + "ElseIf(" + this.elseIfs[i].condition + ")\n";
+        if(this.getParam("elseIfs") && this.getParam("elseIfs").length) {
+            for(var i = 0; i < this.getParam("elseIfs").length; i++) {
+                code += this.renderOffset() + "ElseIf(" + this.getParam("elseIfs")[i].condition + ")\n";
                 code += this.renderSubItems('code', 'elseIfs', i);
             }
         }
@@ -2264,6 +2284,74 @@ Control.Select = JS_CLASS(Control.BaseController, {
         }
     }
 });
+
+Control.ElseIfs = JS_CLASS(Control.BaseController, {
+    tpl: "#tpl-control-elseIfs",
+    tplItem: "#tpl-control-elseIf",
+    constructor: function (param) {
+        SUPER(this,arguments);
+    },
+
+    init: function () {
+        var self = this;
+        this.elseIfs = [];
+        this.$elseIfs = this.$html.find(".js-elseIfs");
+        this.$add = this.$html.find(".js-elseIf-add");
+        this.$add.on("click", function (e) {
+            e.preventDefault();
+            self.add({
+                body: [],
+                condition: "#condition_" + (self.elseIfs.length + 1) + "#"
+            });
+            self.triggerChange();
+        });
+    },
+
+    saveEvent: function () {
+        var self = this;
+        this.$elseIfs.on("change keyup", ".js-control-input", function (e) {
+            //console.log($(this).val(), $(this).attr("data-index"));
+            var index = self.$elseIfs.find(".input-group").index($(this).closest(".input-group"));
+            self.elseIfs[index].condition = $(this).val();
+            self.triggerChange();
+        });
+
+        this.$elseIfs.on("click", ".js-elseIf-remove", function (e) {
+            var index = self.$elseIfs.find(".input-group").index($(this).closest(".input-group"));
+            self.remove(index);
+            self.triggerChange();
+        });
+    },
+
+    setValue: function(value) {
+        if(value === null || typeof value == "undefined")
+            value = [];
+        console.log("set elseifs", value);
+        //this.elseIfs = value;
+        for(var i = 0; i < value.length; i++) {
+            var item = value[i];
+            this.add(item);
+        }
+
+    },
+
+    getValue: function() {
+        return this.elseIfs;
+    },
+
+    add: function (item) {
+        var $html = $(TPL ($(this.tplItem).html(), item));
+        this.$elseIfs.append($html);
+
+        this.elseIfs.push(item);
+    },
+
+    remove: function (index) {
+        this.elseIfs.splice(index, 1);
+        this.$elseIfs.find(".input-group").eq(index).remove();
+    }
+});
+
 
 var InstrumentPanel = JS_CLASS({
     "groups": [
@@ -2721,7 +2809,33 @@ var InstrumentPanel = JS_CLASS({
                     "name": "If",
                     "params": {
                         "condition": "#varname#",
-                        "else": true
+                        "else": true,
+                        "elseIfs": [
+                            {
+                                "condition": "#elseIfCondition1#",
+                                "body": [
+                                    {
+                                        "type": "tag",
+                                        "name": "P",
+                                        "params": {
+                                            "text": "IfElse 1 text"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "condition": "#elseIfCondition2#",
+                                "body": [
+                                    {
+                                        "type": "tag",
+                                        "name": "P",
+                                        "params": {
+                                            "text": "IfElse 2 text"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     "body": [
                         {
@@ -2732,32 +2846,7 @@ var InstrumentPanel = JS_CLASS({
                             }
                         }
                     ],
-                    "elseIfs": [
-                        {
-                            "condition": "#elseIfCondition1#",
-                            "body": [
-                                {
-                                    "type": "tag",
-                                    "name": "P",
-                                    "params": {
-                                        "text": "IfElse 1 text"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "condition": "#elseIfCondition2#",
-                            "body": [
-                                {
-                                    "type": "tag",
-                                    "name": "P",
-                                    "params": {
-                                        "text": "IfElse 2 text"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
+
                     "elseBody": [
                         {
                             "type": "tag",
@@ -2803,8 +2892,8 @@ var InstrumentPanel = JS_CLASS({
                         html += " tag-body='" + JSON.stringify(tag.body) + "'";
                     if (tag.elseBody)
                         html += " tag-body-else='" + JSON.stringify(tag.elseBody) + "'";
-                    if (tag.elseIfs && tag.elseIfs.length)
-                        html += " tag-elseIfs='" + JSON.stringify(tag.elseIfs) + "'";
+                    if (tag.params && tag.params.elseIfs && tag.params.elseIfs.length)
+                        html += " tag-elseIfs='" + JSON.stringify(tag.params.elseIfs) + "'";
                     html += " style='z-index: " + zIndex + "'>" + tag.title;
                     html += "<div class='b-source-element__preview js-source-element__preview'>" + tag.renderHTML() + "</div></div>";
 

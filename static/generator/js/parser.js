@@ -1037,10 +1037,10 @@ window.parser = /*
                 params: {
                 	condition: condition,
                     else: else_ !== null,
+                    elseIfs: optionalList(elseIfs)
                 },
                 body: optionalList(body),        
-                elseBody: elseBody,
-                elseIfs: optionalList(elseIfs)
+                elseBody: elseBody        
               }
           },
         peg$c238 = "ElseIf(",

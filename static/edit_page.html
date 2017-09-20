@@ -728,6 +728,27 @@
   </div>
 </script>
 
+<script id="tpl-control-elseIfs" type="text/x-jquery-tmpl">
+  <div class="form-group" data-field-name="{name}">
+	<label for="control-input-{name}">{title}</label>
+	<div class="js-elseIfs"></div>
+	<div><a href=# class="js-elseIf-add"><i class="fa fa-plus"></i> Add ElseIf block</a></div>
+	<div class="has-error js-control-error"></div>
+	<span class="help-block js-control-description">{description}</span>
+  </div>
+</script>
+
+<script id="tpl-control-elseIf" type="text/x-jquery-tmpl">
+	<div class="input-group" data-field-name="{name}">
+  		<input name="{name}" type="text" class="form-control js-control-input" value="{condition}">
+  		<span class="input-group-btn js-elseIf-remove">
+        	<button class="btn btn-secondary" type="button"><i class="fa fa-close"></i></button>
+      	</span>
+  		<!--<a href=# class="js-elseIf-remove" data-index="{index}"><i class="fa fa-close"></i></a>-->
+  	</div>
+  	<br>
+</script>
+
 {{template "signatures".}}
 
 
