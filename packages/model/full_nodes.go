@@ -16,20 +16,20 @@ type FullNode struct {
 	RbID                  int64  `gorm:"not null default 0"`
 }
 
-func (fn *FullNode) FindNode(stateID int64, walletID int64, finalDelegateStateID int64, finalDelegateWalletID int64) error {
-	return handleError(DBConn.Where(
+func (fn *FullNode) FindNode(stateID int64, walletID int64, finalDelegateStateID int64, finalDelegateWalletID int64) (bool, error) {
+	return isFound(DBConn.Where(
 		"state_id = ?", stateID).Or(
 		"wallet_id = ?", walletID).Or(
 		"final_delegate_state_id = ?", finalDelegateStateID).Or(
-		"final_delegate_wallet_id = ?", finalDelegateWalletID).Find(&fn).Error)
+		"final_delegate_wallet_id = ?", finalDelegateWalletID).Find(&fn))
 }
 
-func (fn *FullNode) Get(walletID int64) error {
-	return handleError(DBConn.Where("wallet_id = ?", walletID).First(fn).Error)
+func (fn *FullNode) Get(walletID int64) (bool, error) {
+	return isFound(DBConn.Where("wallet_id = ?", walletID).First(fn))
 }
 
-func (fn *FullNode) FindNodeByID(nodeID int64) error {
-	return handleError(DBConn.Where("id = ?", nodeID).First(fn).Error)
+func (fn *FullNode) FindNodeByID(nodeID int64) (bool, error) {
+	return isFound(DBConn.Where("id = ?", nodeID).First(fn))
 }
 
 func (fn *FullNode) GetAllFullNodesHasWalletID() ([]FullNode, error) {
@@ -38,16 +38,16 @@ func (fn *FullNode) GetAllFullNodesHasWalletID() ([]FullNode, error) {
 	return result, err
 }
 
-func (fn *FullNode) GetRbIDFullNodesWithWallet() error {
-	return handleError(DBConn.Where("wallet_id != 0").First(fn).Error)
+func (fn *FullNode) GetRbIDFullNodesWithWallet() (bool, error) {
+	return isFound(DBConn.Where("wallet_id != 0").First(fn))
 }
 
 func (fn *FullNode) DeleteNodesWithWallets() error {
 	return DBConn.Exec("DELETE FROM full_nodes WHERE wallet_id != 0").Error
 }
 
-func (fn *FullNode) FindNodeById(nodeid int64) error {
-	return handleError(DBConn.Where("id = ?", nodeid).First(fn).Error)
+func (fn *FullNode) FindNodeById(nodeid int64) (bool, error) {
+	return isFound(DBConn.Where("id = ?", nodeid).First(fn))
 }
 
 func (fn *FullNode) Create() error {

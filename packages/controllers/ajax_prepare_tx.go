@@ -72,12 +72,12 @@ func (c *Controller) checkTx(result *PrepareTxJSON) (contract *smart.Contract, e
 					var value string
 					signature := &model.Signature{}
 					signature.SetTablePrefix(pref)
-					err := signature.Get(ret[1])
+					found, err := signature.Get(ret[1])
 					if err != nil {
 						break
 					}
 					value = signature.Value
-					if len(value) == 0 {
+					if !found {
 						err = fmt.Errorf(`%s is unknown signature`, ret[1])
 						break
 					}
@@ -132,7 +132,7 @@ func (c *Controller) AjaxPrepareTx() interface{} {
 		info := (*contract).Block.Info.(*script.ContractInfo)
 		forsign := fmt.Sprintf("%d,%d,%d,%d", info.ID, int64(result.Time), c.SessWalletID, c.SessStateID)
 		dltWallet := &model.DltWallet{}
-		err = dltWallet.GetWallet(c.SessWalletID)
+		_, err = dltWallet.Get(c.SessWalletID)
 		//isPublic := dltWallet.PublicKey
 		if (*contract).Block.Info.(*script.ContractInfo).Tx != nil {
 			for _, fitem := range *(*contract).Block.Info.(*script.ContractInfo).Tx {

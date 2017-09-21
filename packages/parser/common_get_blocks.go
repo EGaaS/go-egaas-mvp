@@ -97,7 +97,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 		// if the buggy chain exists, here we will ignore it
 		config := &model.Config{}
-		err = config.GetConfig()
+		_, err = config.Get()
 		if err != nil {
 			ClearTmp(blocks)
 			return utils.ErrInfo(err)
@@ -127,7 +127,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 		// we need the hash of previous block to find where the fork started
 		prevBlock := &model.Block{}
-		err = prevBlock.GetBlock(blockID - 1)
+		_, err = prevBlock.Get(blockID - 1)
 		if err != nil {
 			ClearTmp(blocks)
 			return utils.ErrInfo(err)
@@ -280,7 +280,7 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 				// because in the previous request to block_chain the data could be absent, because the $block_id is bigger than our the biggest id in block_chain
 				// that means the info_block could not be updated and could stay away from adding new blocks, which will result in skipping the block in block_chain
 				lastMyBlock := &model.Block{}
-				err = lastMyBlock.GetMaxBlock()
+				_, err = lastMyBlock.GetMaxBlock()
 				if err != nil {
 					return utils.ErrInfo(err)
 				}

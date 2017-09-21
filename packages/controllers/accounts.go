@@ -64,12 +64,12 @@ func (c *Controller) Accounts() (string, error) {
 	data := make([]AccountInfo, 0)
 
 	stateParameter := &model.StateParameter{}
-	if err := stateParameter.GetByName("money_digit"); err != nil {
+	if _, err := stateParameter.GetByName("money_digit"); err != nil {
 		return ``, err
 	}
 	digit := converter.StrToInt(stateParameter.Value)
 
-	if err := stateParameter.GetByName("currency_name"); err != nil {
+	if _, err := stateParameter.GetByName("currency_name"); err != nil {
 		return ``, err
 	}
 	currency := stateParameter.Value
@@ -82,7 +82,7 @@ func (c *Controller) Accounts() (string, error) {
 
 	account := &model.Account{}
 	account.SetTablePrefix(c.SessCitizenID)
-	err := account.Get(c.SessStateID)
+	_, err := account.Get(c.SessStateID)
 	if err != nil {
 		return ``, err
 	}

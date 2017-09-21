@@ -18,8 +18,8 @@ func (m Menu) TableName() string {
 	return m.tableName
 }
 
-func (m *Menu) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(m).Error
+func (m *Menu) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(m))
 }
 
 func (m *Menu) Create() error {

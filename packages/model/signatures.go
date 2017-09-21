@@ -22,8 +22,8 @@ func (s *Signature) TableName() string {
 	return s.tableName
 }
 
-func (s *Signature) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(s).Error
+func (s *Signature) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(s))
 }
 
 func (s *Signature) ExistsByName(name string) (bool, error) {

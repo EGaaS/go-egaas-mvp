@@ -105,7 +105,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	if showIOSMenu && model.DBConn != nil {
 		infoBlock := &model.InfoBlock{}
 		log.Debugf("try to get block info")
-		err := infoBlock.GetInfoBlock()
+		_, err := infoBlock.Get()
 		if err != nil {
 			log.Error("can't get block info: %v", err)
 		}

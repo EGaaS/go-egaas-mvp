@@ -26,7 +26,7 @@ func writeNextBlocks(fileName string, minToSave int) error {
 	}
 
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	_, err = infoBlock.Get()
 	if err != nil {
 		return err
 	}

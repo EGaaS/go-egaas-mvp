@@ -58,7 +58,7 @@ func (p *RestoreAccessActiveParser) Validate() error {
 
 	// check that there is no repeat shift
 	restoreAccess := &model.SystemRestoreAccess{}
-	err = restoreAccess.Get(p.RestoreAccessActive.StateID)
+	_, err = restoreAccess.Get(p.RestoreAccessActive.StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

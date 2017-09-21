@@ -35,17 +35,18 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 		prefix = c.StateIDStr
 	}
 	var err error
+	var menuFound bool
 	page := &model.Page{}
 	menu := &model.Menu{}
 	if len(prefix) > 0 {
 		page.SetTablePrefix(prefix)
-		err = page.Get(pageName)
+		_, err = page.Get(pageName)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
 
 		menu.SetTablePrefix(prefix)
-		err = menu.Get(page.Menu)
+		menuFound, err = menu.Get(page.Menu)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
@@ -53,7 +54,7 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 	params := make(map[string]string)
 	params[`state_id`] = c.StateIDStr
 	params[`accept_lang`] = c.r.Header.Get(`Accept-Language`)
-	if len(menu.Value) > 0 {
+	if menuFound {
 		menu.Value = language.LangMacro(textproc.Process(menu.Value, &params), converter.StrToInt(c.StateIDStr), params[`accept_lang`]) +
 			`<!--#` + page.Menu + `#-->`
 	}

@@ -17,6 +17,7 @@
 package controllers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/consts"
@@ -71,7 +72,6 @@ func ReplaceMenu(menu string) string {
 // Menu is controller for displaying the left menu
 func (c *Controller) Menu() (string, error) {
 	var (
-		err                          error
 		updver, stateName, stateFlag string
 		isMain                       bool
 	)
@@ -92,10 +92,13 @@ func (c *Controller) Menu() (string, error) {
 		params[`accept_lang`] = c.r.Header.Get(`Accept-Language`)
 
 		menu.SetTablePrefix(c.StateIDStr)
-		err = menu.Get("main_menu")
-		if err != nil {
-			err = menu.Get("menu_default")
-			if err != nil {
+		found, err := menu.Get("main_menu")
+		if err != nil || !found {
+			found, err = menu.Get("menu_default")
+			if err != nil || !found {
+				if !found {
+					return "", fmt.Errorf("record not found")
+				}
 				return "", err
 			}
 		} else {
@@ -104,13 +107,13 @@ func (c *Controller) Menu() (string, error) {
 
 		stateParameter := &model.StateParameter{}
 		stateParameter.SetTablePrefix(c.StateIDStr)
-		err := stateParameter.GetByName("state_name")
+		_, err = stateParameter.GetByName("state_name")
 		if err != nil {
 			return "", err
 		}
 		stateName = stateParameter.Value
 
-		err = stateParameter.GetByName("state_flag")
+		_, err = stateParameter.GetByName("state_flag")
 		if err != nil {
 			return "", err
 		}
@@ -118,15 +121,10 @@ func (c *Controller) Menu() (string, error) {
 
 		citizen := &model.Citizen{}
 		citizen.SetTablePrefix(c.StateIDStr)
-		err = citizen.Get(c.SessCitizenID)
+		_, err = citizen.Get(c.SessCitizenID)
 		if err != nil {
 			log.Error("%v", err)
 		}
-
-		if err != nil {
-			log.Error("%v", err)
-		}
-		//		menu = ReplaceMenu(menu)
 		menu.Value = language.LangMacro(textproc.Process(menu.Value, &params), converter.StrToInt(c.StateIDStr), params[`accept_lang`])
 	}
 	var langs []LangInfo

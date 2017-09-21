@@ -67,15 +67,18 @@ func (p *ActivateContractParser) Validate() error {
 	if p.ActivateContract.Id[0] > '9' {
 		smartContract := &model.SmartContract{}
 		smartContract.SetTablePrefix(prefix)
-		err = smartContract.GetByName(p.ActivateContract.Id)
-		if smartContract.ID == 0 {
+		found, err := smartContract.GetByName(p.ActivateContract.Id)
+		if err != nil {
+			return p.ErrInfo(err)
+		}
+		if !found {
 			return p.ErrInfo("incorrect contract name")
 		}
 		p.ActivateContract.Id = converter.Int64ToStr(smartContract.ID)
 	}
 	smartContract := &model.SmartContract{}
 	smartContract.SetTablePrefix(prefix)
-	err = smartContract.GetByID(converter.StrToInt64(p.ActivateContract.Id))
+	_, err = smartContract.GetByID(converter.StrToInt64(p.ActivateContract.Id))
 	if err != nil {
 		return p.ErrInfo(err)
 	}

@@ -41,8 +41,8 @@ func (p *ChangeNodeKeyParser) Init() error {
 
 func (p *ChangeNodeKeyParser) Validate() error {
 	wallet := &model.DltWallet{}
-	err := wallet.GetWallet(p.ChangeNodeKey.Header.UserID)
-	if err != nil || len(wallet.PublicKey) == 0 {
+	found, err := wallet.Get(p.ChangeNodeKey.Header.UserID)
+	if err != nil || !found {
 		return p.ErrInfo("incorrect user_id")
 	}
 	CheckSignResult, err := utils.CheckSign([][]byte{[]byte(wallet.PublicKey)}, p.ChangeNodeKey.ForSign(), p.ChangeNodeKey.Header.BinSignatures, true)

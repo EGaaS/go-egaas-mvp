@@ -85,7 +85,7 @@ func (p *DLTTransferParser) Validate() error {
 	}
 
 	systemParam := &model.SystemParameter{}
-	err = systemParam.Get("fuel_rate")
+	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func (p *DLTTransferParser) Validate() error {
 	}
 
 	wallet := &model.DltWallet{}
-	err = wallet.GetWallet(p.TxWalletID)
+	_, err = wallet.Get(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -149,7 +149,7 @@ func (p *DLTTransferParser) Validate() error {
 func (p *DLTTransferParser) Action() error {
 	log.Debug("wallet address %s", p.DLTTransfer.WalletAddress)
 	dltWallet := &model.DltWallet{}
-	err := dltWallet.GetWallet(p.TxWalletID)
+	_, err := dltWallet.Get(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

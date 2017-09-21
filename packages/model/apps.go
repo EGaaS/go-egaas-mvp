@@ -17,8 +17,8 @@ func (a *App) TableName() string {
 	return a.tableName
 }
 
-func (a *App) Get(name string) error {
-	return handleError(DBConn.Where("name = ?", name).First(a).Error)
+func (a *App) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(a))
 }
 
 func (a *App) GetAll() ([]App, error) {

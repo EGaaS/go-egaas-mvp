@@ -12,16 +12,16 @@ type Confirmation struct {
 	Time    int32 `gorm:"not null"`
 }
 
-func (c *Confirmation) GetGoodBlock(goodCount int) error {
-	return handleError(DBConn.Where("good >= ?", goodCount).Last(&c).Error)
+func (c *Confirmation) GetGoodBlock(goodCount int) (bool, error) {
+	return isFound(DBConn.Where("good >= ?", goodCount).Last(&c))
 }
 
-func (c *Confirmation) GetConfirmation(blockID int64) error {
-	return handleError(DBConn.Where("block_id= ?", blockID).First(&c).Error)
+func (c *Confirmation) GetConfirmation(blockID int64) (bool, error) {
+	return isFound(DBConn.Where("block_id= ?", blockID).First(&c))
 }
 
-func (c *Confirmation) GetMaxGoodBlock() error {
-	return handleError(DBConn.Order("block_id desc").Where("good >= ?", consts.MIN_CONFIRMED_NODES).First(c).Error)
+func (c *Confirmation) GetMaxGoodBlock() (bool, error) {
+	return isFound(DBConn.Order("block_id desc").Where("good >= ?", consts.MIN_CONFIRMED_NODES).First(c))
 }
 
 func (c *Confirmation) Update() error {

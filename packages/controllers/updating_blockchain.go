@@ -59,7 +59,7 @@ func (c *Controller) UpdatingBlockchain() (string, error) {
 
 	if c.dbInit {
 		confirmation := &model.Confirmation{}
-		err := confirmation.GetMaxGoodBlock()
+		_, err := confirmation.GetMaxGoodBlock()
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

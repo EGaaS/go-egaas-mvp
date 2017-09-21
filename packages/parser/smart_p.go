@@ -181,7 +181,7 @@ func (p *Parser) CallContract(flags int) (err error) {
 		}
 		if len(p.PublicKeys) == 0 {
 			wallet := &model.DltWallet{}
-			err := wallet.GetWallet(p.TxSmart.UserID)
+			_, err := wallet.Get(p.TxSmart.UserID)
 			if err != nil {
 				return err
 			}
@@ -224,7 +224,7 @@ func (p *Parser) CallContract(flags int) (err error) {
 		}
 	}
 	systemParam := &model.SystemParameter{}
-	err = systemParam.Get("fuel_rate")
+	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -702,7 +702,7 @@ func UpdateContract(p *Parser, name, value, conditions string) (int64, error) {
 	prefix := converter.Int64ToStr(int64(p.TxStateID))
 	sc := &model.SmartContract{}
 	sc.SetTablePrefix(prefix)
-	err := sc.GetByName(name)
+	_, err := sc.GetByName(name)
 	if err != nil {
 		return 0, err
 	}
@@ -986,7 +986,7 @@ func UpdateSysParam(p *Parser, name, value, conditions string) (int64, error) {
 	)
 
 	par := &model.SystemParameter{}
-	err := par.Get(name)
+	_, err := par.Get(name)
 	if err != nil {
 		return 0, err
 	}

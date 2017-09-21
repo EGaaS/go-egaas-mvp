@@ -87,7 +87,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 	}
 
 	wallet := &model.DltWallet{}
-	if err = wallet.GetWallet(walletID); err != nil {
+	if _, err = wallet.Get(walletID); err != nil {
 		result.Error = err.Error()
 		return result
 	}

@@ -21,16 +21,12 @@ func (lt *LogTransaction) Delete() error {
 	return DBConn.Delete(lt).Error
 }
 
-func (lt *LogTransaction) Get() error {
-	return handleError(DBConn.First(lt).Error)
+func (lt *LogTransaction) Get() (bool, error) {
+	return isFound(DBConn.First(lt))
 }
 
 func (lt *LogTransaction) GetByHash(hash []byte) (bool, error) {
-	query := DBConn.Where("hash = ?", hash).First(lt)
-	if query.RecordNotFound() {
-		return false, nil
-	}
-	return true, query.Error
+	return isFound(DBConn.Where("hash = ?", hash).First(lt))
 }
 
 func (lt *LogTransaction) Create() error {

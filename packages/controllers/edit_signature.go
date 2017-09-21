@@ -63,7 +63,7 @@ func (c *Controller) EditSignature() (string, error) {
 	if len(name) > 0 {
 		signature := &model.Signature{}
 		signature.SetTablePrefix(prefix)
-		err := signature.Get(name)
+		_, err := signature.Get(name)
 		if err != nil {
 			return "", err
 		}

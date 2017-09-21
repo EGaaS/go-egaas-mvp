@@ -34,7 +34,7 @@ func QueueParserTx(d *daemon, ctx context.Context) error {
 	defer DbUnlock(d.goRoutineName)
 
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	_, err = infoBlock.Get()
 	if err != nil {
 		return err
 	}

@@ -41,7 +41,7 @@ func (p *Parser) selectiveRollback(table string, where string, rollbackAI bool) 
 		// данные, которые восстановим
 		// data that we will be restored
 		rollback := &model.Rollback{}
-		err = rollback.Get(rbID)
+		_, err = rollback.Get(rbID)
 		if err != nil {
 			return p.ErrInfo(err)
 		}

@@ -24,8 +24,8 @@ func (DltWallet) TableName() string {
 	return "dlt_wallets"
 }
 
-func (w *DltWallet) GetWallet(walletID int64) error {
-	return handleError(DBConn.Where("wallet_id = ?", walletID).First(&w).Error)
+func (w *DltWallet) Get(walletID int64) (bool, error) {
+	return isFound(DBConn.Where("wallet_id = ?", walletID).First(&w))
 }
 
 func GetWallets(startWalletID int64, walletsCount int) ([]DltWallet, error) {

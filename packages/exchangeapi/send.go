@@ -84,7 +84,7 @@ func send(r *http.Request) interface{} {
 
 	fPrice := syspar.SysCost(`dlt_transfer`)
 	systemParam := &model.SystemParameter{}
-	err = systemParam.Get("fuel_rate")
+	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
 		log.Fatal(err)
 	}

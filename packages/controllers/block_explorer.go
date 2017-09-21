@@ -54,13 +54,13 @@ func (c *Controller) BlockExplorer() (string, error) {
 	if blockID > 0 {
 		pageData.BlockID = blockID
 		block := &model.Block{}
-		err := block.GetBlock(blockID)
+		found, err := block.Get(blockID)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
 
 		blockInfo := block.ToMap()
-		if len(blockInfo) > 0 {
+		if found {
 			blockInfo[`hash`] = string(converter.BinToHex(block.Hash))
 			blockInfo[`size`] = converter.IntToStr(len(block.Data))
 			blockInfo[`wallet_address`] = converter.AddressToString(block.WalletID)
@@ -74,7 +74,7 @@ func (c *Controller) BlockExplorer() (string, error) {
 			}
 			if blockID > 1 {
 				parent := &model.Block{}
-				err = parent.GetBlock(blockID - 1)
+				_, err = parent.Get(blockID - 1)
 				if err == nil {
 					blockInfo[`parent`] = string(converter.BinToHex(parent.Hash))
 				} else {

@@ -62,7 +62,7 @@ func (c *Controller) AjaxCitizenFields() interface{} {
 ]`, nil
 			stateParameter := &model.StateParameter{}
 			stateParameter.SetTablePrefix(converter.Int64ToStr(stateID))
-			err = stateParameter.GetByName("citizenship_price")
+			_, err = stateParameter.GetByName("citizenship_price")
 			if err == nil {
 				price, err := strconv.ParseInt(stateParameter.Value, 10, 64)
 				if err != nil {
@@ -70,7 +70,7 @@ func (c *Controller) AjaxCitizenFields() interface{} {
 				} else {
 					result.Price = price
 					wallet := &model.DltWallet{}
-					err = wallet.GetWallet(c.SessWalletID)
+					_, err = wallet.Get(c.SessWalletID)
 					result.Valid = (err == nil && amount >= result.Price)
 				}
 			}

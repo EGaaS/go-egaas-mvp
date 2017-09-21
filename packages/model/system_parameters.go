@@ -13,8 +13,8 @@ func (sp SystemParameter) TableName() string {
 	return "system_parameters"
 }
 
-func (sp *SystemParameter) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(sp).Error
+func (sp *SystemParameter) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(sp))
 }
 
 func (sp *SystemParameter) GetJSONField(jsonField string, name string) (string, error) {

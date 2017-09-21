@@ -17,7 +17,6 @@
 package parser
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
@@ -66,8 +65,8 @@ func (p *Parser) RollbackToBlockID(blockID int64) error {
 		blocks = blocks[:0]
 	}
 	block := &model.Block{}
-	err = block.GetBlock(blockID)
-	if err != nil && err != sql.ErrNoRows {
+	_, err = block.Get(blockID)
+	if err != nil {
 		return p.ErrInfo(err)
 	}
 	data := block.Data

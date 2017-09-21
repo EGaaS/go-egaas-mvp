@@ -91,7 +91,7 @@ func App(w http.ResponseWriter, r *http.Request) {
 		}
 		app := &model.App{}
 		app.SetTablePrefix(table)
-		err := app.Get(page)
+		_, err := app.Get(page)
 		if err != nil {
 			out = err.Error()
 		} else {

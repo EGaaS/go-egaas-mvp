@@ -73,7 +73,7 @@ func (c *Controller) EditPage() (string, error) {
 		if i == 0 {
 			page := &model.Page{}
 			page.SetTablePrefix(prefix)
-			err = page.Get(name)
+			_, err = page.Get(name)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -87,7 +87,7 @@ func (c *Controller) EditPage() (string, error) {
 			block = dataPage[`menu`] == `0`
 		} else {
 			rollback := &model.Rollback{}
-			err := rollback.Get(rbID)
+			_, err := rollback.Get(rbID)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}
@@ -106,7 +106,7 @@ func (c *Controller) EditPage() (string, error) {
 
 	menu := &model.Menu{}
 	menu.SetTablePrefix(prefix)
-	err = menu.Get(dataPageMain["menu"])
+	_, err = menu.Get(dataPageMain["menu"])
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

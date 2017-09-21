@@ -39,7 +39,7 @@ const (
 // else send the full transactions
 func Disseminator(d *daemon, ctx context.Context) error {
 	config := &model.Config{}
-	err := config.GetConfig()
+	_, err := config.Get()
 	if err != nil {
 		log.Errorf("can't get config: %s", err)
 		return err
@@ -53,7 +53,7 @@ func Disseminator(d *daemon, ctx context.Context) error {
 	}
 
 	node := &model.FullNode{}
-	err = node.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
+	_, err = node.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
 	if err != nil {
 		log.Errorf("can't get full_node: %s", err)
 		return err
@@ -171,7 +171,7 @@ func sendHashesResp(resp []byte, w io.Writer) error {
 		// Parse the list of requested transactions
 		txHash := converter.BytesShift(&resp, 16)
 		tr := &model.Transaction{}
-		err := tr.Read(txHash)
+		_, err := tr.Read(txHash)
 		if err != nil {
 			return err
 		}

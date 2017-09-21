@@ -27,11 +27,7 @@ func (qt *QueueTx) Create() error {
 }
 
 func (qt *QueueTx) GetByHash(hash []byte) (bool, error) {
-	query := DBConn.Where("hash = ?", hash).First(qt)
-	if query.RecordNotFound() {
-		return false, nil
-	}
-	return true, query.Error
+	return isFound(DBConn.Where("hash = ?", hash).First(qt))
 }
 
 func DeleteQueueTxByHash(hash []byte) (int64, error) {

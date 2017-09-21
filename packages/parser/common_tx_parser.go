@@ -59,7 +59,7 @@ func (p *Parser) TxParser(hash, binaryTx []byte, myTx bool) error {
 
 	logging.WriteSelectiveLog("SELECT counter FROM transactions WHERE hex(hash) = " + string(hash))
 	tx := &model.Transaction{}
-	err = tx.Get(hash)
+	_, err = tx.Get(hash)
 	if err != nil {
 		logging.WriteSelectiveLog(err)
 		return utils.ErrInfo(err)
