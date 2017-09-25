@@ -98,12 +98,12 @@ func (c *Controller) AjaxGenKeys() interface{} {
 
 		wallet := &model.DltWallet{}
 		wallet.WalletID = idnew
-		exist, err := wallet.IsExists()
+		found, err := wallet.Get(wallet.WalletID)
 		if err != nil {
 			result.Error = err.Error()
 			return result
 		}
-		if exist != false {
+		if found {
 			i--
 			continue
 		}

@@ -1,7 +1,5 @@
 package model
 
-import "github.com/jinzhu/gorm"
-
 type Citizen struct {
 	tableName string
 	ID        int64  `gorm:"primary_key;not null"`
@@ -20,14 +18,6 @@ func (c Citizen) TableName() string {
 
 func (c *Citizen) Create() error {
 	return DBConn.Create(c).Error
-}
-
-func (c *Citizen) IsExists() (bool, error) {
-	query := DBConn.Where("id = ?", c.ID).First(c)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
 }
 
 func (c *Citizen) Get(id int64) (bool, error) {

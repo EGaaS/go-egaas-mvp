@@ -32,12 +32,12 @@ func txstatus(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	var status txstatusResult
 	ts := &model.TransactionStatus{}
 	binTx := converter.HexToBin(data.params["hash"])
-	notFound, err := ts.Get(binTx)
-	if notFound {
-		return errorAPI(w, `hash has not been found`, http.StatusBadRequest)
-	}
+	found, err := ts.Get(binTx)
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
+	}
+	if !found {
+		return errorAPI(w, `hash has not been found`, http.StatusBadRequest)
 	}
 	if ts.BlockID > 0 {
 		status.BlockID = converter.Int64ToStr(ts.BlockID)

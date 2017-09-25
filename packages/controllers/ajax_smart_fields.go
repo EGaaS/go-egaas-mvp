@@ -56,9 +56,9 @@ func (c *Controller) AjaxSmartFields() interface{} {
 		return result
 	}
 
-	citizen := &model.Citizen{ID: c.SessWalletID}
+	citizen := &model.Citizen{}
 	citizen.SetTablePrefix(stateStr)
-	if exist, err := citizen.IsExists(); err != nil {
+	if exist, err := citizen.Get(c.SessWalletID); err != nil {
 		result.Error = err.Error()
 		return result
 	} else if exist == true {

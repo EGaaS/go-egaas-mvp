@@ -60,7 +60,7 @@ func (p *DLTTransferParser) Validate() error {
 
 	// public key need only when we don't have public_key in the dlt_wallets table
 	dltWallet := &model.DltWallet{}
-	exists, err := dltWallet.IsExists()
+	exists, err := dltWallet.Get(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

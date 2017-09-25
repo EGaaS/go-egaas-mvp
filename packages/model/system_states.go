@@ -1,7 +1,5 @@
 package model
 
-import "github.com/jinzhu/gorm"
-
 type SystemState struct {
 	ID   int64 `gorm:"primary_key;not null"`
 	RbID int64 `gorm:"not null"`
@@ -43,14 +41,6 @@ func (ss *SystemState) GetLast() (bool, error) {
 
 func (ss *SystemState) Delete() error {
 	return DBConn.Delete(ss).Error
-}
-
-func (ss *SystemState) IsExists(stateID int64) (bool, error) {
-	query := DBConn.Where("id = ?", stateID).First(ss)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
 }
 
 func (ss *SystemState) Create() error {

@@ -51,13 +51,14 @@ func login(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	var citizen int64
 	if state > 0 {
 		sysState := &model.SystemState{}
-		if exist, err := sysState.IsExists(state); err == nil && exist {
-			citizen, err = model.Single(`SELECT id FROM "`+converter.Int64ToStr(state)+`_citizens" WHERE id = ?`,
-				wallet).Int64()
+		if found, err := sysState.Get(state); err == nil && found {
+			citizen := &model.Citizen{}
+			citizen.SetTablePrefix(converter.Int64ToStr(state))
+			found, err := citizen.Get(wallet)
 			if err != nil {
 				return errorAPI(w, err.Error(), http.StatusInternalServerError)
 			}
-			if citizen == 0 {
+			if !found {
 				state = 0
 				if utils.PrivCountry {
 					return errorAPI(w, "not a citizen", http.StatusForbidden)
@@ -67,7 +68,6 @@ func login(w http.ResponseWriter, r *http.Request, data *apiData) error {
 			return errorAPI(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
-
 	data.result = &loginResult{Address: address}
 	data.sess.Set("wallet", wallet)
 	data.sess.Set("address", address)

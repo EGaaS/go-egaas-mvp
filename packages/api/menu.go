@@ -41,13 +41,16 @@ type menuListResult struct {
 }
 
 func getMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	dataMenu, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_menu" WHERE name = ?`,
-		data.params[`name`].(string)).String()
+	menu := &model.Menu{}
+	menu.SetTablePrefix(getPrefix(data))
+	found, err := menu.Get(data.params["name"].(string))
+	if !found {
+		return errorAPI(w, err.Error(), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &menuResult{Name: dataMenu["name"], Value: dataMenu["value"], Conditions: dataMenu["conditions"]}
+	data.result = &menuResult{Name: menu.Name, Value: menu.Value, Conditions: menu.Conditions}
 	return nil
 }
 
@@ -121,7 +124,8 @@ func menuList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 		limit = -1
 	}
 	outList := make([]menuItem, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_menu"`).String()
+	menuCount := &model.Menu{}
+	count, err := menuCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}

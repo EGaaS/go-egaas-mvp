@@ -51,7 +51,7 @@ func (c *Controller) AjaxCitizenInfo() interface{} {
 	c.w.Header().Add("Access-Control-Allow-Origin", "*")
 	stateCode := converter.StrToInt64(c.r.FormValue(`stateId`))
 	systemState := &model.SystemState{}
-	_, err = systemState.IsExists(stateCode)
+	_, err = systemState.Get(stateCode)
 	c.r.ParseMultipartForm(16 << 20) // Max memory 16 MiB
 	formdata := c.r.MultipartForm
 	defer formdata.RemoveAll()

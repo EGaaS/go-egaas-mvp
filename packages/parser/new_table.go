@@ -112,11 +112,11 @@ func (p *NewTableParser) Validate() error {
 
 	t := &model.Table{}
 	t.SetTablePrefix(prefix)
-	exists, err := t.ExistsByName(prefix + "_" + p.NewTable.Name)
+	found, err := t.Get(prefix + "_" + p.NewTable.Name)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	if exists {
+	if found {
 		return p.ErrInfo(`table exists`)
 	}
 

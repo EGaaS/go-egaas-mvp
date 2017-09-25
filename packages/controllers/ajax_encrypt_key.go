@@ -69,12 +69,12 @@ func EncryptNewKey(walletID string) (result EncryptKey) {
 		pub, _ := hex.DecodeString(result.Public)
 
 		wallet.WalletID = crypto.Address(pub)
-		exist, err := wallet.IsExists()
+		found, err := wallet.Get(wallet.WalletID)
 		if err != nil {
 			result.Error = err.Error()
 			return result
 		}
-		if exist == false {
+		if found == false {
 			result.WalletID = wallet.WalletID
 		}
 	}

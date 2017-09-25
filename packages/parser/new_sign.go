@@ -62,9 +62,9 @@ func (p *NewSignParser) Validate() error {
 	}
 	sign := &model.Signature{}
 	sign.SetTablePrefix(prefix)
-	if exist, err := sign.ExistsByName(p.NewSign.Name); err != nil {
+	if found, err := sign.Get(p.NewSign.Name); err != nil {
 		return p.ErrInfo(err)
-	} else if exist {
+	} else if found {
 		return p.ErrInfo(fmt.Sprintf("The signature %s already exists", p.NewSign.Name))
 	}
 	return nil

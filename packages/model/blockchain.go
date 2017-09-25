@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
-	"github.com/jinzhu/gorm"
 )
 
 type Block struct {
@@ -37,19 +36,7 @@ func (Block) TableName() string {
 }
 
 func (b *Block) IsExists() (bool, error) {
-	query := DBConn.First(b)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
-}
-
-func (b *Block) IsExistsID(blockID int64) (bool, error) {
-	query := DBConn.Where("id = ?").First(b)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
+	return isFound(DBConn.First(b))
 }
 
 func (b *Block) Create() error {

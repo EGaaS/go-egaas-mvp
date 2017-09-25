@@ -343,11 +343,11 @@ func (p *Parser) GetBlocks(blockID int64, host string, rollbackBlocks, goroutine
 
 			// because this data we made by ourselves, so you can record them directly to the table of verified data, that will be send to other nodes
 			existsB := &model.Block{}
-			exists, err := existsB.IsExistsID(blockID)
+			found, err := existsB.Get(blockID)
 			if err != nil {
 				return utils.ErrInfo(err)
 			}
-			if !exists {
+			if !found {
 				b := prevBlock[blockID]
 				block := &model.Block{
 					ID:       blockID,

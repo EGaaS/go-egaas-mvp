@@ -36,13 +36,17 @@ type langListResult struct {
 }
 
 func getLang(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	dataLang, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_languages" WHERE name = ?`,
-		data.params[`name`].(string)).String()
+	prefix := getPrefix(data)
+	lang := &Language{}
+	lang.SetTablePrefix(prefix)
+	found, err := lang.Get(data.params["name"])
+	if !found {
+		return errorAPI(w, err.Error(), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &langResult{Name: dataLang["name"], Trans: dataLang["res"]}
+	data.result = &langResult{Name: lang.Name, Trans: lang.Res}
 	return nil
 }
 
@@ -90,7 +94,6 @@ func txLang(w http.ResponseWriter, r *http.Request, data *apiData) error {
 }
 
 func langList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
 	limit := int(data.params[`limit`].(int64))
 	if limit == 0 {
 		limit = 25
@@ -98,19 +101,20 @@ func langList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 		limit = -1
 	}
 	outList := make([]langResult, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_languages"`).String()
+	langCount := &model.Language{}
+	count, err := langCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT name, res FROM "`+getPrefix(data)+`_languages" order by name`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	langList := &model.Language{}
+	list, err := langList.GetAllLimitOffset(getPrefix(data), limit, offset)
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
-		outList = append(outList, langResult{Name: val[`name`], Trans: val[`res`]})
+		outList = append(outList, langResult{Name: val.Name, Trans: val.Res})
 	}
 	data.result = &langListResult{Count: count, List: outList}
 	return nil

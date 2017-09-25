@@ -87,14 +87,6 @@ func (t *Table) GetColumnsAndPermissions(tablePrefix string, tableName string) (
 	return result, err
 }
 
-func (t *Table) ExistsByName(name string) (bool, error) {
-	query := DBConn.Where("name = ?", name).First(t)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
-}
-
 func (t *Table) IsExistsByPermissionsAndTableName(columnName, tableName string) (bool, error) {
 	query := DBConn.Where(`(columns_and_permissions->'update'-> ? ) is not null AND name = ?`, columnName, tableName).First(t)
 	if query.Error == nil {
