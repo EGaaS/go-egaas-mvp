@@ -688,7 +688,7 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 	log.Debug("dataArray: %s", dataArray)
 	result := make(map[int32][][]byte)
 	for _, v := range dataArray {
-		hash, err := crypto.DoubleHash(v)
+		hash, err := crypto.StrongHash(v)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -706,14 +706,14 @@ func MerkleTreeRoot(dataArray [][]byte) []byte {
 				}
 			} else {
 				if _, ok := result[j+1]; !ok {
-					hash, err := crypto.DoubleHash(append(result[j][i], result[j][i+1]...))
+					hash, err := crypto.StrongHash(append(result[j][i], result[j][i+1]...))
 					if err != nil {
 						log.Fatal(err)
 					}
 					hash = converter.BinToHex(hash)
 					result[j+1] = [][]byte{hash}
 				} else {
-					hash, err := crypto.DoubleHash([]byte(append(result[j][i], result[j][i+1]...)))
+					hash, err := crypto.StrongHash([]byte(append(result[j][i], result[j][i+1]...)))
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -755,7 +755,7 @@ func GetMrklroot(binaryData []byte, first bool, maxTxSize int64, maxTxCount int)
 			// separate one transaction from the list of transactions
 			if txSize > 0 {
 				transactionBinaryData := converter.BytesShift(&binaryData, txSize)
-				dSha256Hash, err := crypto.DoubleHash(transactionBinaryData)
+				dSha256Hash, err := crypto.StrongHash(transactionBinaryData)
 				if err != nil {
 					log.Fatal(err)
 				}

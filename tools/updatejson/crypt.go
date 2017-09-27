@@ -21,6 +21,8 @@ import (
 	"crypto/cipher"
 	//	"crypto/rand"
 	"fmt"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	//	"io"
 )
 
@@ -30,35 +32,16 @@ func Decrypt(key, ciphertext []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(ciphertext) < aes.BlockSize {
+	if len(ciphertext) < consts.BlockSize {
 		return nil, fmt.Errorf("ciphertext too short")
 	}
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
+	iv := ciphertext[:consts.BlockSize]
+	ciphertext = ciphertext[consts.BlockSize:]
 
-	if len(ciphertext)%aes.BlockSize != 0 {
+	if len(ciphertext)%consts.BlockSize != 0 {
 		return nil, fmt.Errorf("ciphertext is not a multiple of the block size")
 	}
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 	return ciphertext, nil
 }
-
-/*
-func Encrypt(key, plaintext []byte) ([]byte, error) {
-	if len(plaintext)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("plaintext is not a multiple of the block size")
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
-	}
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(ciphertext[aes.BlockSize:], plaintext)
-	return ciphertext, nil
-}*/

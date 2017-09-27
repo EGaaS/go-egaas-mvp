@@ -16,12 +16,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-//TODO параметризировать
 func FillLeft(slice []byte) []byte {
-	if len(slice) >= 32 {
+	if len(slice) >= consts.PubkeySizeLength/2 {
 		return slice
 	}
-	return append(make([]byte, 32-len(slice)), slice...)
+	return append(make([]byte, consts.PubkeySizeLength/2-len(slice)), slice...)
 }
 
 //TODO перенести в конвертеры

@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	crand "crypto/rand"
@@ -9,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
 )
 
@@ -69,7 +69,6 @@ func signECDSA(privateKey string, data string) (ret []byte, err error) {
 	priv := new(ecdsa.PrivateKey)
 	priv.PublicKey.Curve = pubkeyCurve
 	priv.D = bi
-	priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
 
 	signhash, err := Hash([]byte(data))
 	if err != nil {
@@ -83,13 +82,12 @@ func signECDSA(privateKey string, data string) (ret []byte, err error) {
 	return
 }
 
-// TODO параметризировать, длина данных в зависимости от длины кривой
 // CheckECDSA checks if forSign has been signed with corresponding to public the private key
 func checkECDSA(public []byte, data string, signature []byte) (bool, error) {
 	if len(data) == 0 {
 		return false, fmt.Errorf("invalid parameters len(data) == 0")
 	}
-	if len(public) != 64 {
+	if len(public) != consts.PubkeySizeLength {
 		return false, fmt.Errorf("invalid parameters len(public) = %d", len(public))
 	}
 	if len(signature) == 0 {
@@ -111,8 +109,8 @@ func checkECDSA(public []byte, data string, signature []byte) (bool, error) {
 
 	pubkey := new(ecdsa.PublicKey)
 	pubkey.Curve = pubkeyCurve
-	pubkey.X = new(big.Int).SetBytes(public[0:32])
-	pubkey.Y = new(big.Int).SetBytes(public[32:])
+	pubkey.X = new(big.Int).SetBytes(public[0 : consts.PubkeySizeLength/2])
+	pubkey.Y = new(big.Int).SetBytes(public[consts.PubkeySizeLength/2:])
 	r, s, err := parseSign(hex.EncodeToString(signature))
 	if err != nil {
 		return false, err
@@ -126,44 +124,16 @@ func checkECDSA(public []byte, data string, signature []byte) (bool, error) {
 
 // parseSign converts the hex signature to r and s big number
 func parseSign(sign string) (*big.Int, *big.Int, error) {
-	var (
-		binSign []byte
-		err     error
-	)
-	//	var off int
-	parse := func(bsign []byte) []byte {
-		blen := int(bsign[1])
-		if blen > len(bsign)-2 {
-			return nil
-		}
-		ret := bsign[2 : 2+blen]
-		if len(ret) > 32 {
-			ret = ret[len(ret)-32:]
-		} else if len(ret) < 32 {
-			ret = append(bytes.Repeat([]byte{0}, 32-len(ret)), ret...)
-		}
-		return ret
-	}
-	if len(sign) > 128 {
-		binSign, err = hex.DecodeString(sign)
-		if err != nil {
-			return nil, nil, err
-		}
-		left := parse(binSign[2:])
-		if left == nil || int(binSign[3])+6 > len(binSign) {
-			return nil, nil, fmt.Errorf(`wrong left parsing`)
-		}
-		right := parse(binSign[4+binSign[3]:])
-		if right == nil {
-			return nil, nil, fmt.Errorf(`wrong right parsing`)
-		}
-		sign = hex.EncodeToString(append(left, right...))
-	} else if len(sign) < 128 {
+	var err error
+
+	if len(sign) != 128 {
 		return nil, nil, fmt.Errorf(`wrong len of signature %d`, len(sign))
 	}
+
 	all, err := hex.DecodeString(sign[:])
 	if err != nil {
 		return nil, nil, err
 	}
-	return new(big.Int).SetBytes(all[:32]), new(big.Int).SetBytes(all[len(all)-32:]), nil
+
+	return new(big.Int).SetBytes(all[:32]), new(big.Int).SetBytes(all[32:]), nil
 }

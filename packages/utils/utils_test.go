@@ -21,9 +21,11 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/shopspring/decimal"
-	"testing"
 )
 
 func TestInterface(t *testing.T) {
@@ -48,7 +50,7 @@ func TestEncrypt(t *testing.T) {
 
 	// encrypt
 
-	iv := []byte(RandSeq(aes.BlockSize))
+	iv := []byte(RandSeq(consts.BlockSize))
 	c, err := aes.NewCipher(password)
 	if err != nil {
 		t.Error(err)

@@ -132,7 +132,7 @@ func generateNextBlock(prevBlock *model.InfoBlock, trs []model.Transaction, key 
 	var mrklArray [][]byte
 	var blockDataTx []byte
 	for _, tr := range trs {
-		doubleHash, err := crypto.DoubleHash(tr.Data)
+		doubleHash, err := crypto.StrongHash(tr.Data)
 		if err != nil {
 			return nil, err
 		}

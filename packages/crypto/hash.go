@@ -2,6 +2,8 @@ package crypto
 
 import (
 	"crypto/sha256"
+
+	"golang.org/x/crypto/sha3"
 )
 
 type hashProvider int
@@ -22,16 +24,11 @@ func Hash(msg []byte) ([]byte, error) {
 	}
 }
 
-func DoubleHash(msg []byte) ([]byte, error) {
+func StrongHash(msg []byte) ([]byte, error) {
 	if len(msg) == 0 {
 		log.Debug(HashingEmpty.Error())
 	}
-	switch hashProv {
-	case _SHA256:
-		return hashDoubleSHA256(msg), nil
-	default:
-		return nil, UnknownProviderError
-	}
+	return hashSHA3256(msg), nil
 }
 
 func hashSHA256(msg []byte) []byte {
@@ -48,4 +45,10 @@ func hashDoubleSHA256(msg []byte) []byte {
 	firstHash := sha256.Sum256(msg)
 	secondHash := sha256.Sum256(firstHash[:])
 	return secondHash[:]
+}
+
+func hashSHA3256(msg []byte) []byte {
+	hash := make([]byte, 64)
+	sha3.ShakeSum256(hash, msg)
+	return hash
 }

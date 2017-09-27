@@ -306,7 +306,7 @@ func (p *Parser) GetBlockInfo() *utils.BlockData {
 }
 
 func (p *Parser) dataPre() {
-	hash, err := crypto.DoubleHash(p.BinaryData)
+	hash, err := crypto.StrongHash(p.BinaryData)
 	if err != nil {
 		log.Fatal(err)
 	}

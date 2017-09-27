@@ -18,10 +18,10 @@ package lib
 
 import (
 	"bytes"
-	"crypto/aes"
 	"math/rand"
 	"testing"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/test"
 )
 
@@ -40,7 +40,7 @@ func TestPKCS7(t *testing.T) {
 
 func TestCBCEncrypt(t *testing.T) {
 	for i := 0; i < 50; i++ {
-		key, _ := test.RandBytes(aes.BlockSize * (1 + rand.Intn(2)))
+		key, _ := test.RandBytes(consts.BlockSize * (1 + rand.Intn(2)))
 		size := 1 + rand.Intn(1024)
 		src, _ := test.RandBytes(size)
 		enc, err := CBCEncrypt(key, src, nil)

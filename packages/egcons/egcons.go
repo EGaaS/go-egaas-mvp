@@ -18,7 +18,6 @@ package main
 
 import (
 	"bufio"
-	"crypto/aes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -30,6 +29,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/consts"
 	"github.com/EGaaS/go-egaas-mvp/packages/lib"
 	"github.com/EGaaS/go-egaas-mvp/packages/utils"
 
@@ -102,12 +102,12 @@ func checkKey() bool {
 		}
 		gSettings.Address = lib.Address(lib.PrivateToPublic(privKey))
 		hash := sha256.Sum256(pass)
-		privKey, err = lib.CBCEncrypt(hash[:], privKey, make([]byte, aes.BlockSize))
+		privKey, err = lib.CBCEncrypt(hash[:], privKey, make([]byte, consts.BlockSize))
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		gSettings.Key = hex.EncodeToString(privKey[aes.BlockSize:])
+		gSettings.Key = hex.EncodeToString(privKey[consts.BlockSize:])
 	}
 	if privKey, err = hex.DecodeString(gSettings.Key); err != nil {
 		fmt.Println(err)
@@ -124,7 +124,7 @@ func checkKey() bool {
 		}
 		hash := sha256.Sum256(pass)
 		pass = pass[:0]
-		gPrivate, err = lib.CBCDecrypt(hash[:], privKey, make([]byte, aes.BlockSize))
+		gPrivate, err = lib.CBCDecrypt(hash[:], privKey, make([]byte, consts.BlockSize))
 		if err != nil {
 			fmt.Println(err)
 			continue

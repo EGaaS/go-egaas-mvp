@@ -36,7 +36,7 @@ func (p *Parser) UpdBlockInfo() {
 	}
 	forSha := fmt.Sprintf("%d,%s,%s,%d,%d,%d", blockID, p.PrevBlock.Hash, p.MrklRoot, p.BlockData.Time, p.BlockData.WalletID, p.BlockData.StateID)
 	log.Debug("forSha", forSha)
-	hash, err := crypto.DoubleHash([]byte(forSha))
+	hash, err := crypto.StrongHash([]byte(forSha))
 	if err != nil {
 		log.Fatal(err)
 	}
