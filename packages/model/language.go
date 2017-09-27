@@ -30,6 +30,18 @@ func (l *Language) GetAll(prefix string) ([]Language, error) {
 	return *result, err
 }
 
+func (l *Language) GetAllLimitOffset(prefix string, limit, offset int64) ([]Language, error) {
+	result := new([]Language)
+	err := DBConn.Table(prefix + "_languages").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
+func (l *Language) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_languages").Count(&count).Error
+	return count, err
+}
+
 func CreateLanguagesStateTable(stateID string) error {
 	return DBConn.Exec(`CREATE TABLE "` + stateID + `_languages" (
 				"name" varchar(100)  NOT NULL DEFAULT '',

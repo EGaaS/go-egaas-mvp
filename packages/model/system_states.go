@@ -31,6 +31,12 @@ func (ss *SystemState) GetCount() (int64, error) {
 	return count, err
 }
 
+func (ss *SystemState) GetAllLimitOffset(limit, offset int64) ([]SystemState, error) {
+	result := new([]SystemState)
+	err := DBConn.Table("system_states").Order("id desc").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
 func (ss *SystemState) GetLast() (bool, error) {
 	last := DBConn.Last(ss)
 	if last.RecordNotFound() {

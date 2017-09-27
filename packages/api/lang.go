@@ -37,11 +37,11 @@ type langListResult struct {
 
 func getLang(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	prefix := getPrefix(data)
-	lang := &Language{}
+	lang := &model.Language{}
 	lang.SetTablePrefix(prefix)
-	found, err := lang.Get(data.params["name"])
+	found, err := lang.Get(data.params["name"].(string))
 	if !found {
-		return errorAPI(w, err.Error(), http.StatusNotFound)
+		return errorAPI(w, fmt.Sprintf("Lang not found %s", data.params["name"].(string)), http.StatusNotFound)
 	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
@@ -94,7 +94,7 @@ func txLang(w http.ResponseWriter, r *http.Request, data *apiData) error {
 }
 
 func langList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
@@ -108,7 +108,7 @@ func langList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	}
 
 	langList := &model.Language{}
-	list, err := langList.GetAllLimitOffset(getPrefix(data), limit, offset)
+	list, err := langList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -116,6 +116,6 @@ func langList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	for _, val := range list {
 		outList = append(outList, langResult{Name: val.Name, Trans: val.Res})
 	}
-	data.result = &langListResult{Count: count, List: outList}
+	data.result = &langListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }

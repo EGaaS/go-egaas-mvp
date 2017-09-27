@@ -26,10 +26,22 @@ func (m *Menu) Create() error {
 	return DBConn.Create(m).Error
 }
 
+func (m *Menu) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_menu").Count(&count).Error
+	return count, err
+}
+
 func (m *Menu) GetAll(prefix string) ([]Menu, error) {
 	result := make([]Menu, 0)
 	err := DBConn.Table(prefix + "_menu").Order("name").Find(&result).Error
 	return result, err
+}
+
+func (l *Menu) GetAllLimitOffset(prefix string, limit, offset int64) ([]Menu, error) {
+	result := new([]Menu)
+	err := DBConn.Table(prefix + "_menu").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
 }
 
 func (m *Menu) ToMap() map[string]string {

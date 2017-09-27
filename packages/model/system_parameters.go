@@ -40,6 +40,12 @@ func GetAllSystemParameters() ([]SystemParameter, error) {
 	return *parameters, nil
 }
 
+func GetAllSystemParametersNameIn(names []string) ([]SystemParameter, error) {
+	parameters := new([]SystemParameter)
+	err := DBConn.Table("system_parameters").Where("name in (?)", names).Find(&parameters).Error
+	return *parameters, err
+}
+
 func (sp *SystemParameter) ToMap() map[string]string {
 	result := make(map[string]string, 0)
 	result["name"] = sp.Name

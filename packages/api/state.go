@@ -49,13 +49,16 @@ type stateListResult struct {
 }
 
 func getStateParams(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	dataPar, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_state_parameters" WHERE name = ?`,
-		data.params[`name`].(string)).String()
+	sp := &model.StateParameter{}
+	sp.SetTablePrefix(getPrefix(data))
+	found, err := sp.GetByName(data.params["name"].(string))
+	if !found {
+		return errorAPI(w, fmt.Sprintf("State parameter not found %s", data.params["name"].(string)), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &stateParamResult{Name: dataPar["name"], Value: dataPar["value"], Conditions: dataPar["conditions"]}
+	data.result = &stateParamResult{Name: sp.Name, Value: sp.Value, Conditions: sp.Conditions}
 	return nil
 }
 
@@ -147,72 +150,72 @@ func txStateParams(w http.ResponseWriter, r *http.Request, data *apiData) error 
 }
 
 func stateParamsList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
 	outList := make([]stateParamResult, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_state_parameters"`).String()
+	sp := &model.StateParameter{}
+	count, err := sp.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT * FROM "`+getPrefix(data)+`_state_parameters" order by name`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	spList := &model.StateParameter{}
+	list, err := spList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
-		outList = append(outList, stateParamResult{Name: val[`name`], Value: val[`value`],
-			Conditions: val[`conditions`]})
+		outList = append(outList, stateParamResult{Name: val.Name, Value: val.Value,
+			Conditions: val.Conditions})
 	}
-	data.result = &stateParamListResult{Count: count, List: outList}
+	data.result = &stateParamListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }
 
 func stateList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
-	count, err := model.Single(`SELECT count(*) FROM system_states`).String()
+	ssCount := &model.SystemState{}
+	count, err := ssCount.GetCount()
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	idata, err := model.GetList(`SELECT id FROM system_states order by id desc` +
-		fmt.Sprintf(` offset %d limit %d`, data.params[`offset`].(int64), limit)).String()
+	ssList := &model.SystemState{}
+	idata, err := ssList.GetAllLimitOffset(limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 	outList := make([]stateItem, 0)
-	for _, id := range idata {
-		if !model.IsNodeState(converter.StrToInt64(id), r.Host) {
+	for _, val := range idata {
+		if !model.IsNodeState(val.ID, r.Host) {
 			continue
 		}
-		list, err := model.GetAll(fmt.Sprintf(`SELECT name, value FROM "%s_state_parameters" WHERE name in ('state_name','state_flag', 'state_coords')`,
-			id), -1)
+		list, err := model.GetAllSystemParametersNameIn([]string{"state_name", "state_flag", "state_coords"})
 		if err != nil {
 			return errorAPI(w, err.Error(), http.StatusInternalServerError)
 		}
-		item := stateItem{ID: id}
+		item := stateItem{ID: converter.Int64ToStr(val.ID)}
 		for _, val := range list {
-			switch val[`name`] {
+			switch val.Name {
 			case `state_name`:
-				item.Name = val[`value`]
+				item.Name = val.Value
 			case `state_flag`:
-				item.Logo = val[`value`]
+				item.Logo = val.Value
 			case `state_coords`:
-				item.Coords = val[`value`]
+				item.Coords = val.Value
 			}
 		}
 		outList = append(outList, item)
 	}
-	data.result = &stateListResult{Count: count, List: outList}
+	data.result = &stateListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }

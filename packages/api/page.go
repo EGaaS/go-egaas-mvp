@@ -43,14 +43,17 @@ type pageListResult struct {
 }
 
 func getPage(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	dataPage, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_pages" WHERE name = ?`,
-		data.params[`name`].(string)).String()
+	page := &model.Page{}
+	page.SetTablePrefix(getPrefix(data))
+	found, err := page.Get(data.params["name"].(string))
+	if !found {
+		return errorAPI(w, fmt.Sprintf("Page not found %s", data.params["name"].(string)), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &pageResult{Name: dataPage["name"], Menu: dataPage["menu"],
-		Value: dataPage["value"], Conditions: dataPage["conditions"]}
+	data.result = &pageResult{Name: page.Name, Menu: page.Menu,
+		Value: string(page.Value), Conditions: page.Conditions}
 	return nil
 }
 
@@ -122,28 +125,29 @@ func txPage(w http.ResponseWriter, r *http.Request, data *apiData) error {
 
 func pageList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
 	outList := make([]pageItem, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_pages"`).String()
+	pageCount := &model.Page{}
+	count, err := pageCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT name, menu FROM "`+getPrefix(data)+`_pages" order by name`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	pageList := &model.Page{}
+	list, err := pageList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
-		outList = append(outList, pageItem{Name: val[`name`], Menu: val[`menu`]})
+		outList = append(outList, pageItem{Name: val.Name, Menu: val.Menu})
 	}
-	data.result = &pageListResult{Count: count, List: outList}
+	data.result = &pageListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }
 

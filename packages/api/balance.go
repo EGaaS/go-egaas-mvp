@@ -34,7 +34,7 @@ func balance(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	if wallet == 0 {
 		return errorAPI(w, fmt.Sprintf(`Wallet %s is invalid`, data.params[`wallet`].(string)), http.StatusBadRequest)
 	}
-	dltWallet := &DltWallet{}
+	dltWallet := &model.DltWallet{}
 	found, err := dltWallet.Get(wallet)
 	if !found {
 		return errorAPI(w, fmt.Sprintf(`Wallet %s not found`, data.params[`wallet`].(string)), http.StatusNotFound)
@@ -42,6 +42,6 @@ func balance(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &balanceResult{Amount: dltWallet.Amount, EGS: converter.EGSMoney(total)}
+	data.result = &balanceResult{Amount: dltWallet.Amount, EGS: converter.EGSMoney(dltWallet.Amount)}
 	return nil
 }

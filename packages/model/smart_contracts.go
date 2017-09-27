@@ -62,6 +62,18 @@ func GetAllSmartContracts(tablePrefix string) ([]SmartContract, error) {
 	return *contracts, nil
 }
 
+func (sc *SmartContract) GetAllLimitOffset(prefix string, limit, offset int64) ([]SmartContract, error) {
+	result := new([]SmartContract)
+	err := DBConn.Table(prefix + "_smart_contracts").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
+func (sc *SmartContract) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_smart_contracts").Count(&count).Error
+	return count, err
+}
+
 func CreateSmartContractTable(id string) error {
 	return DBConn.Exec(`CREATE SEQUENCE "` + id + `_smart_contracts_id_seq" START WITH 1;
 				CREATE TABLE "` + id + `_smart_contracts" (
