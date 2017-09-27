@@ -51,6 +51,11 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 			return "", utils.ErrInfo(err)
 		}
 	}
+
+	if err != nil {
+		return "", err
+	}
+
 	params := make(map[string]string)
 	params[`state_id`] = c.StateIDStr
 	params[`accept_lang`] = c.r.Header.Get(`Accept-Language`)
@@ -59,5 +64,4 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 			`<!--#` + page.Menu + `#-->`
 	}
 	return menu.Value, nil
-
 }

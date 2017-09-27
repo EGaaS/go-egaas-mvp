@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	log = logging.MustGetLogger("daemons")
+	log = logging.MustGetLogger("parser")
 )
 
 // GetTxTypeAndUserID returns tx type, wallet and citizen id from the block data
@@ -76,7 +76,6 @@ func GetNodePublicKeyWalletOrCB(walletID, stateID int64) ([]byte, error) {
 	var result []byte
 	var err error
 	if walletID != 0 {
-		log.Debug("wallet_id %v state_id %v", walletID, stateID)
 		wallet := &model.DltWallet{}
 		_, err = wallet.Get(walletID)
 		if err != nil {
@@ -102,7 +101,6 @@ func InsertInLogTx(binaryTx []byte, time int64) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//txHash = converter.BinToHex(txHash)
 	ltx := &model.LogTransaction{Hash: txHash, Time: time}
 	err = ltx.Create()
 	if err != nil {
@@ -285,14 +283,13 @@ type Parser struct {
 	TxCost           int64           // Maximum cost of executing contract
 	TxUsedCost       decimal.Decimal // Used cost of CPU resources
 	nodePublicKey    []byte
-	//	newPublicKeysHex [3][]byte
-	TxPtr      interface{} // Pointer to the corresponding struct in consts/struct.go
-	TxData     map[string]interface{}
-	TxSmart    *tx.SmartContract
-	TxContract *smart.Contract
-	TxVars     map[string]string
-	AllPkeys   map[string]string
-	States     map[int64]string
+	TxPtr            interface{} // Pointer to the corresponding struct in consts/struct.go
+	TxData           map[string]interface{}
+	TxSmart          *tx.SmartContract
+	TxContract       *smart.Contract
+	TxVars           map[string]string
+	AllPkeys         map[string]string
+	States           map[int64]string
 }
 
 // ClearTmp deletes temporary files
@@ -315,16 +312,13 @@ func (p *Parser) dataPre() {
 	p.blockHash = hash
 
 	p.blockData = p.BinaryData
-	// определим тип данных
-	// define the data type
+	// get the data type
 	p.dataType = int(converter.BinToDec(converter.BytesShift(&p.BinaryData, 1)))
 	log.Debug("dataType", p.dataType)
 }
 
 // CheckLogTx checks if this transaction exists
-// Это защита от dos, когда одну транзакцию можно было бы послать миллион раз,
-// This is protection against dos, when one transaction could be sent a million times
-// и она каждый раз успешно проходила бы фронтальную проверку
+// This is protection against ddos, when one transaction could be sent a million times
 // And it would have successfully passed a frontal test
 func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	searchedHash, err := crypto.Hash(txBinary)
@@ -334,21 +328,20 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	logTx := &model.LogTransaction{}
 	found, err := logTx.GetByHash(searchedHash)
 	if err != nil {
-		log.Error("%s", utils.ErrInfo(err))
+		log.Error("get transaction from log error: %s", utils.ErrInfo(err))
 		return utils.ErrInfo(err)
 	}
-	log.Debug("hash %x", logTx.Hash)
+
 	if found {
 		return utils.ErrInfo(fmt.Errorf("double tx in log_transactions %x", searchedHash))
 	}
 
 	if transactions {
-		// проверим, нет ли у нас такой тр-ии
 		// check whether we have such a transaction
 		tx := &model.Transaction{}
 		found, err := tx.GetVerified(searchedHash)
 		if err != nil {
-			log.Error("%s", utils.ErrInfo(err))
+			log.Error("get verified transaction error: %s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
 		if found {
@@ -357,15 +350,14 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	}
 
 	if txQueue {
-		// проверим, нет ли у нас такой тр-ии
-		// check whether we have such a transaction
+		// check whether we have such a transaction in transaction queue
 		qtx := &model.QueueTx{}
 		found, err := qtx.GetByHash(searchedHash)
 		if found {
 			return utils.ErrInfo(fmt.Errorf("double tx in queue_tx %x", searchedHash))
 		}
 		if err != nil {
-			log.Error("%s", utils.ErrInfo(err))
+			log.Error("get from transaction queue error: %s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
 	}
@@ -375,7 +367,6 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 
 // GetInfoBlock returns the latest block
 func (p *Parser) GetInfoBlock() error {
-	// последний успешно записанный блок
 	// the last successfully recorded block
 	p.PrevBlock = new(utils.BlockData)
 	ib := &model.InfoBlock{}
@@ -391,17 +382,14 @@ func (p *Parser) GetInfoBlock() error {
 
 // InsertIntoBlockchain inserts a block into the blockchain
 func (p *Parser) InsertIntoBlockchain() error {
-	//var mutex = &sync.Mutex{}
-	// для локальных тестов
-	// for local tests
+
 	if p.BlockData.BlockID == 1 {
+		// for tests
 		if *utils.StartBlockID != 0 {
 			p.BlockData.BlockID = *utils.StartBlockID
 		}
 	}
-	//mutex.Lock()
-	// пишем в цепочку блоков
-	// record into the block chain
+
 	block := &model.Block{}
 	err := block.DeleteById(p.BlockData.BlockID)
 	if err != nil {
@@ -427,7 +415,6 @@ func (p *Parser) InsertIntoBlockchain() error {
 func (p *Parser) CheckInputData(data map[string][]interface{}) error {
 	for k, list := range data {
 		for _, v := range list {
-			fmt.Println("v==", v, k)
 			if !utils.CheckInputData(v, k) {
 				return fmt.Errorf("incorrect %s: %s", v, k)
 			}
@@ -491,8 +478,7 @@ func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
 	if walletID == 0 {
 		walletID = p.TxCitizenID
 	}
-	// получим сумму на кошельке юзера
-	// recieve the amount on the user's wallet
+
 	wallet := &model.DltWallet{}
 	_, err := wallet.Get(walletID)
 	if err != nil {
@@ -558,8 +544,8 @@ func (p *Parser) AccessTable(table, action string) error {
 	}
 
 	if isCustom, err := IsCustomTable(table); err != nil {
-		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать
-		// table != ... is left for compatibility temporarily. Remove new_state after rebuilding.
+		return err
+		// TODO: table != ... is left for compatibility temporarily. Remove it
 	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
 		return fmt.Errorf(table + ` is not a custom table`)
 	}
@@ -585,7 +571,7 @@ func (p *Parser) AccessTable(table, action string) error {
 // AccessColumns checks access rights to the columns
 func (p *Parser) AccessColumns(table string, columns []string) error {
 	if isCustom, err := IsCustomTable(table); err != nil {
-		return err // table != ... временно оставлено для совместимости. После переделки new_state убрать // table != ... is left for compatibility temporarily. Remove new_state after rebuilding
+		return err // table != ... is left for compatibility temporarily. Remove if after new_state refactoring
 	} else if !isCustom && !strings.HasSuffix(table, `_citizenship_requests`) {
 		return fmt.Errorf(table + ` is not a custom table`)
 	}
@@ -709,12 +695,12 @@ func (p *Parser) payFPrice() error {
 		fromID int64
 		err    error
 	)
-	//return nil
+
 	toID := p.BlockData.WalletID // account of node
 	systemParam := &model.SystemParameter{}
 	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
-		log.Fatalf("can't get fuel_rate: %s", err)
+		return fmt.Errorf("can't get fuel_rate: %s", err)
 	}
 	fuel, err := decimal.NewFromString(systemParam.Value)
 	if err != nil {
@@ -734,13 +720,12 @@ func (p *Parser) payFPrice() error {
 			//fromID = p.TxContract.TxGovAccount
 			fromID = converter.StrToInt64(StateVal(p, `gov_account`))
 		} else {
-			// списываем напрямую с dlt_wallets у юзера
 			// write directly from dlt_wallets of user
 			fromID = p.TxWalletID
 		}
 	}
 	egs := p.TxUsedCost.Mul(fuel)
-	fmt.Printf("Pay fuel=%v fromID=%d toID=%d cost=%v egs=%v", fuel, fromID, toID, p.TxUsedCost, egs)
+	log.Infof("Pay fuel=%v fromID=%d toID=%d cost=%v egs=%v", fuel, fromID, toID, p.TxUsedCost, egs)
 	if egs.Cmp(decimal.New(0, 0)) == 0 { // Is it possible to pay nothing?
 		return nil
 	}
@@ -769,10 +754,6 @@ func (p *Parser) payFPrice() error {
 		[]string{converter.Int64ToStr(syspar.GetCommissionWallet())}, true); err != nil {
 		return err
 	}
-	fmt.Printf(" Paid commission %v\r\n", commission)
+	log.Infof(" Paid commission %v", commission)
 	return nil
-}
-
-func (p *Parser) UpdDaemonTime(goroutineName string) {
-	// TODO:
 }
