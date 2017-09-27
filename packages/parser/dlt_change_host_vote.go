@@ -57,7 +57,7 @@ func (p *DLTChangeHostVoteParser) Validate() error {
 
 	// public key need only when we don't have public_key in the dlt_wallets table
 	dltW := &model.DltWallet{}
-	err = dltW.GetWallet(p.TxWalletID)
+	_, err = dltW.Get(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

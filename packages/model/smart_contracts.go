@@ -2,8 +2,6 @@ package model
 
 import (
 	"strconv"
-
-	"github.com/jinzhu/gorm"
 )
 
 type SmartContract struct {
@@ -30,28 +28,12 @@ func (sc *SmartContract) Create() error {
 	return DBConn.Create(sc).Error
 }
 
-func (sc *SmartContract) GetByID(contractID int64) error {
-	return DBConn.Where("id = ?", contractID).Find(sc).Error
+func (sc *SmartContract) GetByID(contractID int64) (bool, error) {
+	return isFound(DBConn.Where("id = ?", contractID).Find(sc))
 }
 
-func (sc *SmartContract) ExistsByID(contractID int64) (bool, error) {
-	query := DBConn.Where("id = ?", contractID).First(sc)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
-}
-
-func (sc *SmartContract) ExistsByName(name string) (bool, error) {
-	query := DBConn.Where("name = ?", name).First(sc)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
-}
-
-func (sc *SmartContract) GetByName(contractName string) error {
-	return DBConn.Where("name = ?", contractName).Find(sc).Error
+func (sc *SmartContract) GetByName(contractName string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", contractName).Find(sc))
 }
 
 func (sc *SmartContract) UpdateConditions(conditions string) error {
@@ -78,6 +60,18 @@ func GetAllSmartContracts(tablePrefix string) ([]SmartContract, error) {
 		return nil, err
 	}
 	return *contracts, nil
+}
+
+func (sc *SmartContract) GetAllLimitOffset(prefix string, limit, offset int64) ([]SmartContract, error) {
+	result := new([]SmartContract)
+	err := DBConn.Table(prefix + "_smart_contracts").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
+func (sc *SmartContract) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_smart_contracts").Count(&count).Error
+	return count, err
 }
 
 func CreateSmartContractTable(id string) error {

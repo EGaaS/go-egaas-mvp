@@ -179,7 +179,7 @@ func updateChain(ctx context.Context, d *daemon, host string, maxBlockID int64) 
 
 	// get current block id from our blockchain
 	curBlock := &model.InfoBlock{}
-	if err = curBlock.GetInfoBlock(); err != nil {
+	if _, err = curBlock.Get(); err != nil {
 		return err
 	}
 
@@ -346,14 +346,14 @@ func checkHash(header utils.BlockData, body []byte, prevHash []byte) (bool, erro
 	var nodePublicKey []byte
 	if header.WalletID != 0 {
 		wallet := &model.DltWallet{}
-		err = wallet.GetWallet(header.WalletID)
+		_, err = wallet.Get(header.WalletID)
 		if err != nil {
 			return true, err
 		}
 		nodePublicKey = []byte(wallet.PublicKey)
 	} else {
 		systemState := &model.SystemRecognizedState{}
-		err = systemState.GetState(header.StateID)
+		_, err = systemState.GetState(header.StateID)
 		if err != nil {
 			return true, err
 		}
@@ -382,7 +382,7 @@ func firstLoad(ctx context.Context, d *daemon, parser *parser.Parser) error {
 	defer DbUnlock(d.goRoutineName)
 
 	nodeConfig := &model.Config{}
-	err = nodeConfig.GetConfig()
+	_, err = nodeConfig.Get()
 	if err != nil {
 		return err
 	}
@@ -413,7 +413,7 @@ func firstLoad(ctx context.Context, d *daemon, parser *parser.Parser) error {
 
 func needLoad() (bool, error) {
 	infoBlock := &model.InfoBlock{}
-	err := infoBlock.GetInfoBlock()
+	_, err := infoBlock.Get()
 	if err != nil {
 		return false, err
 	}
@@ -426,7 +426,7 @@ func needLoad() (bool, error) {
 func getBlockHash(blockID int64) (string, error) {
 	if blockID > 1 {
 		block := &model.Block{}
-		err := block.GetBlock(blockID)
+		_, err := block.Get(blockID)
 		if err != nil {
 			return "", err
 		}

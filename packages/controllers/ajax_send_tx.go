@@ -55,7 +55,7 @@ func (c *Controller) AjaxSendTx() interface{} {
 			result.Error = err.Error()
 		}
 		wallet := &model.DltWallet{}
-		err = wallet.GetWallet(c.SessWalletID)
+		_, err = wallet.Get(c.SessWalletID)
 
 		if err == nil && len(signature) > 0 && len(wallet.PublicKey) == 0 {
 			public, _ := hex.DecodeString(c.r.FormValue(`public`))

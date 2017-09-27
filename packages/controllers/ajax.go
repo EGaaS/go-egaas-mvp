@@ -84,7 +84,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 	if sessStateID > 0 {
 		stateParameter := &model.StateParameter{}
 		stateParameter.SetTablePrefix(converter.Int64ToStr(sessStateID))
-		err := stateParameter.GetByName("state_name")
+		_, err := stateParameter.GetByName("state_name")
 		if err != nil {
 			log.Error("%v", err)
 		}
@@ -109,7 +109,7 @@ func Ajax(w http.ResponseWriter, r *http.Request) {
 
 	if dbInit {
 		nodeConfig := &model.Config{}
-		err := nodeConfig.GetConfig()
+		_, err := nodeConfig.Get()
 		if err != nil {
 			log.Error("%v", err)
 		}

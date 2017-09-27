@@ -42,7 +42,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 	defer DbUnlock(d.goRoutineName)
 
 	config := &model.Config{}
-	if err = config.GetConfig(); err != nil {
+	if _, err = config.Get(); err != nil {
 		return err
 	}
 
@@ -58,7 +58,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 	}
 
 	fullNodes := &model.FullNode{}
-	err = fullNodes.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
+	_, err = fullNodes.FindNode(config.StateID, config.DltWalletID, config.StateID, config.DltWalletID)
 	if err != nil || fullNodes.ID == 0 {
 		// we are not full node and can't generate new blocks
 		d.sleepTime = 10 * time.Second
@@ -67,7 +67,7 @@ func BlockGenerator(d *daemon, ctx context.Context) error {
 	}
 
 	prevBlock := &model.InfoBlock{}
-	err = prevBlock.GetInfoBlock()
+	_, err = prevBlock.Get()
 	if err != nil {
 		log.Errorf("can't get block: %s", err)
 		return err

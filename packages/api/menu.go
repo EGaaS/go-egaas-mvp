@@ -41,13 +41,16 @@ type menuListResult struct {
 }
 
 func getMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	dataMenu, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_menu" WHERE name = ?`,
-		data.params[`name`].(string)).String()
+	menu := &model.Menu{}
+	menu.SetTablePrefix(getPrefix(data))
+	found, err := menu.Get(data.params["name"].(string))
+	if !found {
+		return errorAPI(w, fmt.Sprintf("Menu not found %s", data.params["name"].(string)), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &menuResult{Name: dataMenu["name"], Value: dataMenu["value"], Conditions: dataMenu["conditions"]}
+	data.result = &menuResult{Name: menu.Name, Value: menu.Value, Conditions: menu.Conditions}
 	return nil
 }
 
@@ -113,29 +116,28 @@ func txMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
 }
 
 func menuList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
 	outList := make([]menuItem, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_menu"`).String()
+	menuCount := &model.Menu{}
+	count, err := menuCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT name FROM "`+getPrefix(data)+`_menu" order by name`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	menuList := &model.Menu{}
+	list, err := menuList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-
 	for _, val := range list {
-		outList = append(outList, menuItem{Name: val[`name`]})
+		outList = append(outList, menuItem{Name: val.Name})
 	}
-	data.result = &menuListResult{Count: count, List: outList}
+	data.result = &menuListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }
 

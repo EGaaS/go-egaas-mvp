@@ -43,7 +43,7 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 	defer DbUnlock(d.goRoutineName)
 
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	_, err = infoBlock.Get()
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 	}
 
 	nodeConfig := &model.Config{}
-	err = nodeConfig.GetConfig()
+	_, err = nodeConfig.Get()
 	if err != nil {
 		return err
 
@@ -64,7 +64,7 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 
 	// If we are in the list of those who are able to generate the blocks
 	fullNode := &model.FullNode{}
-	err = fullNode.FindNode(myStateID, myWalletID, myStateID, myWalletID)
+	_, err = fullNode.FindNode(myStateID, myWalletID, myStateID, myWalletID)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func UpdFullNodes(d *daemon, ctx context.Context) error {
 
 	// check if the time of the last updating passed
 	updFn := &model.UpdFullNode{}
-	err = updFn.Read()
+	_, err = updFn.Read()
 	if err != nil {
 		return err
 	}

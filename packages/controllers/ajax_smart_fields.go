@@ -56,9 +56,9 @@ func (c *Controller) AjaxSmartFields() interface{} {
 		return result
 	}
 
-	citizen := &model.Citizen{ID: c.SessWalletID}
+	citizen := &model.Citizen{}
 	citizen.SetTablePrefix(stateStr)
-	if exist, err := citizen.IsExists(); err != nil {
+	if exist, err := citizen.Get(c.SessWalletID); err != nil {
 		result.Error = err.Error()
 		return result
 	} else if exist == true {
@@ -101,11 +101,11 @@ func (c *Controller) AjaxSmartFields() interface{} {
 				if err == nil {
 					stateParameter := &model.StateParameter{}
 					stateParameter.SetTablePrefix(stateStr)
-					err := stateParameter.GetByName("citizenship_price")
+					_, err := stateParameter.GetByName("citizenship_price")
 					if err == nil {
 						result.Price, _ = strconv.ParseInt(stateParameter.Value, 10, 64)
 						dltWallet := &model.DltWallet{}
-						err = dltWallet.GetWallet(c.SessWalletID)
+						_, err = dltWallet.Get(c.SessWalletID)
 						dPrice, _ := decimal.NewFromString(stateParameter.Value)
 						wltAmount, err := decimal.NewFromString(dltWallet.Amount)
 						if err == nil {

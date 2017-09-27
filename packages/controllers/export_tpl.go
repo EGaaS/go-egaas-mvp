@@ -297,7 +297,7 @@ func (c *Controller) ExportTpl() (string, error) {
 								}
 								sign := &model.Signature{}
 								sign.SetTablePrefix(pref)
-								err := sign.Get(ret[1])
+								_, err := sign.Get(ret[1])
 								if err != nil {
 									break
 								}

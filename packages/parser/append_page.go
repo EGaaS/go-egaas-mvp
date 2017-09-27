@@ -68,7 +68,7 @@ func (p *AppendPageParser) Action() error {
 	log.Debug("value page", p.AppendPage.Value)
 	page := &model.Page{}
 	page.SetTablePrefix(prefix)
-	err = page.Get(p.AppendPage.Name)
+	_, err = page.Get(p.AppendPage.Name)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

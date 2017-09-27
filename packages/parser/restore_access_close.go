@@ -47,7 +47,7 @@ func (p *RestoreAccessCloseParser) Validate() error {
 
 	// check whether or not already close
 	restoreAccess := &model.SystemRestoreAccess{}
-	err = restoreAccess.Get(p.RestoreAccessClose.StateID)
+	_, err = restoreAccess.Get(p.RestoreAccessClose.StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

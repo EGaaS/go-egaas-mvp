@@ -84,9 +84,9 @@ func (c *Controller) EditContract() (string, error) {
 			smartContract := &model.SmartContract{}
 			smartContract.SetTablePrefix(prefix)
 			if id != 0 {
-				err = smartContract.GetByID(id)
+				_, err = smartContract.GetByID(id)
 			} else {
-				err = smartContract.GetByName(name)
+				_, err = smartContract.GetByName(name)
 			}
 			if err != nil {
 				return "", utils.ErrInfo(err)
@@ -100,7 +100,7 @@ func (c *Controller) EditContract() (string, error) {
 			rbID = smartContract.RbID
 		} else {
 			rollback := &model.Rollback{}
-			err = rollback.Get(rbID)
+			_, err = rollback.Get(rbID)
 			if err != nil {
 				return "", utils.ErrInfo(err)
 			}

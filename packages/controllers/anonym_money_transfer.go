@@ -53,7 +53,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 		return "", utils.ErrInfo(err)
 	}
 
-	err = systemParameters.Get("fuel_rate")
+	_, err = systemParameters.Get("fuel_rate")
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}
@@ -67,7 +67,7 @@ func (c *Controller) AnonymMoneyTransfer() (string, error) {
 
 	log.Debug("sessCitizenID %d SessWalletID %d SessStateID %d", c.SessCitizenID, c.SessWalletID, c.SessStateID)
 	dltWallet := &model.DltWallet{}
-	err = dltWallet.GetWallet(c.SessWalletID)
+	_, err = dltWallet.Get(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

@@ -47,7 +47,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 
 	// check last blocks, but not more than 5
 	confirmations := &model.Confirmation{}
-	err := confirmations.GetGoodBlock(consts.MIN_CONFIRMED_NODES)
+	_, err := confirmations.GetGoodBlock(consts.MIN_CONFIRMED_NODES)
 	if err != nil {
 		log.Error("get good block error: %s", err)
 		return err
@@ -55,7 +55,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 
 	ConfirmedBlockID := confirmations.BlockID
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	_, err = infoBlock.Get()
 	if err != nil {
 		log.Error("get info_block error: %v", err)
 		return err
@@ -84,7 +84,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 		log.Debug("blockID for confirmation: %d", blockID)
 
 		block := model.Block{}
-		err := block.GetBlock(blockID)
+		_, err := block.Get(blockID)
 		if err != nil {
 			log.Error("get block error: %v", err)
 			return err
@@ -129,7 +129,7 @@ func Confirmations(d *daemon, ctx context.Context) error {
 			log.Info("st0 %v  st1 %v", st0, st1)
 		}
 		confirmation := &model.Confirmation{}
-		err = confirmation.GetConfirmation(blockID)
+		_, err = confirmation.GetConfirmation(blockID)
 		if err == nil {
 			log.Debug("UPDATE confirmations SET good = %v, bad = %v, time = %v WHERE block_id = %v", st1, st0, time.Now().Unix(), blockID)
 			confirmation.BlockID = blockID

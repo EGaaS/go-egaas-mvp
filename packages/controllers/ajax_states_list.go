@@ -38,7 +38,7 @@ func (c *Controller) AjaxStatesList() (string, error) {
 	stateParameter := &model.StateParameter{}
 	query := func(id int64, name string) (string, error) {
 		stateParameter.SetTablePrefix(converter.Int64ToStr(id))
-		err = stateParameter.GetByName(name)
+		_, err = stateParameter.GetByName(name)
 		return stateParameter.Value, err
 	}
 	for _, id := range statesList {

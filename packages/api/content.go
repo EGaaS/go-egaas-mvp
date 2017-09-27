@@ -17,6 +17,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
@@ -52,9 +53,13 @@ func contentPage(w http.ResponseWriter, r *http.Request, data *apiData) error {
 }
 
 func contentMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
 	prefix := getPrefix(data)
-	menu, err := model.Single(`SELECT value FROM "`+prefix+`_menu" WHERE name = ?`, data.params[`name`].(string)).String()
+	menu := &model.Menu{}
+	menu.SetTablePrefix(prefix)
+	found, err := menu.Get(data.params["name"].(string))
+	if !found {
+		return errorAPI(w, fmt.Sprintf("Menu not found %s", data.params["name"].(string)), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -62,10 +67,10 @@ func contentMenu(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	params[`state_id`] = converter.Int64ToStr(data.sess.Get(`state`).(int64))
 	params[`global`] = converter.Int64ToStr(data.params[`global`].(int64))
 	params[`accept_lang`] = r.Header.Get(`Accept-Language`)
-	if len(menu) > 0 {
-		menu = language.LangMacro(textproc.Process(menu, &params), int(data.sess.Get(`state`).(int64)), params[`accept_lang`]) +
+	if len(menu.Value) > 0 {
+		menu.Value = language.LangMacro(textproc.Process(menu.Value, &params), int(data.sess.Get(`state`).(int64)), params[`accept_lang`]) +
 			`<!--#` + data.params[`name`].(string) + `#-->`
 	}
-	data.result = &contentResult{HTML: menu}
+	data.result = &contentResult{HTML: menu.Value}
 	return nil
 }

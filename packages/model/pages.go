@@ -19,12 +19,24 @@ func (p *Page) TableName() string {
 	return p.tableName
 }
 
-func (p *Page) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(p).Error
+func (p *Page) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(p))
 }
 
 func (p *Page) Create() error {
 	return DBConn.Create(p).Error
+}
+
+func (p *Page) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_pages").Count(&count).Error
+	return count, err
+}
+
+func (p *Page) GetAllLimitOffset(prefix string, limit, offset int64) ([]Page, error) {
+	result := new([]Page)
+	err := DBConn.Table(prefix + "_pages").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
 }
 
 func (p *Page) GetWithMenu(prefix string) ([]Page, error) {

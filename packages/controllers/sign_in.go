@@ -86,13 +86,13 @@ func (c *Controller) AjaxSignIn() interface{} {
 	if stateID > 0 {
 		log.Debug("stateId %v", stateID)
 		systemState := &model.SystemState{}
-		err := systemState.Get(stateID)
+		_, err := systemState.Get(stateID)
 		if err != nil {
 			result.Error = err.Error()
 			return result
 		}
 		citizen.SetTablePrefix(converter.Int64ToStr(stateID))
-		err = citizen.Get(walletID)
+		_, err = citizen.Get(walletID)
 		if err != nil {
 			result.Error = err.Error()
 			return result

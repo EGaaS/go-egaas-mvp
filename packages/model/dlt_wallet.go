@@ -2,8 +2,6 @@ package model
 
 import (
 	"strconv"
-
-	"github.com/jinzhu/gorm"
 )
 
 type DltWallet struct {
@@ -24,8 +22,8 @@ func (DltWallet) TableName() string {
 	return "dlt_wallets"
 }
 
-func (w *DltWallet) GetWallet(walletID int64) error {
-	return handleError(DBConn.Where("wallet_id = ?", walletID).First(&w).Error)
+func (w *DltWallet) Get(walletID int64) (bool, error) {
+	return isFound(DBConn.Where("wallet_id = ?", walletID).First(&w))
 }
 
 func GetWallets(startWalletID int64, walletsCount int) ([]DltWallet, error) {
@@ -38,19 +36,7 @@ func GetWallets(startWalletID int64, walletsCount int) ([]DltWallet, error) {
 }
 
 func (w *DltWallet) IsExistsByPublicKey(pubkey []byte) (bool, error) {
-	query := DBConn.Where("public_key_0 = ?", pubkey).First(w)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
-}
-
-func (w *DltWallet) IsExists() (bool, error) {
-	query := DBConn.Where("wallet_id = ?", w.WalletID).First(w)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
+	return isFound(DBConn.Where("public_key_0 = ?", pubkey).First(w))
 }
 
 func (w *DltWallet) Create() error {

@@ -44,7 +44,7 @@ func (c *Controller) RestoreAccess() (string, error) {
 	timeNow := time.Now().Unix()
 
 	sra := &model.SystemRestoreAccess{}
-	err := sra.Get(c.SessStateID)
+	_, err := sra.Get(c.SessStateID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

@@ -46,12 +46,12 @@ func QueueParserBlocks(d *daemon, ctx context.Context) error {
 	defer DbUnlock(d.goRoutineName)
 
 	infoBlock := &model.InfoBlock{}
-	err = infoBlock.GetInfoBlock()
+	_, err = infoBlock.Get()
 	if err != nil {
 		return err
 	}
 	queueBlock := &model.QueueBlock{}
-	err = queueBlock.GetQueueBlock()
+	_, err = queueBlock.Get()
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func QueueParserBlocks(d *daemon, ctx context.Context) error {
 	// download blocks for check
 	fullNode := &model.FullNode{}
 
-	err = fullNode.FindNodeByID(queueBlock.FullNodeID)
+	_, err = fullNode.FindNodeByID(queueBlock.FullNodeID)
 	if err != nil {
 		queueBlock.Delete()
 		return utils.ErrInfo(err)

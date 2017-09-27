@@ -37,14 +37,7 @@ func MainLockUpdate() error {
 }
 
 func (ml *MainLock) Get() (bool, error) {
-	query := DBConn.First(ml)
-	if query.RecordNotFound() {
-		return false, nil
-	}
-	if query.Error != nil {
-		return false, query.Error
-	}
-	return true, nil
+	return isFound(DBConn.First(ml))
 }
 
 func (ml *MainLock) Create() error {

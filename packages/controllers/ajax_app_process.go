@@ -57,12 +57,13 @@ func (c *Controller) AjaxAppProcess() interface{} {
 	} else {
 		app.SetTablePrefix(strconv.FormatInt(c.SessStateID, 10))
 	}
-	exist, err := app.IsExists(app.Name)
+	existsApp := &model.App{}
+	found, err := existsApp.Get(name)
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	if exist {
+	if found {
 		app.Blocks += fmt.Sprintf(",%d", block)
 		err = app.Save()
 	} else {

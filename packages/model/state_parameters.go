@@ -23,12 +23,24 @@ func (sp *StateParameter) SetTablePrefix(tablePrefix string) {
 	sp.tableName = tablePrefix + "_state_parameters"
 }
 
-func (sp *StateParameter) GetByName(name string) error {
-	return handleError(DBConn.Where("name = ?", name).First(sp).Error)
+func (sp *StateParameter) GetByName(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(sp))
 }
 
-func (sp *StateParameter) GetByParameter(parameter string) error {
-	return handleError(DBConn.Where("parameter = ?", parameter).First(sp).Error)
+func (sp *StateParameter) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_state_parameters").Count(&count).Error
+	return count, err
+}
+
+func (sp *StateParameter) GetAllLimitOffset(prefix string, limit, offset int64) ([]StateParameter, error) {
+	result := new([]StateParameter)
+	err := DBConn.Table(prefix + "_state_parameters").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
+func (sp *StateParameter) GetByParameter(parameter string) (bool, error) {
+	return isFound(DBConn.Where("parameter = ?", parameter).First(sp))
 }
 
 func (sp *StateParameter) GetAllStateParameters(tablePrefix string) ([]StateParameter, error) {

@@ -41,7 +41,7 @@ func (c *Controller) ChangeNodeKey() (string, error) {
 	timeNow := time.Now().Unix()
 
 	wallet := &model.DltWallet{}
-	err := wallet.GetWallet(c.SessWalletID)
+	_, err := wallet.Get(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

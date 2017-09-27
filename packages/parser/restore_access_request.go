@@ -46,7 +46,7 @@ func (p *RestoreAccessRequestParser) Validate() error {
 	}
 
 	restoreAccess := &model.SystemRestoreAccess{}
-	err = restoreAccess.Get(p.RestoreAccessRequest.StateID)
+	_, err = restoreAccess.Get(p.RestoreAccessRequest.StateID)
 	if restoreAccess.Active == 0 {
 		return p.ErrInfo("active=0")
 	}

@@ -66,7 +66,7 @@ func (c *Controller) RowHistory() (string, error) {
 	columns["block_id"] = ""
 	for i := 0; i < 100; i++ {
 		rollback := &model.Rollback{}
-		err := rollback.Get(rbID)
+		_, err := rollback.Get(rbID)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}

@@ -43,7 +43,7 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 		return "", nil
 	}
 	ib := &model.InfoBlock{}
-	err := ib.GetInfoBlock()
+	_, err := ib.Get()
 	if err != nil {
 		log.Error("%v", utils.ErrInfo(err))
 
@@ -107,7 +107,7 @@ func (c *Controller) SynchronizationBlockchain() (string, error) {
 	}
 
 	confirmation := &model.Confirmation{}
-	err = confirmation.GetMaxGoodBlock()
+	_, err = confirmation.GetMaxGoodBlock()
 	if err != nil {
 		return "", err
 	}

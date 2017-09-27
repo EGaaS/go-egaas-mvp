@@ -33,6 +33,6 @@ func (rt *RollbackTx) Create() error {
 	return DBConn.Create(rt).Error
 }
 
-func (rt *RollbackTx) Get(transactionHash []byte, tableName string) error {
-	return DBConn.Where("tx_hash = ? AND table_name = ?", transactionHash, tableName).First(rt).Error
+func (rt *RollbackTx) Get(transactionHash []byte, tableName string) (bool, error) {
+	return isFound(DBConn.Where("tx_hash = ? AND table_name = ?", transactionHash, tableName).First(rt))
 }

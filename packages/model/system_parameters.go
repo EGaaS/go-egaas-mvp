@@ -13,8 +13,8 @@ func (sp SystemParameter) TableName() string {
 	return "system_parameters"
 }
 
-func (sp *SystemParameter) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(sp).Error
+func (sp *SystemParameter) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(sp))
 }
 
 func (sp *SystemParameter) GetJSONField(jsonField string, name string) (string, error) {
@@ -38,6 +38,12 @@ func GetAllSystemParameters() ([]SystemParameter, error) {
 		return nil, err
 	}
 	return *parameters, nil
+}
+
+func GetAllSystemParametersNameIn(names []string) ([]SystemParameter, error) {
+	parameters := new([]SystemParameter)
+	err := DBConn.Table("system_parameters").Where("name in (?)", names).Find(&parameters).Error
+	return *parameters, err
 }
 
 func (sp *SystemParameter) ToMap() map[string]string {

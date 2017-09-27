@@ -32,6 +32,12 @@ func (t *Table) Get(name string) (bool, error) {
 	return true, query.Error
 }
 
+func (t *Table) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_tables").Count(&count).Error
+	return count, err
+}
+
 func (t *Table) Create() error {
 	return DBConn.Create(t).Error
 }
@@ -53,6 +59,12 @@ func (t *Table) GetAll(prefix string) ([]Table, error) {
 	result := make([]Table, 0)
 	err := DBConn.Table(prefix + "_tables").Find(&result).Error
 	return result, err
+}
+
+func (t *Table) GetAllLimitOffset(prefix string, limit, offset int64) ([]Table, error) {
+	result := new([]Table)
+	err := DBConn.Table(prefix + "_tables").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
 }
 
 func (t *Table) GetTablePermissions(tablePrefix string, tableName string) (map[string]string, error) {
@@ -85,14 +97,6 @@ func (t *Table) GetColumnsAndPermissions(tablePrefix string, tableName string) (
 		result[key] = value
 	}
 	return result, err
-}
-
-func (t *Table) ExistsByName(name string) (bool, error) {
-	query := DBConn.Where("name = ?", name).First(t)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
 }
 
 func (t *Table) IsExistsByPermissionsAndTableName(columnName, tableName string) (bool, error) {

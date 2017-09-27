@@ -57,7 +57,7 @@ func (p *ChangeNodeKeyDLTParser) Validate() error {
 		txTime = p.BlockData.Time
 	}
 	dltW := &model.DltWallet{}
-	err = dltW.GetWallet(p.TxWalletID)
+	_, err = dltW.Get(p.TxWalletID)
 	if err != nil || txTime-dltW.LastForgingDataUpd < 600 {
 		return p.ErrInfo("txTime - last_forging_data_upd < 600 sec")
 	}

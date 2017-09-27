@@ -278,7 +278,7 @@ MenuBack(Welcome)`,
 	}
 
 	dltWallet := &model.DltWallet{}
-	err = dltWallet.GetWallet(p.TxWalletID)
+	_, err = dltWallet.Get(p.TxWalletID)
 	if err != nil {
 		return
 	}
@@ -325,7 +325,7 @@ func (p *NewStateParser) Action() error {
 		return p.ErrInfo(err)
 	}
 	dltWallet := &model.DltWallet{}
-	err = dltWallet.GetWallet(p.TxWalletID)
+	_, err = dltWallet.Get(p.TxWalletID)
 	if err != nil {
 		return p.ErrInfo(err)
 	} else if len(p.NewState.Header.PublicKey) > 30 && len(dltWallet.PublicKey) == 0 {
@@ -337,7 +337,7 @@ func (p *NewStateParser) Action() error {
 
 func (p *NewStateParser) Rollback() error {
 	rollbackTx := &model.RollbackTx{}
-	err := rollbackTx.Get(p.TxHash, "system_states")
+	_, err := rollbackTx.Get(p.TxHash, "system_states")
 	if err != nil {
 		return p.ErrInfo(err)
 	}

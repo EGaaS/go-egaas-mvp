@@ -27,6 +27,13 @@ var (
 	RecordNotFound = gorm.ErrRecordNotFound
 )
 
+func isFound(db *gorm.DB) (bool, error) {
+	if db.RecordNotFound() {
+		return false, nil
+	}
+	return true, db.Error
+}
+
 func GormInit(user string, pass string, dbName string) error {
 	var err error
 	DBConn, err = gorm.Open("postgres",
@@ -332,7 +339,7 @@ func SendTx(txType int64, adminWallet int64, data []byte) (hash []byte, err erro
 func GetLastBlockData() (map[string]int64, error) {
 	result := make(map[string]int64)
 	confirmation := &Confirmation{}
-	err := confirmation.GetMaxGoodBlock()
+	_, err := confirmation.GetMaxGoodBlock()
 	if err != nil {
 		return result, utils.ErrInfo(err)
 	}
@@ -342,7 +349,7 @@ func GetLastBlockData() (map[string]int64, error) {
 	}
 	// obtain the time of the last affected block
 	block := &Block{}
-	err = block.GetBlock(confirmedBlockID)
+	_, err = block.Get(confirmedBlockID)
 	if err != nil || len(block.Data) == 0 {
 		return result, utils.ErrInfo(err)
 	}
@@ -354,7 +361,7 @@ func GetLastBlockData() (map[string]int64, error) {
 
 func GetMyWalletID() (int64, error) {
 	conf := &Config{}
-	err := conf.GetConfig()
+	_, err := conf.Get()
 	if err != nil {
 		return 0, err
 	}
@@ -446,7 +453,7 @@ func GetSleepTime(myWalletID, myStateID, prevBlockStateID, prevBlockWalletID int
 	}
 
 	// determine full_node_id of the one, who had to generate a block (but could delegate this)
-	err = node.Get(prevBlockWalletID)
+	_, err = node.Get(prevBlockWalletID)
 	if err != nil {
 		return 0, err
 	}
@@ -613,11 +620,4 @@ func GetList(query string, args ...interface{}) *ListResult {
 		}
 	}
 	return &ListResult{result, nil}
-}
-
-func handleError(err error) error {
-	if err == gorm.ErrRecordNotFound {
-		return nil
-	}
-	return err
 }

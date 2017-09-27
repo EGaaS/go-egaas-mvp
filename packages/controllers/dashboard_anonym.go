@@ -33,7 +33,7 @@ func (c *Controller) DashboardAnonym() (string, error) {
 
 	if c.SessWalletID > 0 || len(c.SessAddress) > 0 {
 		wallet := &model.DltWallet{}
-		err := wallet.GetWallet(c.SessWalletID)
+		_, err := wallet.Get(c.SessWalletID)
 
 		log.Debugf("wallet_id = %d\n\n!!!!wallet!!!! = %+v", c.SessWalletID, wallet)
 

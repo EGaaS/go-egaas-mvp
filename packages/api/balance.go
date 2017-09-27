@@ -30,15 +30,18 @@ type balanceResult struct {
 }
 
 func balance(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
 	wallet := converter.StringToAddress(data.params[`wallet`].(string))
 	if wallet == 0 {
 		return errorAPI(w, fmt.Sprintf(`Wallet %s is invalid`, data.params[`wallet`].(string)), http.StatusBadRequest)
 	}
-	total, err := model.Single(`SELECT amount FROM dlt_wallets WHERE wallet_id = ?`, wallet).String()
+	dltWallet := &model.DltWallet{}
+	found, err := dltWallet.Get(wallet)
+	if !found {
+		return errorAPI(w, fmt.Sprintf(`Wallet %s not found`, data.params[`wallet`].(string)), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &balanceResult{Amount: total, EGS: converter.EGSMoney(total)}
+	data.result = &balanceResult{Amount: dltWallet.Amount, EGS: converter.EGSMoney(dltWallet.Amount)}
 	return nil
 }

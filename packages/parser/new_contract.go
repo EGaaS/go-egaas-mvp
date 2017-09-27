@@ -86,9 +86,9 @@ func (p *NewContractParser) Validate() error {
 
 	sc := &model.SmartContract{}
 	sc.SetTablePrefix(prefix)
-	if exist, err := sc.ExistsByName(p.NewContract.Name); err != nil {
+	if found, err := sc.GetByName(p.NewContract.Name); err != nil {
 		return p.ErrInfo(err)
-	} else if exist {
+	} else if found {
 		return p.ErrInfo(fmt.Sprintf("The contract %s already exists", p.NewContract.Name))
 	}
 	return nil

@@ -35,7 +35,7 @@ type modalAnonymPage struct {
 // ModalAnonym shows QR code of the wallet
 func (c *Controller) ModalAnonym() (string, error) {
 	wallet := &model.DltWallet{}
-	err := wallet.GetWallet(c.SessWalletID)
+	_, err := wallet.Get(c.SessWalletID)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

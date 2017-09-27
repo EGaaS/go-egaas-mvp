@@ -61,7 +61,7 @@ func (p *RestoreAccessParser) Validate() error {
 	}
 
 	restoreAccess := &model.SystemRestoreAccess{}
-	err = restoreAccess.Get(p.RestoreAccess.StateID)
+	_, err = restoreAccess.Get(p.RestoreAccess.StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -99,7 +99,7 @@ func (p *RestoreAccessParser) Validate() error {
 
 func (p *RestoreAccessParser) Action() error {
 	restoreAccess := &model.SystemRestoreAccess{}
-	err := restoreAccess.Get(p.RestoreAccess.StateID)
+	_, err := restoreAccess.Get(p.RestoreAccess.StateID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}

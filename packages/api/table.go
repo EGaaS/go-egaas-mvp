@@ -50,14 +50,13 @@ type tableListResult struct {
 
 func getTable(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	prefix := getPrefix(data)
-	tableName := prefix + `_` + data.params[`name`].(string)
-	tablePermission, err := model.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions) as data WHERE name = ?`,
-		"key", "value", tableName)
+	tableName := data.params["name"].(string)
+	tpM := &model.Table{}
+	tablePermission, err := tpM.GetTablePermissions(prefix, data.params["name"].(string))
 	if err != nil {
-		return errorAPI(w, err.Error(), http.StatusInternalServerError)
+		return errorAPI(w, fmt.Sprintf("Error not found %s", data.params["name"].(string)), http.StatusInternalServerError)
 	}
-	columnsAndPermissions, err := model.GetMap(`SELECT data.* FROM "`+prefix+`_tables", jsonb_each_text(columns_and_permissions->'update') as data WHERE name = ?`,
-		"key", "value", tableName)
+	columnsAndPermissions, err := tpM.GetColumnsAndPermissions(prefix, data.params["name"].(string))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -138,29 +137,29 @@ func txEditTable(w http.ResponseWriter, r *http.Request, data *apiData) error {
 }
 
 func tableList(w http.ResponseWriter, r *http.Request, data *apiData) error {
-
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
 	outList := make([]tableItem, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_tables"`).String()
+	tableCount := &model.Table{}
+	count, err := tableCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT name FROM "`+getPrefix(data)+`_tables" order by name`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	tableList := &model.Table{}
+	list, err := tableList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
-		outList = append(outList, tableItem{Name: val[`name`]})
+		outList = append(outList, tableItem{Name: val.Name})
 	}
-	data.result = &tableListResult{Count: count, List: outList}
+	data.result = &tableListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }
 

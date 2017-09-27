@@ -1,7 +1,5 @@
 package model
 
-import "github.com/jinzhu/gorm"
-
 type SystemRecognizedState struct {
 	Name             string `gorm:"not null;size:255"`
 	StateID          int64  `gorm:"not null;primary_key"`
@@ -12,13 +10,13 @@ type SystemRecognizedState struct {
 	RbID             int64  `gorm:"not null"`
 }
 
-func (srs *SystemRecognizedState) GetState(stateID int64) error {
-	return handleError(DBConn.Where("state_id = ?", stateID).First(srs).Error)
+func (srs *SystemRecognizedState) GetState(stateID int64) (bool, error) {
+	return isFound(DBConn.Where("state_id = ?", stateID).First(srs))
 }
 
 func (srs *SystemRecognizedState) IsDelegated(stateID int64) (bool, error) {
-	err := srs.GetState(stateID)
-	if err == gorm.ErrRecordNotFound {
+	found, err := srs.GetState(stateID)
+	if !found {
 		return false, nil
 	}
 	if err != nil {

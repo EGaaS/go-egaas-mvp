@@ -2,8 +2,6 @@ package model
 
 import (
 	"strconv"
-
-	"github.com/jinzhu/gorm"
 )
 
 type Language struct {
@@ -22,8 +20,8 @@ func (l *Language) TableName() string {
 	return l.tableName
 }
 
-func (l *Language) Get(name string) error {
-	return DBConn.Where("name = ?", name).First(l).Error
+func (l *Language) Get(name string) (bool, error) {
+	return isFound(DBConn.Where("name = ?", name).First(l))
 }
 
 func (l *Language) GetAll(prefix string) ([]Language, error) {
@@ -32,12 +30,16 @@ func (l *Language) GetAll(prefix string) ([]Language, error) {
 	return *result, err
 }
 
-func (l *Language) IsExistsByName(name string) (bool, error) {
-	query := DBConn.Where("name = ?", name).First(l)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
+func (l *Language) GetAllLimitOffset(prefix string, limit, offset int64) ([]Language, error) {
+	result := new([]Language)
+	err := DBConn.Table(prefix + "_languages").Order("name").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
+}
+
+func (l *Language) GetCount(prefix string) (int64, error) {
+	var count int64
+	err := DBConn.Table(prefix + "_languages").Count(&count).Error
+	return count, err
 }
 
 func CreateLanguagesStateTable(stateID string) error {

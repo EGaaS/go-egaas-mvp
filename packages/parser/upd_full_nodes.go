@@ -53,7 +53,7 @@ func (p *UpdFullNodesParser) Validate() error {
 
 	// We check to see if the time elapsed since the last update
 	ufn := &model.UpdFullNode{}
-	err = ufn.Read()
+	_, err = ufn.Read()
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -66,7 +66,7 @@ func (p *UpdFullNodesParser) Validate() error {
 	}
 
 	wallet := &model.DltWallet{}
-	err = wallet.GetWallet(p.UpdFullNodes.UserID)
+	_, err = wallet.Get(p.UpdFullNodes.UserID)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
@@ -144,7 +144,7 @@ func (p *UpdFullNodesParser) Action() error {
 	}
 	for _, addressVote := range all {
 		wallet := &model.DltWallet{}
-		err := wallet.GetWallet(int64(converter.StringToAddress(addressVote)))
+		_, err := wallet.Get(int64(converter.StringToAddress(addressVote)))
 		if err != nil {
 			return p.ErrInfo(err)
 		}
@@ -181,12 +181,12 @@ func (p *UpdFullNodesParser) Rollback() error {
 
 	// get rb_id to restore the data from there
 	fnRB := &model.FullNode{}
-	if err := fnRB.GetRbIDFullNodesWithWallet(); err != nil {
+	if _, err := fnRB.GetRbIDFullNodesWithWallet(); err != nil {
 		return p.ErrInfo(err)
 	}
 
 	rbFN := &model.RbFullNode{}
-	err = rbFN.GetByRbID(int64(fnRB.ID)) // TODO: change rb_id type
+	_, err = rbFN.GetByRbID(int64(fnRB.ID)) // TODO: change rb_id type
 	if err != nil {
 		return p.ErrInfo(err)
 	}

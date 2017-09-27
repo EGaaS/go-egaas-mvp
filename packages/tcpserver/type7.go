@@ -25,7 +25,7 @@ import (
 // blocksCollection and queue_parser_blocks daemons send the request through p.GetBlocks()
 func Type7(request *GetBodyRequest) (*GetBodyResponse, error) {
 	block := &model.Block{}
-	err := block.GetBlock(int64(request.BlockID))
+	_, err := block.Get(int64(request.BlockID))
 	if err != nil {
 		return nil, utils.ErrInfo(err)
 	}

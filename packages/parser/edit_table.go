@@ -61,11 +61,11 @@ func (p *EditTableParser) Validate() error {
 
 	table := model.Table{}
 	table.SetTablePrefix(prefix)
-	exists, err := table.ExistsByName(p.EditTable.Name)
+	found, err := table.Get(p.EditTable.Name)
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	if !exists {
+	if !found {
 		return p.ErrInfo(`not exists`)
 	}
 

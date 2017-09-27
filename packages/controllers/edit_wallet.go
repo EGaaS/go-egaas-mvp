@@ -70,12 +70,12 @@ func (c *Controller) EditWallet() (string, error) {
 	}
 	if id != 0 {
 		wallet := &model.DltWallet{}
-		err := wallet.GetWallet(id)
+		found, err := wallet.Get(id)
 		if err != nil {
 			return "", utils.ErrInfo(err)
 		}
 		data = wallet.ToMap()
-		if len(data) == 0 {
+		if !found {
 			alert = fmt.Sprintf(`Wallet %s [%d] has not been found.`, idaddr, id)
 		} else {
 			ret := data[`amount`]

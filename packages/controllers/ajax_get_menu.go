@@ -47,7 +47,7 @@ func (c *Controller) AjaxGetMenu() interface{} {
 
 	dataMenu := &model.Menu{}
 	dataMenu.SetTablePrefix(prefix)
-	err := dataMenu.Get(name)
+	_, err := dataMenu.Get(name)
 	if err != nil {
 		return utils.ErrInfo(err)
 	}

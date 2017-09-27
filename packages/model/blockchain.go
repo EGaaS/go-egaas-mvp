@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/EGaaS/go-egaas-mvp/packages/converter"
-	"github.com/jinzhu/gorm"
 )
 
 type Block struct {
@@ -37,38 +36,26 @@ func (Block) TableName() string {
 }
 
 func (b *Block) IsExists() (bool, error) {
-	query := DBConn.First(b)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), handleError(query.Error)
-}
-
-func (b *Block) IsExistsID(blockID int64) (bool, error) {
-	query := DBConn.Where("id = ?").First(b)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), handleError(query.Error)
+	return isFound(DBConn.First(b))
 }
 
 func (b *Block) Create() error {
 	return DBConn.Create(b).Error
 }
 
-func (b *Block) GetBlock(blockID int64) error {
-	return handleError(DBConn.Where("id = ?", blockID).First(b).Error)
+func (b *Block) Get(blockID int64) (bool, error) {
+	return isFound(DBConn.Where("id = ?", blockID).First(b))
 }
 
-func (b *Block) GetMaxBlock() error {
-	return handleError(DBConn.Last(b).Error)
+func (b *Block) GetMaxBlock() (bool, error) {
+	return isFound(DBConn.Last(b))
 }
 
 func (b *Block) GetBlocksFrom(startFromID int64, ordering string) ([]Block, error) {
 	var err error
 	blockchain := new([]Block)
 	err = DBConn.Order("id "+ordering).Where("id > ?", startFromID).Find(&blockchain).Error
-	return *blockchain, handleError(err)
+	return *blockchain, err
 }
 
 func (b *Block) GetBlocks(startFromID int64, limit int32) ([]Block, error) {
@@ -79,7 +66,7 @@ func (b *Block) GetBlocks(startFromID int64, limit int32) ([]Block, error) {
 	} else {
 		err = DBConn.Order("id desc").Limit(limit).Find(&blockchain).Error
 	}
-	return *blockchain, handleError(err)
+	return *blockchain, err
 }
 
 func (b *Block) Delete() error {
@@ -97,7 +84,7 @@ func (b *Block) DeleteChain() error {
 func (b *Block) GetLastBlockData() (map[string]int64, error) {
 	result := make(map[string]int64)
 	confirmation := &Confirmation{}
-	err := confirmation.GetMaxGoodBlock()
+	_, err := confirmation.GetMaxGoodBlock()
 	if err != nil {
 		return result, err
 	}
@@ -105,7 +92,7 @@ func (b *Block) GetLastBlockData() (map[string]int64, error) {
 		confirmation.BlockID = 1
 	}
 
-	err = b.GetBlock(confirmation.BlockID)
+	_, err = b.Get(confirmation.BlockID)
 	if err != nil || b.ID == 0 {
 		return result, err
 	}

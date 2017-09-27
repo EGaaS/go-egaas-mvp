@@ -34,32 +34,23 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 	if global == "" || global == "0" {
 		prefix = c.StateIDStr
 	}
-
+	var err error
+	var menuFound bool
 	page := &model.Page{}
 	menu := &model.Menu{}
-
-	err := func() error {
-		if len(prefix) > 0 {
-			page.SetTablePrefix(prefix)
-			err := page.Get(pageName)
-			if err == model.RecordNotFound {
-				return nil
-			}
-			if err != nil {
-				return utils.ErrInfo(err)
-			}
-
-			menu.SetTablePrefix(prefix)
-			err = menu.Get(page.Menu)
-			if err == model.RecordNotFound {
-				return nil
-			}
-			if err != nil {
-				return utils.ErrInfo(err)
-			}
+	if len(prefix) > 0 {
+		page.SetTablePrefix(prefix)
+		_, err = page.Get(pageName)
+		if err != nil {
+			return "", utils.ErrInfo(err)
 		}
-		return nil
-	}()
+
+		menu.SetTablePrefix(prefix)
+		menuFound, err = menu.Get(page.Menu)
+		if err != nil {
+			return "", utils.ErrInfo(err)
+		}
+	}
 
 	if err != nil {
 		return "", err
@@ -68,10 +59,9 @@ func (c *Controller) AjaxGetMenuHtml() (string, error) {
 	params := make(map[string]string)
 	params[`state_id`] = c.StateIDStr
 	params[`accept_lang`] = c.r.Header.Get(`Accept-Language`)
-	if len(menu.Value) > 0 {
+	if menuFound {
 		menu.Value = language.LangMacro(textproc.Process(menu.Value, &params), converter.StrToInt(c.StateIDStr), params[`accept_lang`]) +
 			`<!--#` + page.Menu + `#-->`
 	}
 	return menu.Value, nil
-
 }

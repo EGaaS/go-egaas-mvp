@@ -72,9 +72,9 @@ func (p *NewLangParser) Validate() error {
 	} else {
 		lang := &model.Language{}
 		lang.SetTablePrefix(prefix)
-		if exist, err := lang.IsExistsByName(p.NewLang.Name); err != nil {
+		if found, err := lang.Get(p.NewLang.Name); err != nil {
 			return p.ErrInfo(err)
-		} else if exist {
+		} else if found {
 			return p.ErrInfo(fmt.Sprintf("The language resource %s already exists", p.NewLang.Name))
 		}
 	}
@@ -89,9 +89,9 @@ func (p *NewLangParser) Action() error {
 		for name, res := range list {
 			lang := &model.Language{}
 			lang.SetTablePrefix(prefix)
-			if exist, err := lang.IsExistsByName(name); err != nil {
+			if found, err := lang.Get(name); err != nil {
 				return p.ErrInfo(err)
-			} else if !exist {
+			} else if !found {
 				_, _, err := p.selectiveLoggingAndUpd([]string{"name", "res"}, []interface{}{name, res}, prefix+"_languages", nil, nil, true)
 				if err != nil {
 					return p.ErrInfo(err)

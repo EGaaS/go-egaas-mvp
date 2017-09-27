@@ -1,7 +1,5 @@
 package model
 
-import "github.com/jinzhu/gorm"
-
 type SystemState struct {
 	ID   int64 `gorm:"primary_key;not null"`
 	RbID int64 `gorm:"not null"`
@@ -23,14 +21,20 @@ func GetAllSystemStatesIDs() ([]int64, error) {
 	return ids, nil
 }
 
-func (ss *SystemState) Get(id int64) error {
-	return DBConn.Where("id = ?", id).First(ss).Error
+func (ss *SystemState) Get(id int64) (bool, error) {
+	return isFound(DBConn.Where("id = ?", id).First(ss))
 }
 
 func (ss *SystemState) GetCount() (int64, error) {
 	count := int64(0)
 	err := DBConn.Table("system_states").Count(&count).Error
 	return count, err
+}
+
+func (ss *SystemState) GetAllLimitOffset(limit, offset int64) ([]SystemState, error) {
+	result := new([]SystemState)
+	err := DBConn.Table("system_states").Order("id desc").Limit(limit).Offset(offset).Find(&result).Error
+	return *result, err
 }
 
 func (ss *SystemState) GetLast() (bool, error) {
@@ -43,14 +47,6 @@ func (ss *SystemState) GetLast() (bool, error) {
 
 func (ss *SystemState) Delete() error {
 	return DBConn.Delete(ss).Error
-}
-
-func (ss *SystemState) IsExists(stateID int64) (bool, error) {
-	query := DBConn.Where("id = ?", stateID).First(ss)
-	if query.Error == gorm.ErrRecordNotFound {
-		return false, nil
-	}
-	return !query.RecordNotFound(), query.Error
 }
 
 func (ss *SystemState) Create() error {

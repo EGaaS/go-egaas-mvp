@@ -46,7 +46,7 @@ func (c *Controller) WalletHistory() (string, error) {
 		walletID = c.SessWalletID
 	}
 	wallet := &model.DltWallet{}
-	err := wallet.GetWallet(walletID)
+	_, err := wallet.Get(walletID)
 	if err != nil {
 		return ``, utils.ErrInfo(err)
 	}
@@ -61,7 +61,7 @@ func (c *Controller) WalletHistory() (string, error) {
 		for len(list) <= 100 && rb > 0 {
 			var data map[string]string
 			rollback := &model.Rollback{}
-			err := rollback.Get(rb)
+			_, err := rollback.Get(rb)
 			if err != nil {
 				return ``, utils.ErrInfo(err)
 			}

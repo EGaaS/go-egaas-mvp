@@ -49,10 +49,13 @@ type contractListResult struct {
 func checkID(data *apiData) (id string, err error) {
 	id = data.params[`id`].(string)
 	if id[0] > '9' {
-		id, err = model.Single(`SELECT id FROM "`+getPrefix(data)+`_smart_contracts" WHERE name = ?`, id).String()
-		if err == nil && len(id) == 0 {
+		sc := &model.SmartContract{}
+		sc.SetTablePrefix(getPrefix(data))
+		found, err := sc.GetByName(id)
+		if err == nil && !found {
 			err = fmt.Errorf(`incorrect id %s of the contract`, data.params[`id`].(string))
 		}
+		id = converter.Int64ToStr(sc.ID)
 	}
 	return
 }
@@ -62,12 +65,17 @@ func getContract(w http.ResponseWriter, r *http.Request, data *apiData) error {
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusBadRequest)
 	}
-	dataContract, err := model.GetOneRow(`SELECT * FROM "`+getPrefix(data)+`_smart_contracts" WHERE id = ?`, id).String()
+	contract := &model.SmartContract{}
+	contract.SetTablePrefix(getPrefix(data))
+	found, err := contract.GetByID(converter.StrToInt64(id))
+	if !found {
+		return errorAPI(w, fmt.Sprintf("Contract not found %s", id), http.StatusNotFound)
+	}
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
-	data.result = &contractResult{ID: dataContract["id"], Name: dataContract["name"], Active: dataContract["active"],
-		Wallet: dataContract["wallet"], Value: dataContract["value"], Conditions: dataContract["conditions"]}
+	data.result = &contractResult{ID: converter.Int64ToStr(contract.ID), Name: contract.Name, Active: contract.Active,
+		Wallet: converter.Int64ToStr(contract.WalletID), Value: string(contract.Value), Conditions: contract.Conditions}
 	return nil
 }
 
@@ -185,34 +193,35 @@ func txActivateContract(w http.ResponseWriter, r *http.Request, data *apiData) e
 
 func contractList(w http.ResponseWriter, r *http.Request, data *apiData) error {
 
-	limit := int(data.params[`limit`].(int64))
+	limit := data.params[`limit`].(int64)
 	if limit == 0 {
 		limit = 25
 	} else if limit < 0 {
 		limit = -1
 	}
 	outList := make([]contractItem, 0)
-	count, err := model.Single(`SELECT count(*) FROM "` + getPrefix(data) + `_smart_contracts"`).String()
+	scCount := &model.SmartContract{}
+	count, err := scCount.GetCount(getPrefix(data))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	list, err := model.GetAll(`SELECT * FROM "`+getPrefix(data)+`_smart_contracts" order by id`+
-		fmt.Sprintf(` offset %d `, data.params[`offset`].(int64)), limit)
+	scList := &model.SmartContract{}
+	list, err := scList.GetAllLimitOffset(getPrefix(data), limit, data.params["offset"].(int64))
 	if err != nil {
 		return errorAPI(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	for _, val := range list {
 		var wallet, active string
-		if val[`wallet_id`] != `NULL` {
-			wallet = converter.AddressToString(converter.StrToInt64(val[`wallet_id`]))
+		if val.WalletID != 0 {
+			wallet = converter.AddressToString(val.WalletID)
 		}
-		if val[`active`] != `NULL` {
+		if val.Active != `NULL` {
 			active = `1`
 		}
-		outList = append(outList, contractItem{ID: val[`id`], Name: val[`name`], Wallet: wallet, Active: active})
+		outList = append(outList, contractItem{ID: converter.Int64ToStr(val.ID), Name: val.Name, Wallet: wallet, Active: active})
 	}
-	data.result = &contractListResult{Count: count, List: outList}
+	data.result = &contractListResult{Count: converter.Int64ToStr(count), List: outList}
 	return nil
 }

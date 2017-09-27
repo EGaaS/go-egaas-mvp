@@ -49,7 +49,7 @@ func (c *Controller) EditStateParameters() (string, error) {
 
 	stateParameter := &model.StateParameter{}
 	stateParameter.SetTablePrefix(converter.Int64ToStr(c.StateID))
-	err = stateParameter.GetByName(name)
+	_, err = stateParameter.GetByName(name)
 	if err != nil {
 		return "", utils.ErrInfo(err)
 	}

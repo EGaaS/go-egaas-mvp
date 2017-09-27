@@ -149,7 +149,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 	if sessStateID > 0 {
 		stateParameter := &model.StateParameter{}
 		stateParameter.SetTablePrefix(converter.Int64ToStr(sessStateID))
-		err = stateParameter.GetByName("state_name")
+		_, err = stateParameter.GetByName("state_name")
 		if err != nil {
 			log.Errorf("get state_name failed: %v", err)
 		}
@@ -167,7 +167,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 			log.Errorf("install get failed:%v", err)
 		}
 		config := &model.Config{}
-		err = config.GetConfig()
+		_, err = config.Get()
 		if err != nil {
 			log.Errorf("get config failed: %v", err)
 		}
@@ -184,7 +184,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 		log.Debug("installProgress", install.Progress, "configExists", configExists, "lastBlockTime", lastBlockTime)
 
 		confirmation := &model.Confirmation{}
-		err = confirmation.GetMaxGoodBlock()
+		_, err = confirmation.GetMaxGoodBlock()
 		if err != nil {
 			log.Errorf("get max good block failed: %v", err)
 		}
@@ -361,7 +361,7 @@ func Content(w http.ResponseWriter, r *http.Request) {
 		// We highlight the block number in red if the update process is in progress
 		var blockJs string
 		ib := &model.InfoBlock{}
-		err = ib.GetInfoBlock()
+		_, err = ib.Get()
 		if err != nil {
 			log.Error("can't get block info %v", err)
 		}

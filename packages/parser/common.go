@@ -17,7 +17,6 @@
 package parser
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -59,12 +58,12 @@ func GetTxTypeAndUserID(binaryBlock []byte) (txType int64, walletID int64, citiz
 func GetBlockDataFromBlockChain(blockID int64) (*utils.BlockData, error) {
 	BlockData := new(utils.BlockData)
 	block := &model.Block{}
-	err := block.GetBlock(blockID)
+	found, err := block.Get(blockID)
 	if err != nil {
 		return BlockData, utils.ErrInfo(err)
 	}
-
-	if len(block.Data) > 0 {
+	log.Debug("data: %x\n", block.Data)
+	if found {
 		binaryData := block.Data
 		converter.BytesShift(&binaryData, 1) // не нужно. 0 - блок, >0 - тр-ии
 		BlockData = utils.ParseBlockHeader(&binaryData)
@@ -78,15 +77,18 @@ func GetNodePublicKeyWalletOrCB(walletID, stateID int64) ([]byte, error) {
 	var err error
 	if walletID != 0 {
 		wallet := &model.DltWallet{}
-		err = wallet.GetWallet(walletID)
+		_, err = wallet.Get(walletID)
 		if err != nil {
 			return []byte(""), err
 		}
 		result = []byte(wallet.NodePublicKey)
 	} else {
 		srs := &model.SystemRecognizedState{}
-		err = srs.GetState(stateID)
-		if err != nil {
+		found, err := srs.GetState(stateID)
+		if err != nil || !found {
+			if !found {
+				return []byte(""), fmt.Errorf("record not found")
+			}
 			return []byte(""), err
 		}
 		result = []byte(srs.NodePublicKey)
@@ -134,7 +136,7 @@ func IsState(country string) (int64, error) {
 	for _, id := range ids {
 		sp := &model.StateParameter{}
 		sp.SetTablePrefix(converter.Int64ToStr(id))
-		err = sp.GetByName("state_name")
+		_, err = sp.GetByName("state_name")
 		if err != nil {
 			return 0, err
 		}
@@ -337,12 +339,12 @@ func (p *Parser) CheckLogTx(txBinary []byte, transactions, txQueue bool) error {
 	if transactions {
 		// check whether we have such a transaction
 		tx := &model.Transaction{}
-		err := tx.GetVerified(searchedHash)
+		found, err := tx.GetVerified(searchedHash)
 		if err != nil {
 			log.Error("get verified transaction error: %s", utils.ErrInfo(err))
 			return utils.ErrInfo(err)
 		}
-		if len(tx.Hash) > 0 {
+		if found {
 			return utils.ErrInfo(fmt.Errorf("double tx in transactions %x", searchedHash))
 		}
 	}
@@ -368,8 +370,8 @@ func (p *Parser) GetInfoBlock() error {
 	// the last successfully recorded block
 	p.PrevBlock = new(utils.BlockData)
 	ib := &model.InfoBlock{}
-	err := ib.GetInfoBlock()
-	if err != nil && err != sql.ErrNoRows {
+	_, err := ib.Get()
+	if err != nil {
 		return p.ErrInfo(err)
 	}
 	p.PrevBlock.Hash = ib.Hash
@@ -478,7 +480,7 @@ func (p *Parser) checkSenderDLT(amount, commission decimal.Decimal) error {
 	}
 
 	wallet := &model.DltWallet{}
-	err := wallet.GetWallet(walletID)
+	_, err := wallet.Get(walletID)
 	if err != nil {
 		return err
 	}
@@ -512,7 +514,7 @@ func (p *Parser) BlockError(err error) {
 func (p *Parser) AccessRights(condition string, iscondition bool) error {
 	sp := &model.StateParameter{}
 	sp.SetTablePrefix(p.TxStateIDStr)
-	err := sp.GetByName(condition)
+	_, err := sp.GetByName(condition)
 	if err != nil {
 		return err
 	}
@@ -615,14 +617,14 @@ func (p *Parser) AccessChange(table, name, global string, stateId int64) error {
 	case "pages":
 		page := &model.Page{}
 		page.SetTablePrefix(prefix)
-		if err := page.Get(name); err != nil {
+		if _, err := page.Get(name); err != nil {
 			return err
 		}
 		conditions = page.Conditions
 	case "menus":
 		menu := &model.Menu{}
 		menu.SetTablePrefix(prefix)
-		if err := menu.Get(name); err != nil {
+		if _, err := menu.Get(name); err != nil {
 			return err
 		}
 		conditions = menu.Conditions
@@ -654,7 +656,7 @@ func (p *Parser) getEGSPrice(name string) (decimal.Decimal, error) {
 	p.TxCost = 0
 	p.TxUsedCost, _ = decimal.NewFromString(*fPrice)
 	systemParam := &model.SystemParameter{}
-	err = systemParam.Get("fuel_rate")
+	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -696,7 +698,7 @@ func (p *Parser) payFPrice() error {
 
 	toID := p.BlockData.WalletID // account of node
 	systemParam := &model.SystemParameter{}
-	err = systemParam.Get("fuel_rate")
+	_, err = systemParam.Get("fuel_rate")
 	if err != nil {
 		return fmt.Errorf("can't get fuel_rate: %s", err)
 	}
@@ -728,7 +730,7 @@ func (p *Parser) payFPrice() error {
 		return nil
 	}
 	wallet := &model.DltWallet{}
-	if err := wallet.GetWallet(fromID); err != nil {
+	if _, err := wallet.Get(fromID); err != nil {
 		return err
 	}
 	wltAmount, err := decimal.NewFromString(wallet.Amount)
