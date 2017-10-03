@@ -98,14 +98,14 @@ var (
 	FirstBlockNodePublicKey = flag.String("firstBlockNodePublicKey", "", "FirstBlockNodePublicKey")
 	FirstBlockHost          = flag.String("firstBlockHost", "", "FirstBlockHost")
 	WalletAddress           = flag.String("walletAddress", "", "walletAddress for forging ")
-	TcpHost                 = flag.String("tcpHost", "", "tcpHost (e.g. 127.0.0.1)")
+	TcpHost                 = flag.String("tcpHost", "127.0.0.1", "tcpHost (e.g. 127.0.0.1)")
 	ListenHttpPort          = flag.String("listenHttpPort", "7079", "ListenHttpPort")
 	GenerateFirstBlock      = flag.Int64("generateFirstBlock", 0, "generateFirstBlock")
 	OldVersion              = flag.String("oldVersion", "", "")
 	TestRollBack            = flag.Int64("testRollBack", 0, "testRollBack")
 	Dir                     = flag.String("dir", GetCurrentDir(), "DayLight directory")
 	OldFileName             = flag.String("oldFileName", "", "")
-	LogLevel                = flag.String("logLevel", "", "DayLight LogLevel")
+	LogLevel                = flag.String("logLevel", "ERROR", "DayLight LogLevel")
 	Console                 = flag.Int64("console", 0, "Start from console")
 	SqliteDbUrl             string
 	StartBlockId            = flag.Int64("startBlockId", 0, "Start block for blockCollection daemon")
@@ -116,6 +116,17 @@ var (
 	BoltDir                 = flag.String("boltDir", GetCurrentDir(), "Bolt directory")
 	BoltPsw                 = flag.String("boltPsw", "", "Bolt password")
 	ApiToken                = flag.String("apiToken", "", "Api Token")
+
+	ShouldInstall          = flag.Bool("install", false, "should be software installed instead of started?")
+	GenFirstBlock          = flag.Int64("gen_first_block", 1, "should first block be generated")
+	FirstLoadBlockchainURL = flag.String("first_load_url", "https://media.githubusercontent.com/media/egaas-blockchain/egaas-blockchain.github.io/master/blockchain.raw", "Blockchain load url")
+	FirstLoad              = flag.String("first_load", "url", "load from url or nodes")
+	DbType                 = "postgres"
+	DbHost                 = flag.String("db_host", "localhost", "postgres host")
+	DbPort                 = flag.String("db_port", "5432", "postgres port")
+	DbName                 = flag.String("db_name", "", "database name")
+	DbUsername             = flag.String("username", "", "database username")
+	DbPassword             = flag.String("password", "", "database password")
 
 	DaemonsChans []*DaemonsChansType
 	eWallets     = &sync.Mutex{}

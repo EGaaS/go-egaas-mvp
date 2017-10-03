@@ -22,6 +22,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/EGaaS/go-egaas-mvp/packages/controllers"
 	"github.com/EGaaS/go-egaas-mvp/packages/daylight"
 	"github.com/EGaaS/go-egaas-mvp/packages/static"
 	"github.com/EGaaS/go-egaas-mvp/packages/system"
@@ -40,6 +41,15 @@ func main_loader_html(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, html)
 }
 func main() {
+	if *utils.ShouldInstall {
+		err := install()
+		if err != nil {
+			fmt.Println("installation error: ", err)
+			return
+		}
+		fmt.Println("install ok")
+	}
+
 	runtime.LockOSThread()
 
 	var width uint = 800
@@ -83,4 +93,26 @@ func main() {
 
 	enterLoop()
 	system.Finish(0)
+}
+
+func install() error {
+	if *utils.LogLevel != "DEBUG" && *utils.LogLevel != "ERROR" {
+		*utils.LogLevel = "ERROR"
+	}
+
+	c := &controllers.Controller{}
+	err := c.LocalInstall(*utils.Dir,
+		*utils.GenFirstBlock,
+		*utils.TcpHost,
+		*utils.ListenHttpPort,
+		*utils.LogLevel,
+		*utils.FirstLoadBlockchainURL,
+		*utils.FirstLoad,
+		utils.DbType,
+		*utils.DbHost,
+		*utils.DbPort,
+		*utils.DbName,
+		*utils.DbUsername,
+		*utils.DbPassword)
+	return err
 }
