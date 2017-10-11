@@ -78,11 +78,11 @@ type FieldInfo struct {
 
 // ContractInfo contains the contract information
 type ContractInfo struct {
-	ID    uint32
-	Name  string
-	Owner *OwnerInfo
-	Used  map[string]bool // Called contracts
-	Tx    *[]*FieldInfo
+	ID       uint32
+	Name     string
+	Owner    *OwnerInfo
+	Used     map[string]bool // Called contracts
+	Tx       *[]*FieldInfo
 	Settings map[string]interface{}
 }
 

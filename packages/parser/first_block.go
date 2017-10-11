@@ -64,8 +64,8 @@ func (p *FirstBlockParser) Action() error {
 	if err != nil {
 		return p.ErrInfo(err)
 	}
-	err = model.DBConn.Exec(`insert into "1_menu" (id,name,value,conditions) values('1', 'default_menu', ?, 'ContractAccess("@1EditMenu")')`,
-		syspar.SysString(`default_ecosystem_menu`)).Error
+	err = model.DBConn.Exec(`insert into "1_menu" (id,name,value,title,conditions) values('1', 'default_menu', ?, ?,'ContractAccess("@1EditMenu")')`,
+		syspar.SysString(`default_ecosystem_menu`), `default`).Error
 	if err != nil {
 		return p.ErrInfo(err)
 	}
