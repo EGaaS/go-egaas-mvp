@@ -1525,7 +1525,8 @@ func TableConditions(p *Parser, name, columns, permissions string) (err error) {
 			return fmt.Errorf(`worng column`)
 		}
 		itype := data[`type`]
-		if itype != `varchar` && itype != `number` && itype != `datetime` && itype != `text` && itype != `bytea` && itype != `double` && itype != `money` {
+		if itype != `varchar` && itype != `number` && itype != `datetime` && itype != `text` &&
+			itype != `bytea` && itype != `double` && itype != `money` && itype != `character` {
 			return fmt.Errorf(`incorrect type`)
 		}
 		if len(data[`conditions`]) == 0 {
@@ -1719,7 +1720,7 @@ func ColumnCondition(p *Parser, tableName, name, coltype, permissions, index str
 	if count >= int64(syspar.GetMaxColumns()) {
 		return fmt.Errorf(`Too many columns. Limit is %d`, syspar.GetMaxColumns())
 	}
-	if coltype != `varchar` && coltype != `number` && coltype != `datetime` &&
+	if coltype != `varchar` && coltype != `number` && coltype != `datetime` && coltype != `character` &&
 		coltype != `text` && coltype != `bytea` && coltype != `double` && coltype != `money` {
 		return fmt.Errorf(`incorrect type`)
 	}

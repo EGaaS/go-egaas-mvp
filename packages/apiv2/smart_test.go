@@ -162,7 +162,8 @@ func TestNewTable(t *testing.T) {
 	name := randName(`tbl`)
 	form := url.Values{"Name": {name}, "Columns": {`[{"name":"MyName","type":"varchar", "index": "1", 
 	  "conditions":"true"},
-	{"name":"Amount", "type":"number","index": "0", "conditions":"true"}]`},
+	{"name":"Amount", "type":"number","index": "0", "conditions":"true"},
+	{"name":"Active", "type":"character","index": "0", "conditions":"true"}]`},
 		"Permissions": {`{"insert": "true", "update" : "true", "new_column": "true"}`}}
 	err := postTx(`NewTable`, &form)
 	if err != nil {
