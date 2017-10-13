@@ -1732,6 +1732,9 @@ func ColumnCondition(p *Parser, tableName, name, coltype, permissions, index str
 		if count >= syspar.GetMaxIndexes() {
 			return fmt.Errorf(`Too many indexes. Limit is %d`, syspar.GetMaxIndexes())
 		}
+		if coltype != `varchar` && coltype != `number` && coltype != `datetime` {
+			return fmt.Errorf(`incorrect index type`)
+		}
 	}
 
 	if err := p.AccessTable(tblName, "new_column"); err != nil {

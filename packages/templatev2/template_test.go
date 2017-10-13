@@ -94,8 +94,8 @@ var forTest = tplList{
 	{`SetVar(test, mytest).(empty,0)And(0,test,0)Or(0,#test#)Or(0, And(0,0))And(0,Or(0,my,while))
 		And(1,#mytest#)Or(#empty#, And(#empty#, line))`,
 		`[{"tag":"text","text":"010010"}]`},
-	{`Address()Span(Address(-5728238900021))Address(3467347643873)`,
-		`[{"tag":"text","text":"unknown address"},{"tag":"span","children":[{"tag":"text","text":"1844-6738-3454-7065-1595"}]},{"tag":"text","text":"0000-0003-4673-4764-3873"}]`},
+	{`Address()Span(Address(-5728238900021))Address(3467347643873).(-6258391547979339691)`,
+		`[{"tag":"text","text":"unknown address"},{"tag":"span","children":[{"tag":"text","text":"1844-6738-3454-7065-1595"}]},{"tag":"text","text":"0000-0003-4673-4764-38731218-8352-5257-3021-1925"}]`},
 	/*	{`Div(myclass, Include(test)Span(OK))`,
 		`[{"tag":"include","attr":{"name":"myblock"}}]`},*/
 
