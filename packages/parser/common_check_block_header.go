@@ -79,7 +79,7 @@ func (p *Parser) CheckBlockHeader() error {
 		log.Debug("p.PrevBlock.Time %v + sleepTime %v - p.BlockData.Time %v > consts.ERROR_TIME %v", p.PrevBlock.Time, sleepTime, p.BlockData.Time, consts.ERROR_TIME)
 		if p.PrevBlock.Time+sleepTime-p.BlockData.Time > consts.ERROR_TIME && p.BlockData.BlockId > 25000 {
 			return utils.ErrInfo(fmt.Errorf("incorrect block time %d + %d - %d > %d", p.PrevBlock.Time, sleepTime, p.BlockData.Time, consts.ERROR_TIME))
-		} else if math.Abs(float64(p.PrevBlock.Time+sleepTime-p.BlockData.Time)) > float64(consts.ERROR_TIME) && p.BlockData.BlockId > 1612500 {
+		} else if (float64(p.PrevBlock.Time+sleepTime-p.BlockData.Time)) > float64(consts.ERROR_TIME) && p.BlockData.BlockId > 1612500 {
 			return utils.ErrInfo(fmt.Errorf("incorrect block time %d + %d - %d > %d", p.PrevBlock.Time, sleepTime, p.BlockData.Time, consts.ERROR_TIME))
 		}
 	}
